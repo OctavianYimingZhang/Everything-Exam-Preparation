@@ -13,7 +13,7 @@ from typing import Any
 try:
     from docx import Document  # type: ignore
     from docx.enum.text import WD_ALIGN_PARAGRAPH  # type: ignore
-    from docx.shared import Cm, Pt  # type: ignore
+    from docx.shared import Cm, Pt, RGBColor  # type: ignore
 except Exception as exc:  # pragma: no cover
     raise SystemExit(f"python-docx is required: {exc}")
 
@@ -24,54 +24,11 @@ from knowledge_only_rendering_rules import (
     repeated_template_label_hits,
 )
 
-
-STYLE_LIMITS = {
-    "margin_cm": 2.0,
-    "margin_tolerance_cm": 0.08,
-    "line_spacing_min": 1.45,
-    "line_spacing_max": 1.55,
-    "body_font_min_pt": 9.5,
-    "body_font_max_pt": 11.5,
-}
-
-
-FORBIDDEN_TEXT = {
-    "source anchor",
-    "confidence",
-    "evidence score",
-    "recurrence count",
-    "examiner operation",
-    "discriminator axis",
-    "essay plan",
-    "full example essay",
-    "practice question",
-    "answer key",
-    "past paper year",
-    "prediction score",
-    "according to slide",
-    "english explanations extracted",
-    "ppt page",
-    "slide mentions",
-    "slides say",
-    "the final slide",
-    "the first slide",
-    "the next slide",
-    "the second slide",
-    "this slide",
-}
-
-OLD_VISIBLE_SCAFFOLD_HEADINGS = {
-    "How To Answer This Exam",
-    "What This Lecture Is About",
-    "What This Module Explains",
-    "Knowledge Walkthrough",
-    "Key Logic",
-    "Knowledge Points",
-    "Must Master",
-    "Lecture Recap",
-}
-
-SEMANTIC_HEADINGS = {"Knowledge map", "Key distinctions", "Core knowledge points", "Synthesis"}
+STYLE_LIMITS = {"margin_cm": 2.0, "margin_tolerance_cm": 0.08, "line_spacing_min": 1.45, "line_spacing_max": 1.55, "body_font_min_pt": 9.5, "body_font_max_pt": 11.5}
+BLUE_RGB = {"0000FF", "0563C1", "2F5496", "1F4E79", "4472C4", "5B9BD5"}
+FORBIDDEN_TEXT = {"source anchor", "confidence", "evidence score", "recurrence count", "examiner operation", "discriminator axis", "essay plan", "full example essay", "practice question", "answer key", "past paper year", "prediction score", "according to slide", "english explanations extracted", "ppt page", "slide mentions", "slides say", "the final slide", "the first slide", "the next slide", "the second slide", "this slide"}
+OLD_VISIBLE_SCAFFOLD_HEADINGS = {"How To Answer This Exam", "What This Lecture Is About", "What This Module Explains", "Knowledge Walkthrough", "Key Logic", "Knowledge Points", "Must Master", "Lecture Recap"}
+SEMANTIC_HEADINGS = {"Knowledge map", "Key distinctions", "Core knowledge points", "Synthesis", "Course Knowledge Map"}
 
 
 def collect_docx(path: Path) -> list[Path]:
@@ -81,9 +38,32 @@ def collect_docx(path: Path) -> list[Path]:
 
 
 def run_size_pt(run) -> float | None:
-    if run.font.size is None:
+    return None if run.font.size is None else float(run.font.size.pt)
+
+
+def colour_string(colour: Any) -> str | None:
+    if colour is None:
         return None
-    return float(run.font.size.pt)
+    if getattr(colour, "rgb", None):
+        return str(colour.rgb).upper()
+    if getattr(colour, "theme_color", None):
+        return f"theme:{colour.theme_color}"
+    return None
+
+
+def paragraph_has_image(paragraph) -> bool:
+    return bool(paragraph._p.xpath(".//w:drawing"))
+
+
+def paragraph_is_heading(paragraph, text: str, visible_index: int) -> bool:
+    style_name = str(getattr(paragraph.style, "name", "") or "").lower()
+    if visible_index == 1:
+        return True
+    if any(token in style_name for token in ["heading", "title", "lecture", "subheading", "module"]):
+        return True
+    if text in SEMANTIC_HEADINGS or text.startswith(("Lecture:", "Module:")):
+        return True
+    return len(text) <= 130 and not text.endswith(".") and paragraph.runs and any(run.bold for run in paragraph.runs)
 
 
 def build_bad_style_fixture(path: Path) -> None:
@@ -96,23 +76,10 @@ def build_bad_style_fixture(path: Path) -> None:
     title = doc.add_paragraph()
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title.paragraph_format.line_spacing = 1.0
-    title.add_run("Lecture Knowledge Walkthrough").font.name = "Times New Roman"
-    for text in [
-        "English explanations extracted from the shared ChatGPT page",
-        "This slide shows the old source-route wrapper.",
-        "Lecture: Fixture Lecture",
-        "What This Lecture Is About",
-        "Module Map",
-        "Knowledge Walkthrough",
-        "Key Logic",
-        "Must Master",
-        "Definition: one",
-        "Definition: two",
-        "Definition: three",
-        "Definition: four",
-        "Components: PCR tubes and thermocycler.",
-        "Workflow: DNA extraction -> PCR -> digest -> gel.",
-    ]:
+    run = title.add_run("Lecture Knowledge Walkthrough")
+    run.font.name = "Times New Roman"
+    run.font.color.rgb = RGBColor(0, 0, 255)
+    for text in ["English explanations extracted from the shared ChatGPT page", "This slide shows the old source-route wrapper.", "What This Lecture Is About", "Definition: one", "Definition: two", "Definition: three", "Definition: four", "Components: PCR tubes and thermocycler.", "Workflow: DNA extraction -> PCR -> digest -> gel."]:
         paragraph = doc.add_paragraph()
         paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
         paragraph.paragraph_format.line_spacing = 1.0
@@ -120,23 +87,6 @@ def build_bad_style_fixture(path: Path) -> None:
         run.font.name = "Times New Roman"
         run.font.size = Pt(12)
     doc.save(path)
-
-
-def paragraph_has_image(paragraph) -> bool:
-    return bool(paragraph._p.xpath(".//w:drawing"))
-
-
-def paragraph_is_heading(paragraph, text: str, visible_index: int) -> bool:
-    style_name = str(getattr(paragraph.style, "name", "") or "").lower()
-    if visible_index == 1:
-        return True
-    if "heading" in style_name or "title" in style_name or "lecture" in style_name or "subheading" in style_name:
-        return True
-    if text in SEMANTIC_HEADINGS or text.startswith("Lecture:"):
-        return True
-    if len(text) <= 120 and not text.endswith(".") and paragraph.runs and any(run.bold for run in paragraph.runs):
-        return True
-    return False
 
 
 def lint_docx(path: Path) -> dict[str, Any]:
@@ -162,7 +112,7 @@ def lint_docx(path: Path) -> dict[str, Any]:
     section = doc.sections[0]
     margins_cm = [section.top_margin.cm, section.bottom_margin.cm, section.left_margin.cm, section.right_margin.cm]
     if any(abs(value - STYLE_LIMITS["margin_cm"]) > STYLE_LIMITS["margin_tolerance_cm"] for value in margins_cm):
-        failures.append({"type": "margins_not_compact_2_0_cm", "margins_cm": margins_cm})
+        failures.append({"type": "margins_not_2_0_cm", "margins_cm": margins_cm})
 
     visible_index = 0
     for paragraph in doc.paragraphs:
@@ -184,22 +134,22 @@ def lint_docx(path: Path) -> dict[str, Any]:
                 failures.append({"type": "body_not_justified", "paragraph": visible_index, "text": text_value[:80]})
             if line_spacing is None or not (STYLE_LIMITS["line_spacing_min"] <= float(line_spacing) <= STYLE_LIMITS["line_spacing_max"]):
                 failures.append({"type": "body_line_spacing_not_1_5", "paragraph": visible_index, "line_spacing": line_spacing})
+        style_colour = colour_string(paragraph.style.font.color if paragraph.style and paragraph.style.font else None)
+        if style_colour and style_colour != "000000":
+            failures.append({"type": "style_font_colour_not_black", "paragraph": visible_index, "colour": style_colour})
         for run_idx, run in enumerate([run for run in paragraph.runs if run.text], start=1):
             if run.font.name != "Arial":
                 failures.append({"type": "run_font_not_arial", "paragraph": visible_index, "run": run_idx, "font": run.font.name})
             size = run_size_pt(run)
             if size is not None and not (STYLE_LIMITS["body_font_min_pt"] <= size <= 16.0):
                 failures.append({"type": "run_font_size_outside_readable_range", "paragraph": visible_index, "run": run_idx, "font_size_pt": size})
-            color = run.font.color.rgb
-            if color is not None and str(color) != "000000":
-                failures.append({"type": "run_font_color_not_black", "paragraph": visible_index, "run": run_idx, "color": str(color)})
+            colour = colour_string(run.font.color)
+            if colour is not None and colour != "000000":
+                failures.append({"type": "run_font_colour_not_black", "paragraph": visible_index, "run": run_idx, "colour": colour})
+            if colour in BLUE_RGB or (colour or "").startswith("theme:"):
+                failures.append({"type": "blue_or_theme_text_detected", "paragraph": visible_index, "run": run_idx, "colour": colour})
 
-    return {
-        "docx": str(path),
-        "status": "pass" if not failures else "fail",
-        "failures": failures,
-        "paragraph_count": len([p for p in doc.paragraphs if p.text.strip() or paragraph_has_image(p)]),
-    }
+    return {"docx": str(path), "status": "pass" if not failures else "fail", "failures": failures, "paragraph_count": len([p for p in doc.paragraphs if p.text.strip() or paragraph_has_image(p)])}
 
 
 def main() -> int:
