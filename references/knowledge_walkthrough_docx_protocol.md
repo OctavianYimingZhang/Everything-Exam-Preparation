@@ -1,166 +1,173 @@
 # Knowledge Walkthrough DOCX Protocol
 
-`knowledge_walkthrough_docx` is the compatibility lecture-first route when the user explicitly asks to go through lecture knowledge in source order. It is Word-first and lecture-first. It is not an Excel workbook converted into a DOCX file.
+`knowledge_walkthrough_docx` is the compatibility route when the user explicitly asks to go through lecture knowledge in source order. It produces the same public artifact name:
 
-For general revision, exam-prep notes, or "go through the material" requests, prefer `exam_prep_notes_docx` in `exam_prep_notes_protocol.md`. That route uses exam-informed Academic Exam-Ready Notes logic while preserving the public artifact name `Lecture_Knowledge_Walkthrough.docx`.
+```text
+Lecture_Knowledge_Walkthrough.docx
+```
+
+The route is lecture-aware, not slide-dump based. Source order can help preserve prerequisites and teaching logic, but the public document must still be a knowledge explanation, not a page-by-page extraction log.
 
 ## Purpose
 
-The student opens this Word file to do one task:
-
-```text
-Go through the main knowledge in lecture order, understand each conceptual module, and know the common exam-facing use of the knowledge.
-```
+The student opens this Word file to understand the main knowledge in lecture order. A valid walkthrough should explain what each concept is, why it matters, how the relevant mechanism, method, pathway, calculation or experiment works, and what consequence, limitation or interpretation follows.
 
 The route is not:
 
-- essay exam preparation by default;
-- past-paper prediction;
-- MCQ or short-answer high-yield report;
-- Excel-style `Exam_Prep_Map`;
-- a slide/page paraphrase.
+- a slide/page paraphrase;
+- an audit of uploaded files;
+- a source inventory;
+- a prediction file;
+- an essay package by default;
+- a place for course administration, staff details, attendance instructions, platform links or raw extraction text.
 
-The route is:
+## Route Pipeline
 
 ```text
-Lecture -> conceptual module -> explanation -> key logic -> common confusion -> must master
+SourceRoleMap
+-> NonKnowledgeNoiseFilter
+-> SourceScaleBudget
+-> lecture-order conceptual reconstruction
+-> ExaminableKnowledgeUnitPlan
+-> connected explanation drafting
+-> KnowledgeSurfaceContract / NonKnowledgeGate
+-> DOCX layout QA
 ```
+
+The important change is that `SourceScaleBudget` comes before drafting. A large lecture pack must not be collapsed into a short practical-style summary. A small practical pack can be concise, but a full-course pack needs enough modules and examinable units to cover the source scale.
+
+## Source Scale Budget
+
+Before writing, estimate:
+
+```yaml
+SourceScaleBudget:
+  source_units_count:
+  readable_source_blocks:
+  protected_knowledge_units_total:
+  excluded_non_knowledge_units_total:
+  target_public_units_min:
+  target_words_min:
+  compression_mode: explain_not_dump
+  coverage_floor_status: pass | warn | block
+```
+
+Rules:
+
+- Use more public knowledge units when the source contains more lectures, mechanisms, figures, methods, calculations, pathways, examples or named evidence.
+- Do not use a short Experimental Biology-style practical output as the size cap for larger units.
+- Keep conceptual grouping, but place multiple examinable units inside each module.
+- If the output is much shorter than the source scale budget, regenerate from source distillation.
 
 ## Student-Facing Structure
 
-Use this document structure:
+Use this public structure:
 
 ```text
-Title Page
+Title
+Course Knowledge Map
+Lecture or module heading when source order helps
+[★★★ | ★★ | ★] Topic-specific knowledge heading
+Connected explanatory prose
+Optional equation / worked example / diagnostic pattern / comparison / table when useful
+```
+
+The Course Knowledge Map must be conceptual. It must not be a list of filenames, lecture deck names, source titles or upload inventory.
+
+Forbidden visible structures include:
+
+```text
 How To Use This Document
-Lecture 1: [Lecture Title]
-Lecture Overview
-Module Map
-Module 1.1
-Module 1.2
-Module 1.3
-Lecture Recap
-Lecture 2: [Lecture Title]
-...
-```
-
-Do not use table-like Excel columns such as:
-
-```text
-Lecture | Topic | Source | Evidence | Exam Type | Prediction | Action
-```
-
-The document should read continuously.
-
-## Lecture Section
-
-Each lecture section must include:
-
-```text
-Lecture X: [Lecture Name]
 What This Lecture Is About
-[3-5 sentences in the assistant's own words.]
-Module Map
-1. [Module 1]: [one-sentence function]
-2. [Module 2]: [one-sentence function]
-Core Logic
-[one mechanism chain or concept chain.]
+What This Module Explains
+Knowledge Walkthrough
+Key Logic
+Knowledge Points
+Must Master
+Lecture Recap
+Source Coverage
+Evidence Used
+Extraction Quality
 ```
 
-## Module Card
+If a legacy plan contains these fields, merge real knowledge into the nearest explanatory unit and discard the scaffold label.
 
-Each module must use this structure:
+## Examinable Knowledge Units
+
+Each visible unit should be one coherent explanation:
+
+```yaml
+ExaminableKnowledgeUnit:
+  title:
+  priority: high | medium | low
+  source_support:
+  explanation:
+  optional_equation_or_example:
+  common_confusion_or_boundary:
+```
+
+The explanation must be a connected paragraph or a short set of connected paragraphs. It should not be a raw list of slide bullets. It should not be broken into repeated slot labels such as:
 
 ```text
-Module X.X: [Module Title]
-What This Module Explains
-[2-4 sentences.]
-Knowledge Walkthrough
-[Natural explanatory prose. Bold required terms. Do not dump bullets. Do not retell slide order.]
-Key Logic
-[Arrow chain or compact mechanism chain.]
-Key Distinctions
-[Only source-backed distinctions or misconception boundaries. Omit the section when none are useful.]
-Knowledge Points
-[3-5 short factual recall/action points.]
+Definition:
+Components:
+Workflow:
+Logic:
+Interpretation:
+Graph logic:
 ```
 
-## Generation Steps
+Bullets are allowed only when the source content is naturally parallel, such as equation variables, ordered method steps, diagnostic patterns, receptor classes, ion-channel subfamilies or comparison rows. A bullet list needs an explanatory lead sentence.
 
-Step 1: Lecture-level reading. Read the full lecture before output. Identify the actual biological, biochemical, clinical, methodological, or conceptual problem the lecture is solving.
+## Non-Knowledge Removal
 
-Step 2: Module extraction. Split by conceptual function, not by slide number:
+Remove these from public output:
 
-- definition module;
-- mechanism module;
-- regulation module;
-- integration module;
-- comparison module;
-- disease/application module;
-- method/data module.
+- lecturer names, emails, phone numbers, office locations, contributor lists and staff biographies;
+- Unit Attendance, SEAtS, Mentimeter, QR codes, room schedules, Blackboard/SoftChalk instructions and live-session logistics;
+- assessment percentages, exam dates, mark splits and closed-book logistics unless the user asks for a separate exam-analysis brief;
+- library availability, bookshop adverts, URL-only lines, image credits, copyright lines, figure filenames, raw font names and page artefacts;
+- decorative quotes, acknowledgements, lecture agenda slides and generic ILOs unless rewritten into specific examinable knowledge;
+- public AI provenance, source-route narration, QA flags, evidence scores, confidence bands, manifests and helper JSON.
 
-Step 3: Knowledge compression. Merge repeated content and convert pathways into mechanism chains only after checking protected KnowledgePoints. Official definitions, contrast pairs, criteria/features/stages lists, named examples, `Why X?` blocks, diagrams, tables, equations, calculations, workflows, and past-paper terms must remain visible as named module content. Demote or omit only genuinely unsupported or repetitive detail, not protected source-backed items.
+## Layout Contract
 
-Step 4: Student-facing rewrite. Use direct explanatory prose and bold required terms. Keep default English labels unless the user explicitly requests another language or mixed-language output. Do not write `slides say`, `according to page`, or source-tracing narration.
-
-Step 5: Lecture recap. End each lecture with a compact recap, normally 6-10 lines.
-
-Step 6: Select `RouteDocxStyleProfile` before DOCX writing. If the user supplies a formatting screenshot, old generated DOCX, or visual layout example, analyse it only as transferable layout evidence: density, spacing, alignment, heading hierarchy, page-break policy, and label discipline. Do not copy source-specific wording, course titles, or factual content from the example.
-
-Step 7: Run the Knowledge Walkthrough DOCX style linter before publish. A walkthrough that falls back to essay-style margins, essay-style 1.5 spacing, justified body text, inconsistent fonts, or excessive whitespace must be regenerated.
-
-Step 8: Run the knowledge-only rendering gate. The walkthrough must contain only source-backed knowledge points and knowledge-bearing labels. Remove `How To Use This Document`, `How To Answer`, `Integrated reasoning`, `Integrated practical reasoning`, `Answer Logic`, `Exam Strategy`, `Recommended Approach`, `A strong answer should`, `Use this module`, and commentary about whether a topic is reliable by question type. Rewrite any real content inside those sections as factual `Knowledge Points`, `Key Logic`, `Key Distinctions`, method workflow, graph/data rule, calculation rule, comparison, or limitation.
-
-## Forbidden Student Fields
-
-The DOCX must not show:
-
-- source anchor;
-- confidence;
-- evidence score;
-- recurrence count;
-- examiner operation;
-- discriminator axis;
-- essay theme;
-- essay plan;
-- full example essay;
-- long-answer paragraph bank;
-- practice question;
-- answer key;
-- past-paper year mapping;
-- prediction score.
-
-## DOCX Formatting
-
-Use the compact lecture-note formatting contract:
-
-- Arial;
-- 2.0 cm margins;
-- compact 1.05-1.15 line spacing;
-- body text left-aligned;
-- subheadings left-aligned;
-- main title centered;
-- black text;
-- stable heading hierarchy;
-- lecture page breaks;
-- no essay-style 2.5 cm margins, 1.5 spacing, or justified body text unless the user explicitly asks for essay-style formatting.
-
-Required style profile:
+Use the ordinary notes/walkthrough layout:
 
 ```yaml
 RouteDocxStyleProfile:
   route: knowledge_walkthrough_docx
   margin_cm: 2.0
-  line_spacing: 1.05-1.15
-  body_alignment: left
+  line_spacing: 1.5
+  body_alignment: justified
+  title_alignment: left
+  heading_alignment: left
+  image_alignment: center
   body_font_pt: 10.5
   heading_font_pt: 12
-  lecture_heading_font_pt: 14
   text_color: black
-  lecture_page_breaks: true
-  essay_style_spacing_forbidden: true
+  theme_colours_allowed: false
+  blue_heading_styles_allowed: false
 ```
 
-## Output Boundary
+This route must not use inherited Word theme colours or light-blue heading styles. Run the layout normalizer if the generated DOCX inherits coloured heading styles from Word defaults.
 
-The public output folder should contain the DOCX only unless the user asks for an audit package. Internal QA files, source maps, and generation manifests must go to an internal QA folder.
+## Visuals
+
+Figures are included only when they help explain a knowledge point. They must be centered and scaled to the available content area while preserving readability. Avoid large blank areas by fitting images to nearby explanatory content and avoiding unnecessary page breaks.
+
+## QA Gate
+
+Block and regenerate if any of these appear:
+
+- source-scale coverage floor failure;
+- file-title Course Knowledge Map;
+- raw slide bullets copied line-by-line;
+- course administration, staff/contact/logistics or platform text;
+- old scaffold headings such as `What This Lecture Is About` or `Knowledge Points`;
+- dense repeated label fragments;
+- shorthand arrow chains used as the main explanation;
+- non-black visible text, theme-colour headings, blue text, non-Arial text, wrong alignment or non-1.5 line spacing;
+- source-route narration such as `this slide shows` or `the notes say`.
+
+When QA fails, regenerate from the distilled knowledge units rather than patching the final DOCX by deleting a few bad lines.
