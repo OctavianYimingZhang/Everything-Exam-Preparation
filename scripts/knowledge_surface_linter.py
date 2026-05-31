@@ -71,8 +71,14 @@ def lint_paths(paths: list[Path]) -> dict[str, Any]:
 
 
 def self_test() -> dict[str, Any]:
+    raw_bullets = [f"• copied slide bullet {idx}" for idx in range(1, 24)]
     bad_text = "\n".join(
         [
+            "Course Knowledge Map",
+            "Core knowledge spans Lecture 1 slides.pptx; Lecture 2 slides.pptx; Module 3.pdf; Module 4.pptm; Module 5.pptx; Module 6.pdf; Module 7.pptx; Module 8.pptx.",
+            "Unit Attendance: download the SEAtS app and scan the QR code.",
+            "To make the most of the live session, join Mentimeter.",
+            "Meet the Staff: Unit Coordinator, Tel: 0161 000 0000, Location: Some Building, lecturer@example.ac.uk.",
             "English explanations extracted from the shared ChatGPT page",
             "This slide shows the opposite side of the body.",
             "Definition: one",
@@ -91,6 +97,7 @@ def self_test() -> dict[str, Any]:
             "Elution mechanism: salt elutes the protein.",
             "Formula: Resin-COOH ⇌ Resin-COO- + H+.",
             "Logic: pH below pKa favours protonation.",
+            *raw_bullets,
         ]
     )
     good_text = (
@@ -99,11 +106,18 @@ def self_test() -> dict[str, Any]:
     )
     bad_failures = lint_text(bad_text, reference="bad_fixture")
     good_failures = lint_text(good_text, reference="good_fixture")
+    failure_labels = {failure.get("label") for failure in bad_failures}
+    failure_categories = {failure.get("category") for failure in bad_failures}
     failures: list[dict[str, Any]] = []
     if not bad_failures:
         failures.append({"type": "self_test_bad_fixture_not_rejected"})
-    if not any(failure.get("label") == "colon_fragment_label_density" for failure in bad_failures):
+    if "colon_fragment_label_density" not in failure_labels:
         failures.append({"type": "self_test_colon_fragment_fixture_not_rejected", "failures": bad_failures})
+    if "raw_slide_bullet_dump" not in failure_labels:
+        failures.append({"type": "self_test_raw_bullet_fixture_not_rejected", "failures": bad_failures})
+    for category in ["admin_logistics_noise", "admin_contact_noise", "course_map_file_title_dump"]:
+        if category not in failure_categories:
+            failures.append({"type": f"self_test_{category}_not_rejected", "failures": bad_failures})
     if good_failures:
         failures.append({"type": "self_test_good_fixture_rejected", "failures": good_failures})
     return {
