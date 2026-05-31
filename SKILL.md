@@ -1,11 +1,11 @@
 ---
 name: everything-exam-preparation
-description: Purpose-first, Word-first exam preparation workflow for lecture slides, notes, practical materials, past papers, extra reading and recommended books.
+description: Purpose-first, source-adaptive, Word-first exam preparation workflow for lecture slides, notes, practical materials, past papers, extra reading and recommended books.
 ---
 
 # Everything Exam Preparation
 
-This Skill turns supplied course materials into revision artifacts. It is not a slide archive converter. It must not force the model to dump extraction fragments, file titles, administrative text, or internal planning fields. The model should read the source set for meaning, reconstruct the examinable knowledge, and explain it clearly.
+This Skill turns supplied course materials into revision artifacts. It is not a slide archive converter and it is not a fixed-length summariser. It must not force the model to dump extraction fragments, file titles, administrative text, or internal planning fields. The model should read the source set for meaning, reconstruct the examinable knowledge, and explain it clearly at a length proportional to the source pack.
 
 ## Core Output
 
@@ -26,10 +26,11 @@ source pack
 -> classify source roles
 -> remove non-knowledge noise
 -> reconstruct conceptual course modules
+-> calculate source-adaptive coverage budget
 -> select examinable knowledge units
 -> write connected explanations
 -> add optional question-type overlay
--> run public-surface and layout QA
+-> run public-surface, density and layout QA
 ```
 
 The output should explain what each concept is, why it matters, how the mechanism, method or calculation works, and what result, limitation or interpretation follows.
@@ -75,7 +76,7 @@ A `Course Knowledge Map` must be conceptual. It should organise the course into 
 
 ## Course Reconstruction
 
-For broad source packs, build 4-10 conceptual modules:
+For broad source packs, build conceptual modules:
 
 ```yaml
 CourseModule:
@@ -87,6 +88,32 @@ CourseModule:
 ```
 
 Preserve source order when it explains prerequisites. Do not produce one public module per file if that only repeats file names.
+
+## Source-Adaptive Coverage Budget
+
+Never use the same small output size for every course. The amount of public knowledge must scale with the amount of examinable source material.
+
+Before drafting, create:
+
+```yaml
+SourceScaleBudget:
+  source_units_count:
+  source_pages_or_slides_estimate:
+  source_types:
+  conceptual_module_target_range:
+  examinable_unit_target_range:
+  minimum_visible_coverage_floor:
+  compression_reason:
+  coverage_floor_status: pass | warn | block
+```
+
+Rules:
+
+- A broad course pack must not be compressed to the size of a short practical or mock paper.
+- Keep a small number of conceptual modules when useful, but include enough examinable units inside each module to cover the source scale.
+- A pack with many lectures, figures, practicals, calculations or mechanisms requires expanded coverage.
+- Do not use Experimental Biology or any other short unit as a size cap for larger courses.
+- If the public output falls below the source-scale floor, block the run and regenerate from source distillation instead of releasing a short file.
 
 ## Examinable Knowledge Units
 
@@ -123,6 +150,7 @@ For ordinary notes and walkthroughs:
 - images are centered;
 - default text line spacing is 1.5;
 - text is black Arial in a readable size;
+- theme colours, blue heading styles and non-black visible text are forbidden unless the user explicitly asks for colour;
 - images are scaled to the content area while preserving aspect ratio and readability;
 - large blank areas should be reduced by fitting images to context and avoiding unnecessary page breaks.
 
@@ -156,9 +184,11 @@ Fail and rewrite if the public output contains:
 - dense lists of names without mechanisms;
 - repeated `Definition`, `Components`, `Workflow`, `Logic`, `Graph logic` or equivalent labels;
 - shorthand arrow chains used as the main explanation;
+- a broad source pack compressed below the source-adaptive coverage floor;
 - unsupported claims, fake citations or over-strong scientific claims;
 - unbound protected source units;
-- public AI-process text, source anchors, QA JSON, manifests or lineage files.
+- public AI-process text, source anchors, QA JSON, manifests or lineage files;
+- non-black visible text, theme-colour headings, non-Arial text, wrong alignment or non-1.5 line spacing.
 
 Targeted checks:
 
