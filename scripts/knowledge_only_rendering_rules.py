@@ -85,6 +85,57 @@ RIGID_TEMPLATE_LABELS = [
     "Principle",
 ]
 
+# Labels that often appear when a plan has been torn into slots instead of
+# being rewritten as an explanatory knowledge point. These are not banned as
+# single labels, but high density is a public-surface failure.
+FRAGMENT_SLOT_LABELS = [
+    "A280",
+    "A550",
+    "Binding logic",
+    "Calculation chain",
+    "Caveat",
+    "Components",
+    "Concept",
+    "Design",
+    "Direction",
+    "Elution mechanism",
+    "Enzyme choice",
+    "Exclusion logic",
+    "Failure mode",
+    "Formula",
+    "Forward primer",
+    "Identity",
+    "Key detail",
+    "Key point",
+    "Logic",
+    "Mechanism",
+    "Protein charge",
+    "Purpose",
+    "Readout",
+    "Reason",
+    "Redox logic",
+    "Reverse primer",
+    "Rule",
+    "Safety",
+    "Timing",
+    "Unit logic",
+    "Values",
+    "Variables",
+    "Workflow",
+]
+
+# Labels that can remain visible when they genuinely prevent ambiguity.
+ESSENTIAL_VISIBLE_LABELS = {
+    "Equation",
+    "Worked example",
+    "Diagnostic pattern",
+    "Control",
+    "Comparison",
+    "Table",
+}
+
+COLON_LABEL_RE = re.compile(r"(?im)^\s*(?:[-•*]\s*)?([A-Z][A-Za-z0-9 /+().-]{1,42})\s*:")
+
 
 def normalized_text(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "").casefold().replace("–", "-").replace("—", "-")).strip()
@@ -113,12 +164,48 @@ def forbidden_non_knowledge_hits(text: str) -> list[str]:
     return sorted(set(hits))
 
 
+def _visible_lines(text: str) -> list[str]:
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def _colon_fragment_labels(text: str) -> list[str]:
+    labels: list[str] = []
+    essential = {normalized_text(label) for label in ESSENTIAL_VISIBLE_LABELS}
+    for match in COLON_LABEL_RE.finditer(text):
+        label = match.group(1).strip()
+        if normalized_text(label) in essential:
+            continue
+        labels.append(label)
+    return labels
+
+
 def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
-    """Flag repeated rigid template labels without banning occasional semantic labels."""
+    """Flag rigid labels and colon-slot fragmentation in public notes.
+
+    Occasional semantic labels are acceptable. Failure means the public surface
+    reads like a planning schema (``Components:``, ``Workflow:``, ``Logic:``)
+    rather than a connected explanation of a knowledge point.
+    """
 
     hits: list[str] = []
     for label in RIGID_TEMPLATE_LABELS:
         count = len(re.findall(rf"(?im)^\s*(?:[-•*]\s*)?{re.escape(label)}\s*:", text))
         if count >= threshold:
             hits.append(label)
-    return hits
+
+    fragment_labels = _colon_fragment_labels(text)
+    normalized_fragments = [normalized_text(label) for label in fragment_labels]
+    nonessential_set = {normalized_text(label) for label in RIGID_TEMPLATE_LABELS + FRAGMENT_SLOT_LABELS}
+    nonessential_hits = [label for label in normalized_fragments if label in nonessential_set]
+    visible_line_count = max(1, len(_visible_lines(text)))
+
+    # Catch the current failure mode: many different one-word slot labels that
+    # look individually harmless but collectively tear a concept into fragments.
+    if len(nonessential_hits) >= 8 or (len(nonessential_hits) >= 5 and len(nonessential_hits) / visible_line_count >= 0.25):
+        hits.append("colon_fragment_label_density")
+
+    for label in sorted(set(fragment_labels)):
+        if normalized_text(label) in nonessential_set and fragment_labels.count(label) >= 2:
+            hits.append(label)
+
+    return sorted(set(hits))
