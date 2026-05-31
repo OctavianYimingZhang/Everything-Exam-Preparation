@@ -2,8 +2,8 @@
 """Generate the default Academic Exam-Ready Notes DOCX from conceptual modules.
 
 This route intentionally does not render raw slide inventories, extracted slide
-bullets, administrative content, or internal KnowledgeCard scaffolds. The plan
-must provide a conceptual course map and examinable knowledge units.
+bullets, administrative content, or internal scaffolds. The plan must provide a
+conceptual course map, source-scale budget and examinable knowledge units.
 """
 
 from __future__ import annotations
@@ -44,6 +44,8 @@ STYLE_DEFAULTS = {
     "title_font_pt": 14.0,
     "text_color": "black",
     "module_page_breaks": False,
+    "theme_colours_allowed": False,
+    "blue_heading_styles_allowed": False,
 }
 
 FORBIDDEN_KEYS = {
@@ -206,12 +208,66 @@ def star_prefix(priority: Any) -> str:
     return mapping.get(value, mapping.get(str(priority or "").strip(), "★★"))
 
 
+def infer_source_units(plan: dict[str, Any]) -> int:
+    budget = plan.get("source_scale_budget")
+    if isinstance(budget, dict):
+        for key in ["source_units_count", "readable_source_blocks", "protected_knowledge_units_total"]:
+            value = budget.get(key)
+            if isinstance(value, int) and value > 0:
+                return value
+    seen: set[str] = set()
+    for module in get_course_modules(plan):
+        for source in module.get("source_lectures", []) or []:
+            if str(source).strip():
+                seen.add(str(source).strip())
+    return len(seen)
+
+
+def count_public_units(plan: dict[str, Any]) -> int:
+    return sum(len([unit for unit in module.get("examinable_units", []) or [] if isinstance(unit, dict)]) for module in get_course_modules(plan))
+
+
+def floor_for_source_units(source_units: int) -> int:
+    if source_units <= 0:
+        return 0
+    if source_units <= 3:
+        return 8
+    if source_units <= 8:
+        return 20
+    if source_units <= 15:
+        return 40
+    return 70
+
+
+def validate_source_scale_budget(plan: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    budget = plan.get("source_scale_budget")
+    if not isinstance(budget, dict):
+        return ["exam_prep_notes_requires_source_scale_budget"]
+    source_units = infer_source_units(plan)
+    public_units = count_public_units(plan)
+    target_min = budget.get("target_public_units_min")
+    if not isinstance(target_min, int) or target_min < 0:
+        errors.append("source_scale_budget_missing_target_public_units_min")
+        target_min = floor_for_source_units(source_units)
+    else:
+        target_min = max(target_min, floor_for_source_units(source_units))
+    if budget.get("coverage_floor_status") == "block":
+        errors.append("source_scale_budget_blocks_generation")
+    if public_units < int(target_min):
+        errors.append(f"source_scale_budget_public_units_too_low:{public_units}<{int(target_min)}")
+    if budget.get("compression_mode") not in {"explain_not_dump", "concise", "standard", "expanded", "multi_volume_required"}:
+        errors.append("source_scale_budget_bad_compression_mode")
+    return errors
+
+
 def validate_plan(plan: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if plan.get("object_type") != "ExamPrepNotesPlan":
         errors.append("plan_object_type_not_exam_prep_notes_plan")
     if not get_course_modules(plan):
         errors.append("exam_prep_notes_requires_course_modules")
+    errors.extend(validate_source_scale_budget(plan))
     profile = plan.get("route_docx_style_profile")
     if not isinstance(profile, dict):
         errors.append("exam_prep_notes_requires_route_docx_style_profile")
@@ -224,6 +280,12 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
         errors.append("exam_prep_notes_style_profile_heading_not_left")
     if profile.get("image_alignment") != "center":
         errors.append("exam_prep_notes_style_profile_image_not_center")
+    if profile.get("text_color") != "black":
+        errors.append("exam_prep_notes_style_profile_text_not_black")
+    if profile.get("theme_colours_allowed") is not False:
+        errors.append("exam_prep_notes_theme_colours_not_disabled")
+    if profile.get("blue_heading_styles_allowed") is not False:
+        errors.append("exam_prep_notes_blue_heading_styles_not_disabled")
     spacing = profile.get("line_spacing")
     if not isinstance(spacing, (int, float)) or not (1.45 <= float(spacing) <= 1.55):
         errors.append("exam_prep_notes_style_profile_line_spacing_not_1_5")
@@ -260,7 +322,15 @@ def write_docx(plan: dict[str, Any], output_dir: Path, qa_dir: Path, strict: boo
         add_paragraph(doc, "Course Knowledge Map", plan, "heading")
         add_paragraph(doc, str(plan["course_knowledge_map"]), plan, "body")
 
-    manifest = {"notes_plan_id": plan.get("notes_plan_id"), "target_group_key": plan.get("target_group_key"), "title": title, "modules": [], "qa_flags": errors}
+    manifest = {
+        "notes_plan_id": plan.get("notes_plan_id"),
+        "target_group_key": plan.get("target_group_key"),
+        "title": title,
+        "source_scale_budget": plan.get("source_scale_budget"),
+        "public_units": count_public_units(plan),
+        "modules": [],
+        "qa_flags": errors,
+    }
     for idx, module in enumerate(get_course_modules(plan)):
         if idx > 0 and bool(style_value(plan, "module_page_breaks")):
             doc.add_page_break()
