@@ -78,14 +78,14 @@
         "strict_publish_gate",
         "require_lineage",
         "run_language_lint",
-        "run_ontology_validator",
+        "run_workflow_validator",
         "fail_on_blocking_flags"
       ],
       "properties": {
         "strict_publish_gate": { "type": "boolean" },
         "require_lineage": { "type": "boolean" },
         "run_language_lint": { "type": "boolean" },
-        "run_ontology_validator": { "type": "boolean" },
+        "run_workflow_validator": { "type": "boolean" },
         "fail_on_blocking_flags": { "type": "boolean" }
       },
       "additionalProperties": true

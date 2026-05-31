@@ -678,7 +678,7 @@ MODULE_DEFS = {
         "action_type": "RunDeliverableQA",
         "minimum_inputs": ["PrepArtifact"],
         "expected_outputs": ["QAFlag"],
-        "qa_checks": ["public output boundary", "language lint", "ontology validation"],
+        "qa_checks": ["public output boundary", "language lint", "workflow validation"],
     },
     "audit": {
         "action_type": "RunDeliverableQA",
@@ -937,7 +937,7 @@ def build_plan(config: dict[str, Any], source_scan: dict[str, Any] | None = None
         "skipped_modules": skipped_modules,
         "blockers": blockers,
         "publish_gate": {
-            "object_validation": bool(qa.get("run_ontology_validator", True)),
+            "object_validation": bool(qa.get("run_workflow_validator", True)),
             "lineage_required": bool(qa.get("require_lineage", True)),
             "qa_required": True,
             "strict_publish_gate": bool(qa.get("strict_publish_gate", True)),

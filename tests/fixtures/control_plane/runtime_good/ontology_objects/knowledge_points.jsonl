@@ -1,1 +1,0 @@
-{"object_type":"KnowledgePoint","kp_id":"KP001","source_anchors":["FRAG001"],"concept_type":"mechanism","mechanism_chain":["claim","mechanism","consequence"],"task_dimensions":["explain"],"likely_question_types":["short_answer","essay"],"examinability":"High"}

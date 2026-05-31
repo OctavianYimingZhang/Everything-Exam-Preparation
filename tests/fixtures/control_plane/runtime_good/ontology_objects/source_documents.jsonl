@@ -1,1 +1,0 @@
-{"object_type":"SourceDocument","source_id":"SRC001","path":"tests/fixtures/control_plane/fake_lecture.txt","file_role":"lecture_note","trust_level":"official_course","analysis_context":"target_current_regime","allowed_evidence_use":["factual_course_content"],"extraction_status":"ok","source_hash":"hash001"}

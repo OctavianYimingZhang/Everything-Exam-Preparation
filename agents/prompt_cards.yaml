@@ -33,7 +33,7 @@ prompt_cards:
       - "Do not expose source anchors, confidence, discriminator axes, answer keys, practice questions, or contrast tables."
     hard_stops:
       - "No lecture slides or official notes."
-      - "Blocking ontology or language QA flag."
+      - "Blocking workflow or language QA flag."
   - card_id: "knowledge_walkthrough_docx"
     preset: "knowledge_walkthrough_docx"
     purpose: "Build a compatibility lecture-first Word walkthrough for revising lecture knowledge in source order."

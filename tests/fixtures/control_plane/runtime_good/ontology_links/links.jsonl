@@ -1,6 +1,0 @@
-{"link_id":"LINK001","link_type":"CONTAINS","from_id":"SRC001","to_id":"FRAG001","created_by_action":"ExtractFragments"}
-{"link_id":"LINK002","link_type":"PARTITIONED_AS","from_id":"SRC001","to_id":"PART001","created_by_action":"BuildFragmentIndex"}
-{"link_id":"LINK003","link_type":"GROUPS_FRAGMENT","from_id":"PART001","to_id":"FRAG001","created_by_action":"BuildFragmentIndex"}
-{"link_id":"LINK004","link_type":"SUPPORTS_KP","from_id":"FRAG001","to_id":"KP001","created_by_action":"SegmentKnowledgePoints"}
-{"link_id":"LINK005","link_type":"SUPPORTS_CLAIM","from_id":"KP001","to_id":"CLAIM001","created_by_action":"SegmentKnowledgePoints"}
-{"link_id":"LINK006","link_type":"GENERATED_FROM","from_id":"ART001","to_id":"KP001","created_by_action":"GeneratePrepArtifact"}
