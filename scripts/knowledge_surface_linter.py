@@ -83,6 +83,14 @@ def self_test() -> dict[str, Any]:
             "Graph logic: another wrapper.",
             "Graph logic: another wrapper.",
             "Graph logic: another wrapper.",
+            "Components: PCR tubes, thermocycler, tips and gel kit.",
+            "Workflow: DNA extraction -> PCR -> digest -> gel.",
+            "Exclusion logic: antibodies and microscope are not needed.",
+            "Binding logic: resin is charged.",
+            "Protein charge: the protein is positive.",
+            "Elution mechanism: salt elutes the protein.",
+            "Formula: Resin-COOH ⇌ Resin-COO- + H+.",
+            "Logic: pH below pKa favours protonation.",
         ]
     )
     good_text = (
@@ -94,6 +102,8 @@ def self_test() -> dict[str, Any]:
     failures: list[dict[str, Any]] = []
     if not bad_failures:
         failures.append({"type": "self_test_bad_fixture_not_rejected"})
+    if not any(failure.get("label") == "colon_fragment_label_density" for failure in bad_failures):
+        failures.append({"type": "self_test_colon_fragment_fixture_not_rejected", "failures": bad_failures})
     if good_failures:
         failures.append({"type": "self_test_good_fixture_rejected", "failures": good_failures})
     return {
