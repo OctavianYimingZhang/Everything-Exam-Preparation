@@ -175,4 +175,5 @@ Before public output is approved:
 2. Mark protected units.
 3. Bind each protected unit to public output.
 4. Run zero-mention lint.
-5. Run knowledge-surface lint so the coverage does not expose audit/provenance text.
+5. Run source-scale lint. The public output must meet the derived unit and visible-word floor from source units, pages/slides, and protected knowledge count; declared low targets do not override the floor.
+6. Run knowledge-surface lint so the coverage does not expose audit/provenance text.

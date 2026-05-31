@@ -105,6 +105,8 @@ Every protected unit must either appear in public knowledge output or be explici
 
 Reference-caliber rule: if a user supplies a high-quality DOCX exemplar, use it only for density, layout and paragraph-surface calibration. The supplied Experimental Biology style means topic-specific headings, connected explanatory paragraphs, worked calculation or method detail when useful, and no public workflow narration. It is not factual evidence for another course and it is not a length cap for larger courses.
 
+Source-scale floor: ordinary notes and walkthroughs must scale with the source pack. Use `source_pages_or_slides_estimate`, source-unit count and protected knowledge count as hard lower-bound inputs. Similar-sized packs should meet at least the Experimental Biology density scale; courses with several times more slides/pages must produce materially larger public knowledge output unless the exclusion ledger proves most material is duplicate, administrative, unreadable or non-knowledge. As a minimum guide, 201-500 pages/slides needs about 105 public units and 14k visible words; 501-800 needs about 150 public units and 20k visible words; 801+ needs about 180 public units and 25k visible words or a multi-volume split. A declared `target_public_units_min` or `target_words_min` below the derived floor is invalid.
+
 ---
 
 ## 5. KnowledgeSurfaceContract
@@ -219,7 +221,7 @@ source inventory
 
 Past papers may add, split, reorder, densify or prioritise, but must not delete, hide or over-compress source-backed baseline modules.
 
-Fail and regenerate when the notes are short relative to source scale, when broad lecture packs are collapsed into a few generic modules, or when the public document explains the workflow instead of teaching the knowledge.
+Fail and regenerate when the notes are short relative to source scale, when `target_words_min` or `target_public_units_min` is lower than the derived source-scale floor, when broad lecture packs are collapsed into a few generic modules, or when the public document explains the workflow instead of teaching the knowledge.
 
 Visible priority labels:
 

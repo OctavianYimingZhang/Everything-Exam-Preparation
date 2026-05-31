@@ -117,6 +117,15 @@ Rules:
 - Keep a small number of conceptual modules when useful, but include enough examinable units inside each module to cover the source scale.
 - A pack with many lectures, figures, practicals, calculations or mechanisms requires expanded coverage.
 - Do not use Experimental Biology or any other short unit as a size cap for larger courses.
+- `source_pages_or_slides_estimate` is a hard sizing input, not a comment. When the source has hundreds of slides/pages, the public DOCX must become a whole-course notebook or multiple volumes, not a 5k-word overview.
+- Use these minimum internal floors unless the source is demonstrably sparse or unreadable and the exclusion ledger proves it:
+  - 1-10 pages/slides: at least 8 public units and about 420 visible words.
+  - 11-80 pages/slides: at least 12-25 public units and 1k-3k visible words.
+  - 81-200 pages/slides: at least 50 public units and about 5.8k visible words, matching the Experimental Biology density scale.
+  - 201-500 pages/slides: at least 105 public units and about 14k visible words.
+  - 501-800 pages/slides: at least 150 public units and about 20k visible words.
+  - 801+ pages/slides: at least 180 public units and about 25k visible words, or split into multiple deliverable volumes.
+- If `target_public_units_min` or `target_words_min` is below the derived source-scale floor, the budget is invalid even if the draft is polished.
 - If the first draft feels like a route summary, file inventory, checklist, or brief overview, it is not acceptable. Regenerate from the source-distillation pass until the public document teaches the examinable mechanisms, calculations, methods, examples, boundaries and interpretations in connected prose.
 - If the public output falls below the source-scale floor, block the run and regenerate from source distillation instead of releasing a short file.
 

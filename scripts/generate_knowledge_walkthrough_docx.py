@@ -24,6 +24,7 @@ from knowledge_only_rendering_rules import (
     forbidden_non_knowledge_hits,
     repeated_template_label_hits,
 )
+from source_scale_budget_rules import floor_for_source_scale
 
 STYLE_DEFAULTS = {
     "route": "knowledge_walkthrough_docx",
@@ -163,48 +164,32 @@ def star_prefix(priority: Any) -> str:
     return mapping.get(value, mapping.get(str(priority or "").strip(), "★★"))
 
 
-def infer_source_units(plan: dict[str, Any]) -> int:
-    budget = plan.get("source_scale_budget")
-    if isinstance(budget, dict):
-        for key in ["source_units_count", "readable_source_blocks", "protected_knowledge_units_total"]:
-            value = budget.get(key)
-            if isinstance(value, int) and value > 0:
-                return value
-    seen = {str(source).strip() for module in get_course_modules(plan) for source in (module.get("source_lectures", []) or []) if str(source).strip()}
-    if seen:
-        return len(seen)
-    lecture_order = plan.get("lecture_order")
-    return len(lecture_order) if isinstance(lecture_order, list) else 0
-
-
 def count_public_units(plan: dict[str, Any]) -> int:
     return sum(len([unit for unit in module.get("examinable_units", []) or [] if isinstance(unit, dict)]) for module in get_course_modules(plan))
-
-
-def floor_for_source_units(source_units: int) -> int:
-    if source_units <= 0:
-        return 0
-    if source_units <= 3:
-        return 8
-    if source_units <= 8:
-        return 20
-    if source_units <= 15:
-        return 40
-    return 70
 
 
 def validate_source_scale_budget(plan: dict[str, Any]) -> list[str]:
     budget = plan.get("source_scale_budget")
     if not isinstance(budget, dict):
         return ["walkthrough_requires_source_scale_budget"]
-    source_units = infer_source_units(plan)
     public_units = count_public_units(plan)
+    scale_floor = floor_for_source_scale(plan)
+    floor_units = int(scale_floor["minimum_public_units"])
+    floor_words = int(scale_floor["minimum_visible_words"])
     target_min = budget.get("target_public_units_min")
     if not isinstance(target_min, int) or target_min < 0:
-        target_min = floor_for_source_units(source_units)
+        errors = ["source_scale_budget_missing_target_public_units_min"]
+        target_min = floor_units
+    elif target_min < floor_units:
+        errors = [f"source_scale_budget_target_public_units_min_below_floor:{target_min}<{floor_units}"]
     else:
-        target_min = max(target_min, floor_for_source_units(source_units))
-    errors = []
+        errors = []
+    target_min = max(int(target_min), floor_units)
+    target_words = budget.get("target_words_min")
+    if not isinstance(target_words, int) or target_words < 0:
+        errors.append("source_scale_budget_missing_target_words_min")
+    elif target_words < floor_words:
+        errors.append(f"source_scale_budget_target_words_min_below_floor:{target_words}<{floor_words}")
     if budget.get("coverage_floor_status") == "block":
         errors.append("source_scale_budget_blocks_generation")
     if public_units < int(target_min):
@@ -228,8 +213,10 @@ def validate_public_density(plan: dict[str, Any]) -> list[str]:
     word_count = len([token for token in combined.replace("\n", " ").split(" ") if token.strip()])
     budget = plan.get("source_scale_budget")
     target_words_min = budget.get("target_words_min") if isinstance(budget, dict) else None
-    if isinstance(target_words_min, int) and target_words_min > 0 and word_count < target_words_min:
-        errors.append(f"walkthrough_visible_words_too_low:{word_count}<{target_words_min}")
+    scale_floor = floor_for_source_scale(plan)
+    effective_target_words = max(target_words_min if isinstance(target_words_min, int) else 0, int(scale_floor["minimum_visible_words"]))
+    if effective_target_words > 0 and word_count < effective_target_words:
+        errors.append(f"walkthrough_visible_words_too_low:{word_count}<{effective_target_words}")
     return errors
 
 

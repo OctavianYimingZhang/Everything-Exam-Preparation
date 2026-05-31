@@ -43,6 +43,7 @@ Before writing, estimate:
 ```yaml
 SourceScaleBudget:
   source_units_count:
+  source_pages_or_slides_estimate:
   readable_source_blocks:
   protected_knowledge_units_total:
   excluded_non_knowledge_units_total:
@@ -57,6 +58,7 @@ Rules:
 - Use more public knowledge units when the source contains more lectures, mechanisms, figures, methods, calculations, pathways, examples or named evidence.
 - Do not use a short Experimental Biology-style practical output as the size cap for larger units.
 - Keep conceptual grouping, but place multiple examinable units inside each module.
+- `source_pages_or_slides_estimate` must drive the minimum size when it is larger than the lecture count. Large course decks should not be allowed to declare a small `target_words_min`: 201-500 slides/pages usually needs at least 105 public units and about 14k visible words; 501-800 needs at least 150 public units and about 20k visible words; 801+ needs at least 180 public units and about 25k visible words or multiple volumes.
 - If the output is much shorter than the source scale budget, regenerate from source distillation.
 
 ## Student-Facing Structure

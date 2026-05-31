@@ -85,6 +85,9 @@ Budget rules:
 - Broad course packs need expanded coverage. A 10-20 lecture source pack normally requires many more examinable units than a short practical pack, even after compression.
 - Do not use Experimental Biology or any short practical unit as a size cap for larger courses.
 - Do not use page count alone. Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, or named experimental evidence.
+- Do use `source_pages_or_slides_estimate` as a hard lower-bound input. For 501-800 slides/pages, the public notes normally need at least 150 public knowledge units and roughly 20k visible words. For 801+ slides/pages, they normally need at least 180 public knowledge units and roughly 25k visible words, or a deliberate multi-volume split.
+- If a broad course has several times the source scale of the Experimental Biology exemplar, the final public output must also be materially larger unless the exclusion ledger proves that most pages/slides are duplicates, administrative content, unreadable material, or non-knowledge.
+- `target_public_units_min` and `target_words_min` must be greater than or equal to the derived source-scale floor. Low declared targets do not override source scale.
 - If source material is large but the output is short, record a `coverage_floor_failure` and regenerate from the distillation pass.
 - If the public draft reads like a workflow explanation, file inventory, source-role report, or high-level revision guide rather than a knowledge document, it fails even if the word count is high.
 
@@ -93,7 +96,8 @@ Indicative internal floors, to be adapted by evidence density:
 - 1-3 source units: usually 8-20 examinable units.
 - 4-8 source units: usually 20-45 examinable units.
 - 9-15 source units: usually 40-80 examinable units.
-- 16+ source units or whole-course packs: usually 70+ examinable units or multiple deliverable volumes.
+- 16-30 source units or whole-course packs: usually 80+ examinable units.
+- 31+ source units or broad whole-course packs: usually 120+ examinable units, with the pages/slides floor controlling when it is higher.
 
 These are not student-visible promises. They prevent accidental over-compression.
 

@@ -177,6 +177,9 @@ The route should be selective. The goal is high-information explanation, not max
 - A disease/drug/example unit should include only details that teach the reusable concept.
 - A broad course pack must meet the source-scale floor before release. If there are many lectures, figures, calculations, practicals, pathways, named examples or methods, expand the number of public units instead of compressing them into a short overview.
 - Calibrate public density against high-quality exemplars such as the supplied Experimental Biology DOCX: concept-specific headings, no workflow narration, and paragraphs that teach the mechanism, calculation, readout or boundary directly.
+- Treat the Experimental Biology exemplar as a density floor for similar-sized source packs, not as a length cap. If a target course has hundreds more slides/pages than that exemplar, the walkthrough must expand proportionally enough to teach the additional source-backed mechanisms, methods, examples, data rules and boundaries.
+- Large slide decks require visible source-scale floors before release: 201-500 slides/pages usually means at least 105 public units and about 14k visible words; 501-800 means at least 150 public units and about 20k visible words; 801+ means at least 180 public units and about 25k visible words or a multi-volume split.
+- A plan whose declared `target_words_min` or `target_public_units_min` is lower than the derived source-scale floor is invalid. Regenerate the budget before drafting instead of releasing a short, polished DOCX.
 
 Fail if the output looks like copied extraction text with `★★` headings before nearly every slide heading.
 Fail if the output looks like a workflow/status report rather than a knowledge walkthrough.

@@ -9,11 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from knowledge_only_rendering_rules import forbidden_advisory_heading_hits, forbidden_advisory_phrase_hits
+from source_scale_budget_rules import floor_for_source_scale
 
 
 REQUIRED_TOP_LEVEL = {
     "notes_plan_id",
     "target_group_key",
+    "source_scale_budget",
     "course_sections",
     "lecture_mapping",
     "knowledge_cards",
@@ -148,6 +150,36 @@ def validate(plan: dict[str, Any]) -> dict[str, Any]:
 
     if plan.get("qa_status") not in ALLOWED_QA_STATUS:
         failures.append({"type": "invalid_qa_status", "qa_status": plan.get("qa_status")})
+
+    budget = plan.get("source_scale_budget")
+    if not isinstance(budget, dict):
+        failures.append({"type": "missing_source_scale_budget"})
+    else:
+        floor = floor_for_source_scale(plan)
+        floor_units = int(floor["minimum_public_units"])
+        floor_words = int(floor["minimum_visible_words"])
+        target_units = budget.get("target_public_units_min")
+        target_words = budget.get("target_words_min")
+        if not isinstance(target_units, int) or target_units < 0:
+            failures.append({"type": "source_scale_budget_missing_target_public_units_min"})
+        elif target_units < floor_units:
+            failures.append(
+                {
+                    "type": "source_scale_budget_target_public_units_min_below_floor",
+                    "declared": target_units,
+                    "minimum": floor_units,
+                }
+            )
+        if not isinstance(target_words, int) or target_words < 0:
+            failures.append({"type": "source_scale_budget_missing_target_words_min"})
+        elif target_words < floor_words:
+            failures.append(
+                {
+                    "type": "source_scale_budget_target_words_min_below_floor",
+                    "declared": target_words,
+                    "minimum": floor_words,
+                }
+            )
 
     if not isinstance(plan.get("course_sections"), list) or not plan.get("course_sections"):
         failures.append({"type": "course_sections_empty"})
