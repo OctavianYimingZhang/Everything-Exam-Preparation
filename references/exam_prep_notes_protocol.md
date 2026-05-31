@@ -1,461 +1,255 @@
 # Exam Prep Notes Protocol
 
-`exam_prep_notes_docx` is the default route when the user supplies course materials and asks for revision, notes, general exam preparation, or to go through the material without naming a narrower artifact. It produces Academic Exam-Ready Notes in the compatible public Word artifact `Lecture_Knowledge_Walkthrough.docx`.
-
-This route is not a slide paraphrase, a chatty tutor explanation, a prediction file, an Excel map, or a complete Example Essay package.
-
-## Core Principle
-
-Accept any readable, ordered course-note source, but do not give every source the same authority.
+`exam_prep_notes_docx` is the default route when the user supplies course materials and asks for revision, notes, general exam preparation, or to go through the material without naming a narrower artifact. It produces the compatible public Word artifact:
 
 ```text
-CourseContentSource -> OrderedContentItem -> SourceFragment -> AtomicKnowledgeLedger -> SourceBaselineNotesPlan -> KnowledgeOnlyStudentView -> PublicOutputPoint -> ExamOverlayPass -> PrepArtifact
+Lecture_Knowledge_Walkthrough.docx
 ```
 
-The route reconstructs the course knowledge architecture and writes a protected source-first baseline before any exam overlay is allowed to affect density, order, priority, or add-ons. Source order is used to infer prerequisites, teaching intent, and causal development, not to force the final notes to preserve the original note sequence when a better exam logic exists.
+The route is a synthesis route, not an extraction route. Its job is to turn source material into clear examinable knowledge. It must not preserve every slide heading, file title, raw bullet, administrative line, or OCR fragment.
 
-## Source Authority
+## Route Purpose
 
-Factual authority:
+The public document should help a student understand the course. It should answer:
 
-- official lecture slides;
-- official notes or handouts;
-- lecturer-provided PDF/DOCX notes;
-- official practical material or assessment guidance;
-- independently verified textbooks, chapters, papers, DOI/PubMed records, publisher pages, or equivalent academic sources.
+- what the concept, method, process, structure or calculation is;
+- why it works;
+- how the mechanism, experiment, graph, assay or calculation proceeds;
+- what readout, consequence, limitation or application follows.
 
-Auxiliary sources:
+Question-type reports are add-ons. They come after the core knowledge walkthrough is clear.
 
-- student typed notes;
-- handwritten notes;
-- annotated screenshots;
-- flashcards;
-- Notion-style or structured revision notes;
-- unknown-provenance summaries.
+## First-Principles Pipeline
 
-Auxiliary sources may indicate what the student thinks matters, what needs clarification, or where an official source should be checked. They must not directly support factual course claims unless verified against factual-authority sources.
+Run this route in the following order:
 
-AI-generated notes have no factual authority. They may help with structure only after every factual claim is independently verified.
+```text
+SourceRoleMap
+-> NonKnowledgeNoiseFilter
+-> SourceDistillationPass
+-> ConceptualCourseMap
+-> ExaminableKnowledgeUnitPlan
+-> ConnectedExplanationDraft
+-> KnowledgeSurfaceContract / NonKnowledgeGate
+-> optional question-type overlay
+-> DOCX layout QA
+```
 
-If only auxiliary notes are supplied, the route may still organise and clean the material, but it must mark factual conclusions as requiring verification and avoid adding unsupported specificity. Ask for official or verified sources only when the requested conclusion depends on factual authority.
+Do not let `AtomicKnowledgeLedger`, source coverage, or past-paper emphasis become the public generation driver. Those tools may protect important concepts internally, but they must not force raw slide text into the final DOCX.
 
-## Internal Pipeline
+## Source Role Map
 
-Run the route in this order:
+Every source block must be classified before drafting:
 
-1. Classify source authority and extraction quality.
-2. Build a source coverage map and identify unreadable or weak sources.
-3. Reconstruct course-level sections from the official source logic.
-4. Map lecture sessions or ordered source blocks into the reconstructed course sections.
-5. Extract lecture-level conceptual modules and KnowledgePoints.
-6. Build the internal `AtomicKnowledgeLedger`.
-7. Generate `SourceBaselineNotesPlan` from official source structure before exam pruning.
-8. Run `BaselineCoverageFloorQA`.
-9. If formal past papers are supplied, insert optional `exam_regime`, `past_paper_questions`, `question_archetypes`, and `examiner_operations` actions; use them for format, emphasis, and answer-operation evidence only.
-10. Build `ExamEmphasisProfile` from formal past-paper question records when available.
-11. Apply `ExamOverlayPass` to priority, density, ordering, examples, traps, and question-type add-ons.
-12. Run `OverlayDidNotDamageCoverageQA`.
-13. Build the `KnowledgeOnlyStudentView` filter.
-14. Select the `OutputLanguageProfile` from the user request; keep default English labels unless the user explicitly requests another language.
-15. Select the route-specific `RouteDocxStyleProfile`.
-16. Build `PublicOutputPoint` and `PublicPointBlock` objects from the internal cards.
-17. Bind protected atomic items to public points with `PointCoverageBinding`.
-18. Run the `KnowledgeOnlyRenderingGate`.
-19. Run the `PublicPointConsistencyGate`.
-20. Generate Academic Exam-Ready Notes from public points only.
-21. Append a question-type add-on layer only when useful or requested.
-22. Add optional visual aids only after the text is source-backed.
-23. Run public-point, knowledge-only rendering, output-language, route-style, exam-prep-notes, student-output, evidence, DOCX, and helper-file boundary QA.
+- `subject_knowledge`: definitions, mechanisms, structures, pathways, experiments, methods, calculations, graphs, data patterns, examples, diagnostic rules and limitations.
+- `practical_operation`: apparatus, reagents, protocol logic, controls, safety handling, calculations and interpretation rules.
+- `exam_pattern`: question form, command verbs, mark operations and recurring discriminators.
+- `extra_reading`: verified books, chapters, papers or academic sources that deepen source logic.
+- `style_or_layout_example`: reference output used only for structure, density and layout.
+- `non_knowledge_noise`: admin, logistics, contact details, attendance systems, URLs, decorative text, OCR debris, file titles and slide artifacts.
 
-Exam evidence may add, split, reorder, prioritise, densify, and enrich. Exam evidence must not delete, hide, or over-compress protected source-backed modules.
+Only `subject_knowledge`, relevant `practical_operation`, and verified `extra_reading` may become public prose. Past papers shape emphasis and overlays only. Cross-target examples cannot support factual claims for the current course.
 
-Past-paper objects must not be visible to module segmentation, atomic-item extraction, or baseline coverage construction. Formal exam evidence may be loaded only after `AtomicKnowledgeLedger`, `SourceBaselineNotesPlan`, and `BaselineCoverageFloorQA` are complete. This prevents exam patterns from defining the factual boundary of the notes.
+## NonKnowledgeNoiseFilter
 
-If no formal past papers are supplied, generate notes from source centrality, conceptual dependency, and official course emphasis only. Do not invent exam frequency or future-question probability.
+Remove these before notes are planned:
 
-Cross-target examples, exemplar answers, and feedback sources must run the internal example-learning chain before they affect any rule: example review ledger, transferable-rule synthesis, rule-promotion gate, and example-transfer linting. Accepted rules may control paragraph density, answer ordering, and transferable workflow checks only; they must not support target factual claims, prediction claims, official answers, priority labels, or production branching on example identity.
+- lecturer names, emails, phone numbers, office locations, staff lists, unit coordinator details and contributor lists;
+- attendance apps, QR codes, room instructions, timetable lines, live-session instructions, platform instructions and links;
+- assessment logistics unless the user explicitly requests a separate exam-analysis brief;
+- bookshop adverts, library availability lines, URL-only lines, image credits, copyright lines, acknowledgements and decorative quotations;
+- slide agendas, contents pages, generic learning outcomes and generic advice unless rewritten into a specific knowledge claim;
+- raw slide bullets, duplicated headings, font dumps, page artifacts and extraction debris;
+- OCR fragments that do not form a biological, chemical, clinical, mathematical or methodological claim.
 
-Visual-heavy PDFs, presentations, figures, tables, image exemplars, and image-only files must carry visual-inspection metadata in source inventory and fragment partitions. If a requested output depends on the visual content, inspect it before making the claim or keep the relevant conclusion limited.
+If a block contains both knowledge and noise, extract the knowledge claim and discard the noise. Do not copy the block.
 
-## AtomicKnowledgeLedger
+## SourceDistillationPass
 
-Before building baseline notes, create an internal `AtomicKnowledgeLedger`.
+The source distillation pass rewrites source material into candidate knowledge claims before any public notes are drafted.
 
-Every slide, page, table, figure, diagram, or source block must be decomposed into atomic units:
+For each source lecture, practical, paper or notes block, make internal records of:
 
 ```yaml
-AtomicKnowledgeUnit:
-  unit_id: string
-  source_id: string
-  lecture_id: string
-  slide_or_page_range: string
-  raw_heading: string
-  raw_text_summary: string
-  unit_type:
-    - definition
-    - term
-    - contrast_pair
-    - criteria_item
-    - mechanism_step
-    - method_step
-    - equation
-    - calculation_rule
-    - graph_readout
-    - diagram_label
-    - table_entry
-    - named_example
-    - disease_case
-    - drug_case
-    - limitation
-    - misconception
-    - administrative
-    - decorative
-    - duplicate
-    - unreadable_visual
-  student_visibility:
-    - include_in_notes
-    - internal_audit_only
-    - exclude_admin
-    - duplicate_covered_elsewhere
-    - requires_visual_inspection
-  bound_module_id: string | null
-  coverage_status:
-    - covered
-    - grouped_but_named
-    - audit_only
-    - excluded_with_reason
-    - missing
+DistilledKnowledgeCandidate:
+  concept:
+  function:
+  source_support:
+  keep_reason:
+  discard_reason_if_any:
+  merge_with:
+  public_unit_candidate: true | false
 ```
 
 Rules:
 
-- Every slide/page heading becomes at least one atomic item unless it is purely administrative.
-- Every bullet containing a term, process, definition, method, equation, graph, example, limitation, or contrast becomes an atomic item.
-- Every table row or diagram label that teaches knowledge becomes an atomic item.
-- Administrative units are excluded from student output.
-- Knowledge units must be bound to final modules or named submodules.
-- Grouping is allowed only when each grouped item is still named and explained inside the module.
+- Keep central definitions, distinctions, causal mechanisms, process order, evidence, formulas, units, worked calculations, method logic, interpretation rules and named examples that teach a reusable concept.
+- Merge adjacent source fragments when they explain the same concept. For example, a method principle, readout and limitation normally belong in one explanatory unit, not three isolated labels.
+- Drop headings that are only source navigation, such as `Introduction`, `Contents`, `Today`, `Summary`, `Part 1`, `Next module`, or file names.
+- Convert vague source headings into concept-specific headings. Example: `Lecture 1` is not a public heading; `Internal membranes create organelle-specific chemical environments` can be.
+- Never write the public notes directly from extracted bullet text.
 
-## ExamEmphasisProfile
+## Conceptual Course Map
 
-Formal past papers may control preparation emphasis, not factual truth. The internal profile may include:
+The `Course Knowledge Map` must be conceptual, not a file list. It should normally contain 4-10 course modules for a broad source pack.
 
-```yaml
-ExamEmphasisProfile:
-  target_group_key:
-  current_regime:
-  visible_question_types: []
-  repeated_question_families: []
-  compatible_knowledge_points: []
-  answer_operations: []
-  emphasis_level: high | medium | low | unknown
-  limitation_flags: []
-```
-
-Allowed uses:
-
-- increase depth for source-backed KnowledgePoints that match visible question families;
-- order notes so high-transfer concepts appear before lower-transfer details;
-- decide whether MCQ, short-answer, long-answer, practical/data, or essay add-ons are useful;
-- mark content as `★★★`, `★★`, or `★` without exposing scoring logic.
-
-Forbidden uses:
-
-- exact future wording;
-- unsupported official answers;
-- fake numerical probability;
-- content outside source-backed scope;
-- public confidence bands, recurrence counts, or past-paper year mappings.
-
-## Definition Policy
-
-If an official course source gives a definition, preserve its meaning and wording as closely as possible while improving grammar and concision.
-
-If a definition appears only in student notes or unknown-provenance notes, treat it as a cue. Write a clean academic definition only after checking official course sources or verified academic sources.
-
-If no support is found, use a conservative definition, avoid extra specificity, and attach an internal QA flag. Do not invent mechanism, scope, exception, or terminology.
-
-## Protected KnowledgePoint Rule
-
-A source-backed item is protected when it is:
-
-- an intended learning outcome;
-- a slide/page heading or major notes heading;
-- an official definition;
-- a contrast pair;
-- a criteria, features, stages, classes, or components list;
-- a named example used to teach a concept;
-- a source section of the form `Why X?`;
-- a labelled diagram, table, graph, equation, calculation, or workflow;
-- a summary or take-home point;
-- a term, operation, or concept appearing in formal past papers.
-
-Protected items must appear in the source baseline plan. They may not disappear, be hidden only in `Common Error / Trap`, or be reduced to one checklist phrase. If a protected item is genuinely low value, keep it brief and label it `★`; do not remove it unless a QA flag records why it cannot be supported.
-
-## Knowledge-Only Student View
-
-For ordinary `exam_prep_notes_docx`, student-facing output must contain only knowledge-related revision content.
-
-Do not include:
-
-- assessment percentages;
-- exam timing;
-- mark splits;
-- Section A / Section B administrative rules;
-- historical-paper comparability notes;
-- `no mark scheme supplied` notes;
-- `Coverage note` warnings;
-- source-quality caveats;
-- ELM-check warnings;
-- audit, provenance, extraction-quality, source-coverage, or lineage explanations.
-
-Keep these in an internal audit file or chat-only diagnostic only when explicitly requested. The public DOCX is a knowledge document, not an exam-format audit.
-
-Replace `Course-Level Exam Map` with `Course Knowledge Map`.
-
-Allowed public top matter:
-
-- course/module title;
-- knowledge section map;
-- lecture/topic mapping;
-- one short sentence on how the knowledge is organised.
-
-Generic exam advice stays internal. A concrete graph-reading rule, calculation operation, case-study decision rule, or answer-shaping rule may appear only when it adds knowledge; otherwise it belongs in a question-type add-on. Do not expose exam timing, marks, paper comparability, source limitations, or audit caveats.
-
-## Knowledge-Only Rendering Gate
-
-Before DOCX generation, ordinary notes must pass a hard knowledge-only rendering gate. Public output is allowed to contain:
-
-- source-backed definitions and official terms;
-- mechanisms and process chains;
-- criteria, stages, classes, components, and method workflows;
-- equations, calculations, graph/data interpretation rules, units, axes, and readout logic;
-- source-backed examples, comparisons, limitations, and factual caveats.
-
-Public output must not contain:
-
-- generic answer advice;
-- `How To Answer`, `How To Use`, `A strong answer should`, `Use this module`, or similar instruction prose;
-- `Integrated reasoning`, `Integrated practical reasoning`, `Answer Logic`, `Exam Strategy`, or `Recommended Approach` sections;
-- commentary that a topic is or is not reliable by question type;
-- route recommendations, study recommendations, source-quality caveats, or audit limitations.
-
-If such content is generated, suppress it when it is generic. If it contains a real knowledge distinction, rewrite only that distinction into a knowledge-bearing block such as `Comparison`, `Limitation`, `Calculation Logic`, `Graph Logic`, or `Method Workflow`.
-
-## Background Demotion Rule
-
-Background/context modules include industry overview, stakeholder landscape, broad pipeline narration, commercial context, historical framing, and assessment administration.
-
-Default rating: `★`.
-
-Raise to `★★` only when the background is needed to justify target choice, candidate progression, regulatory logic, or case-study decisions.
-
-Raise to `★★★` only when the current source set shows that the exam explicitly asks students to define, compare, calculate, or justify using that background as the central answer operation.
-
-Background modules must normally be capped at 4-6 lines and must not appear before higher-yield definitional, mechanistic, methodological, or criteria-list modules when this would obscure exam-core material.
-
-## Granularity Rule
-
-Use one card per examinable concept.
-
-Do not merge the following into one dense paragraph:
-
-- definition + criteria + example;
-- mechanism + limitation + named drug;
-- method principle + readout + limitation;
-- graph parameter + calculation + interpretation;
-- contrast pair + application.
-
-If a source section contains a list, preserve it as a numbered or bulleted list when the list itself is examinable.
-
-If a source gives a named example, include it as an `Example` block unless the example is clearly decorative.
-
-## KnowledgePoint Analysis And Public Mapping Gate
-
-Before rendering ordinary notes, convert each internal KnowledgePoint into public revision content through an explicit consistency gate:
+Allowed map form:
 
 ```text
-KnowledgeCard -> PublicOutputPoint -> PublicPointBlock -> PointCoverageBinding
+The course is organised around membrane structure, transport energetics, signalling, trafficking and disease/application logic.
 ```
 
-Rules:
+Forbidden map form:
 
-- every student-visible KnowledgeCard must be referenced by at least one `PublicOutputPoint.source_card_ids` entry;
-- every public source-card reference must point to an existing internal KnowledgeCard;
-- every public point must state its `covered_atomic_units`;
-- every knowledge-bearing public block must state the atomic units it covers;
-- block-level covered atomic units must be a subset of the parent public point's covered atomic units;
-- every parent public point atomic unit must appear in at least one public block unless the point is explicitly marked as main-text-only by a future schema revision;
-- every `PointCoverageBinding.covered_atomic_units` set must match the corresponding public point's `covered_atomic_units`;
-- `missing_protected_items` must be empty when `protected_items_preserved` is true.
+```text
+Core knowledge spans Lecture 1; Lecture 2; slides.pptx; Module 3.pdf; practical handout; source file name...
+```
 
-This gate prevents a common failure mode where an internal card survives planning but disappears from the public notes, or where a public point claims coverage that is not visible in its definitions, criteria, mechanism, example, comparison, calculation, graph, or limitation blocks.
+A public map may mention source lectures only inside a compact lecture/topic mapping when this helps orientation. It must not be the main knowledge map.
 
-## Module Density Floor
+## CourseModule
 
-The Skill must not compress a lecture or PPT section below the density required by protected source features. Supplied examples may raise this floor only after the example-learning promotion gate converts the observation into a generic validation rule.
+Construct modules by conceptual function:
 
-For each lecture or PPT file:
+```yaml
+CourseModule:
+  module_title:
+  module_function:
+  source_lectures:
+  core_questions:
+  examinable_units:
+```
 
-- every major source heading must become either a module or a named submodule;
-- every protected list must be preserved as a list;
-- every named method must receive a module or submodule;
-- every named example must appear as an Example block or named example submodule;
-- every diagram, table, equation, or workflow that teaches knowledge must be explained;
-- no module may combine more than one definition set, mechanism, criteria list, method workflow, named example, graph, or calculation logic unless each receives its own visible subheading.
+A module title should name the knowledge problem, not the source file. Good examples:
 
-Heuristic minimum:
+```text
+Lipid bilayers create selective permeability and compartment identity
+Electrochemical gradients combine concentration and voltage
+Taste receptor identity determines signalling pathway and labelled-line coding
+```
 
-- If a lecture contains 1-10 protected atomic units: at least 2 modules.
-- If a lecture contains 11-25 protected atomic units: at least 4 modules.
-- If a lecture contains 26+ protected atomic units: at least 6 modules or clearly separated submodules.
-- A course section spanning more than 2 lectures must not be represented by fewer than 4 modules unless the source itself is extremely short.
+Bad examples:
 
-Fail QA when broad cards replace lecture-level coverage.
+```text
+Lecture 1
+Module 02
+1.3 Tools and Techniques
+Postlab ANSWERS
+```
 
-## Student-Facing Structure
+## ExaminableKnowledgeUnit
 
-Use a Word-first structure that reads as revision notes, not an audit:
+Public content must be written as coherent units:
+
+```yaml
+ExaminableKnowledgeUnit:
+  title:
+  priority: high | medium | low
+  source_support:
+  explanation:
+  optional_equation_or_example:
+  common_confusion_or_boundary:
+```
+
+The visible unit should be a topic-specific heading followed by connected prose. It must not be a slot list. It should normally explain what the point is, why it works, how the mechanism or calculation proceeds, and what follows from it.
+
+Do not write units as:
+
+```text
+Definition: ...
+Components: ...
+Workflow: ...
+Logic: ...
+Interpretation: ...
+```
+
+Use bullets only when the items are naturally parallel, such as formula variables, ordered workflow steps or a real comparison table. A bullet list must have an explanatory lead sentence and should not replace the explanation.
+
+## Density And Compression
+
+The route should be selective. The goal is high-information explanation, not maximum line count.
+
+- A broad first-year course should not create hundreds of tiny visible points.
+- A short practical unit may need fewer but deeper units.
+- A method/calculation unit should keep formula, units and worked example together.
+- A mechanism unit should keep cause, process, evidence and consequence together.
+- A disease/drug/example unit should include only details that teach the reusable concept.
+
+Fail if the output looks like copied extraction text with `★★` headings before nearly every slide heading.
+
+## Question-Type Overlay
+
+After the core walkthrough is clear, add the requested or useful overlay:
+
+- MCQ: discriminator rules and compact trap distinctions.
+- Short answer: concise model answers and mark-producing terms.
+- Long answer / practical / data / project / scenario: method-readout-control-limitation logic and worked examples.
+- Essay: plans or full Example Essays only when essay mode is requested. `EssayAdaptiveBudget` controls length.
+
+The overlay must not replace baseline knowledge and must not expose source-route narration, examiner-operation fields, recurrence counts, confidence bands or prediction scores.
+
+## Public DOCX Structure
+
+Default structure:
 
 ```text
 Title
 Course Knowledge Map
-Lecture [Number or Name]
-[★★★ | ★★ | ★] [Public Point Title]
-[Main explanation]
-[Definitions / Criteria / Steps / Mechanism / Equation / Calculation Logic / Graph Logic / Comparison / Example / Limitation blocks as needed]
-Question-Type Add-On Layer
-Optional Visual Aid
+Module 1: concept-specific heading
+  connected explanatory units
+Module 2: concept-specific heading
+  connected explanatory units
+...
 ```
 
-Internal card fields guide planning and QA. They are not public headings. Ordinary Academic Exam-Ready Notes must not render headings named `Exam Specificity`, `Core Exam Claim`, `Exam Use`, `Common Error / Trap`, or `Must Master`.
+Do not render sections named `How To Use This Document`, `What This Lecture Is About`, `What This Module Explains`, `Core Exam Claim`, `Exam Specificity`, `Exam Use`, `Common Error / Trap`, `Must Master`, `Source Coverage`, `Evidence Used`, `Extraction Quality` or equivalent internal fields.
 
-Render only knowledge-bearing blocks. If a planned `Exam Use` contains only generic advice such as how to use a module in an answer, suppress it. If a planned trap contains a real distinction, integrate it into a Comparison or Limitation block.
+Use `SurfaceLabelDecision`, `LabelDecision` and `semantic_sparse` label policy: labels are kept only when they improve readability for equations, worked examples, diagnostic patterns, controls, comparisons or tables. Otherwise merge the label into the heading or prose. This prevents `colon-slot fragmentation` and `shorthand arrow chains` from becoming the visible document style.
 
-The internal `ExamPrepNotesPlan` must use structured course sections, lecture mapping, source-backed internal knowledge cards, public output points, official definition records, source-baseline binding, exam-emphasis binding, exam-overlay binding, output-language profile, route DOCX style profile, render decisions, point coverage bindings, question-type add-ons, content-coverage checks, QA flags, and a visible-output field filter. Every public output point must have source support, one visible star priority label, a point kind, protected atomic coverage, and a coverage binding.
+## Public DOCX Layout
 
-Priority meanings:
-
-- `★★★` = answer-producing exam core: standalone definition, mechanism, calculation, graph/data operation, criteria list, method workflow, named source example, or case-study decision point.
-- `★★` = supporting examinable knowledge: useful for explanation, comparison, justification, or transfer.
-- `★` = background/context: useful framing only; keep brief unless directly tested.
-
-## Route DOCX Style
-
-`exam_prep_notes_docx` uses compact revision-note formatting, not essay-submission formatting:
+For ordinary notes:
 
 ```yaml
 RouteDocxStyleProfile:
   route: exam_prep_notes_docx
   margin_cm: 2.0
-  line_spacing: 1.05-1.15
-  body_alignment: left
+  line_spacing: 1.5
+  body_alignment: justified
+  title_alignment: left
+  heading_alignment: left
+  image_alignment: center
   body_font_pt: 10.5
   heading_font_pt: 12
-  lecture_heading_font_pt: 14
-  lecture_page_breaks: true
+  text_color: black
 ```
 
-Every lecture starts on a new page. Body text is left-aligned. The 2.5 cm margin, 1.5 line spacing, and justified-body format belongs to `example_essay_docx`, not ordinary Academic Exam-Ready Notes or compatibility lecture walkthroughs.
+Images must be centered and scaled to the content area while preserving readability. Avoid large blank areas and unnecessary page breaks.
 
-For ordinary Academic Exam-Ready Notes, the public DOCX is a knowledge document, not an exam-format audit. The Skill must first decompose all official source material into an `AtomicKnowledgeLedger`, exclude administrative items from student output, preserve every source-backed knowledge item in a baseline module or named submodule, and only then apply exam evidence as priority, density, ordering, and add-on guidance. Past papers may change emphasis; they must not define the factual boundary of the notes.
+## KnowledgeSurfaceContract
 
-## Academic Exam-Ready Notes Prose Policy
+Before public rendering, apply the `KnowledgeSurfaceContract` and run the `NonKnowledgeGate`. Public notes must not contain:
 
-Use these as internal planning functions, not required public headings:
+- `source_route_narration`;
+- `ai_process_or_provenance`;
+- `rigid_template_bucket` headings;
+- internal QA or audit fields;
+- source maps, run manifests, lineage files or helper JSON;
+- source file names as knowledge map content.
 
-- `Core Exam Claim`;
-- `Key Definitions`;
-- `Exam-Ready Knowledge Synthesis`;
-- `Criteria / Components / Steps`;
-- `Mechanism / Process Logic`;
-- `Canonical Example`;
-- `Exam Use`;
-- `Common Error / Trap`;
-- `Must Master`.
+## QA Gate
 
-Skill package files, fixtures, and protocol text are authored in English. This is a package-authoring convention, not a restriction on user-requested outputs. Public labels should stay as default English labels unless the user explicitly requests another language or mixed-language output. Do not infer multilingual output from source-language mixture alone.
+Block and rewrite if any of these appear:
 
-Avoid:
+- `Core knowledge spans` followed by a source list;
+- many visible sections beginning with source file names, `Lecture:`, `Module 01`, `slides`, `handout` or `presentation`;
+- high density of `★★` headings that mirror slide headings;
+- administrative, logistics, staff, contact, attendance, platform or assessment material;
+- raw slide bullets, OCR fragments, font dumps, image credits or copyright debris;
+- dense lists of names without mechanisms;
+- repeated `Definition`, `Components`, `Workflow`, `Logic`, `Graph logic`, `Interpretation` or equivalent labels;
+- shorthand arrow chains used as the main explanation;
+- unsupported claims, fake citations or over-strong scientific claims;
+- public AI-process text, source anchors, QA JSON, manifests or lineage files.
 
-- `In this section we will learn...`;
-- `This slide explains...`;
-- `The notes are trying to say...`;
-- `You should understand...`;
-- page-by-page or slide-by-slide narration.
-
-The writing should start with the examinable claim or problem, then explain mechanism, evidence, scope, limitation, and concrete application where it adds knowledge.
-
-## Question-Type Add-On Layer
-
-Question-type add-ons come after the base notes. They do not replace the base notes.
-
-MCQ add-on:
-
-```yaml
-MCQAddOn:
-  testable_statement:
-  possible_wrong_or_distractor_statement:
-  common_trap:
-  must_remember_rule:
-```
-
-Do not claim official correct answers unless an answer key exists.
-
-Short-answer add-on:
-
-```yaml
-ShortAnswerAddOn:
-  bounded_example_question:
-  concise_example_answer:
-  required_terms_in_answer_text:
-  avoid_this_mistake:
-```
-
-Bold required terms inside the answer. Do not expose `common omissions` as a visible field.
-
-Essay add-on:
-
-```yaml
-EssayAddOn:
-  essay_ready_paragraph_blocks:
-    mechanism:
-    process:
-    comparison:
-    evidence:
-    limitation:
-```
-
-Generate complete Example Essays only when the user explicitly requests essay preparation, model essays, full essay-style answers, or complete essay documents.
-
-## Visual-Aid Hook
-
-Visual aids are optional and final-layer only:
-
-```text
-VisualAidPlanning -> ImageGenerationIfAvailable -> VisualAidQA -> EmbedOrAttach
-```
-
-Generated visual aids may illustrate already source-backed mechanisms, workflows, spatial relations, comparisons, or method logic. They must not introduce facts, reproduce private or copyrighted source figures, replace source reading, or imply an official course figure.
-
-Follow `visual_aid_generation_protocol.md` for visual-aid specs, captions, and QA flags.
-
-## QA Flags
-
-Block or rewrite when any of these appear:
-
-- `original_note_order_leakage`;
-- `exam_emphasis_without_formal_evidence`;
-- `past_paper_loaded_before_baseline_qa`;
-- `administrative_exam_audit_in_student_notes`;
-- `atomic_knowledge_unit_missing`;
-- `broad_card_below_density_floor`;
-- `protected_item_only_in_trap_or_must_master`;
-- `non_black_docx_text`;
-- `blue_docx_heading`;
-- `student_note_used_as_fact_without_verification`;
-- `ai_note_used_as_fact`;
-- `definition_specificity_without_support`;
-- `question_type_addon_before_base_notes`;
-- `generated_visual_aid_treated_as_evidence`;
-- `internal_helper_artifact_in_student_output`.
+When the QA gate fails, regenerate from the `SourceDistillationPass`; do not patch the final DOCX by deleting a few bad lines.
