@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a purpose-first Knowledge Walkthrough DOCX from a plan.
-
-The current route renders conceptual course modules and examinable knowledge
-units. Legacy lecture/module plans are accepted only as a compatibility input.
-"""
+"""Generate a source-adaptive Knowledge Walkthrough DOCX from a plan."""
 
 from __future__ import annotations
 
@@ -29,7 +25,6 @@ from knowledge_only_rendering_rules import (
     repeated_template_label_hits,
 )
 
-
 STYLE_DEFAULTS = {
     "route": "knowledge_walkthrough_docx",
     "margin_cm": 2.0,
@@ -44,49 +39,12 @@ STYLE_DEFAULTS = {
     "title_font_pt": 14.0,
     "text_color": "black",
     "module_page_breaks": False,
+    "theme_colours_allowed": False,
+    "blue_heading_styles_allowed": False,
 }
 
-FORBIDDEN_KEYS = {
-    "source_anchor",
-    "source_anchors_visible",
-    "confidence",
-    "evidence",
-    "evidence_score",
-    "recurrence_count",
-    "examiner_operation",
-    "discriminator_axis",
-    "essay_theme",
-    "essay_plan",
-    "full_example_essay",
-    "practice_question",
-    "answer_key",
-    "prediction_score",
-}
-
-FORBIDDEN_TEXT = {
-    "source anchor",
-    "confidence",
-    "evidence score",
-    "recurrence count",
-    "examiner operation",
-    "discriminator axis",
-    "essay plan",
-    "full example essay",
-    "practice question",
-    "answer key",
-    "past paper year",
-    "prediction score",
-    "according to slide",
-    "english explanations extracted",
-    "ppt page",
-    "slide mentions",
-    "slides say",
-    "the final slide",
-    "the first slide",
-    "the next slide",
-    "the second slide",
-    "this slide",
-}
+FORBIDDEN_KEYS = {"source_anchor", "source_map", "confidence", "evidence_score", "qa_flag", "lineage"}
+FORBIDDEN_TEXT = {"source anchor", "confidence", "evidence score", "according to slide", "english explanations extracted", "this slide"}
 
 
 def load_plan(path: Path) -> dict[str, Any]:
@@ -142,7 +100,6 @@ def set_document_defaults(doc: Document, plan: dict[str, Any]) -> None:
         style.font.size = Pt(float(style_value(plan, "body_font_pt")))
         style.font.color.rgb = RGBColor(0, 0, 0)
         style.paragraph_format.line_spacing = float(style_value(plan, "line_spacing"))
-        style.paragraph_format.space_before = Pt(0)
         style.paragraph_format.space_after = Pt(3)
 
 
@@ -181,21 +138,6 @@ def walk_values(value: Any) -> list[tuple[str, Any]]:
     return found
 
 
-def visible_strings(plan: dict[str, Any]) -> list[str]:
-    parts: list[str] = [str(plan.get("title") or ""), str(plan.get("course_knowledge_map") or "")]
-    for module in plan.get("course_modules", []) or []:
-        if not isinstance(module, dict):
-            continue
-        parts.extend(str(module.get(key) or "") for key in ["module_title", "module_function"])
-        for unit in module.get("examinable_units", []) or []:
-            if isinstance(unit, dict):
-                parts.extend(str(unit.get(key) or "") for key in ["title", "explanation", "optional_equation_or_example", "common_confusion_or_boundary"])
-    for lecture in plan.get("legacy_lectures", []) or plan.get("lectures", []) or []:
-        if isinstance(lecture, dict):
-            parts.extend(str(lecture.get(key) or "") for key in ["lecture_title", "lecture_overview", "core_logic"])
-    return [part for part in parts if part.strip()]
-
-
 def legacy_to_course_modules(plan: dict[str, Any]) -> list[dict[str, Any]]:
     modules: list[dict[str, Any]] = []
     for lecture in plan.get("legacy_lectures", []) or plan.get("lectures", []) or []:
@@ -205,31 +147,11 @@ def legacy_to_course_modules(plan: dict[str, Any]) -> list[dict[str, Any]]:
         for module in lecture.get("modules", []) or []:
             if not isinstance(module, dict):
                 continue
-            explanation = " ".join(
-                str(module.get(key) or "").strip()
-                for key in ["module_overview", "knowledge_walkthrough", "key_logic"]
-                if str(module.get(key) or "").strip()
-            )
+            explanation = " ".join(str(module.get(key) or "").strip() for key in ["module_overview", "knowledge_walkthrough", "key_logic"] if str(module.get(key) or "").strip())
             if explanation:
-                units.append(
-                    {
-                        "object_type": "ExaminableKnowledgeUnit",
-                        "title": str(module.get("module_title") or "Knowledge unit"),
-                        "priority": module.get("priority") or "medium",
-                        "explanation": explanation,
-                        "common_confusion_or_boundary": " ".join(str(item) for item in module.get("common_confusions", []) or []),
-                    }
-                )
+                units.append({"object_type": "ExaminableKnowledgeUnit", "title": str(module.get("module_title") or "Knowledge unit"), "priority": module.get("priority") or "medium", "explanation": explanation})
         if units:
-            modules.append(
-                {
-                    "object_type": "CourseModule",
-                    "module_title": str(lecture.get("lecture_title") or "Course module"),
-                    "module_function": str(lecture.get("lecture_overview") or ""),
-                    "source_lectures": [str(lecture.get("lecture_id") or lecture.get("lecture_title") or "")],
-                    "examinable_units": units,
-                }
-            )
+            modules.append({"object_type": "CourseModule", "module_title": str(lecture.get("lecture_title") or "Course module"), "module_function": str(lecture.get("lecture_overview") or ""), "source_lectures": [str(lecture.get("lecture_id") or lecture.get("lecture_title") or "")], "examinable_units": units})
     return modules
 
 
@@ -238,16 +160,76 @@ def get_course_modules(plan: dict[str, Any]) -> list[dict[str, Any]]:
     return modules or legacy_to_course_modules(plan)
 
 
+def visible_strings(plan: dict[str, Any]) -> list[str]:
+    parts = [str(plan.get("title") or ""), str(plan.get("course_knowledge_map") or "")]
+    for module in get_course_modules(plan):
+        parts.extend(str(module.get(key) or "") for key in ["module_title", "module_function"])
+        for unit in module.get("examinable_units", []) or []:
+            if isinstance(unit, dict):
+                parts.extend(str(unit.get(key) or "") for key in ["title", "explanation", "optional_equation_or_example", "common_confusion_or_boundary"])
+    return [part for part in parts if part.strip()]
+
+
 def star_prefix(priority: Any) -> str:
     mapping = {"high": "★★★", "medium": "★★", "low": "★", "★★★": "★★★", "★★": "★★", "★": "★"}
     value = str(priority or "medium").strip().lower()
     return mapping.get(value, mapping.get(str(priority or "").strip(), "★★"))
 
 
+def infer_source_units(plan: dict[str, Any]) -> int:
+    budget = plan.get("source_scale_budget")
+    if isinstance(budget, dict):
+        for key in ["source_units_count", "readable_source_blocks", "protected_knowledge_units_total"]:
+            value = budget.get(key)
+            if isinstance(value, int) and value > 0:
+                return value
+    seen = {str(source).strip() for module in get_course_modules(plan) for source in (module.get("source_lectures", []) or []) if str(source).strip()}
+    if seen:
+        return len(seen)
+    lecture_order = plan.get("lecture_order")
+    return len(lecture_order) if isinstance(lecture_order, list) else 0
+
+
+def count_public_units(plan: dict[str, Any]) -> int:
+    return sum(len([unit for unit in module.get("examinable_units", []) or [] if isinstance(unit, dict)]) for module in get_course_modules(plan))
+
+
+def floor_for_source_units(source_units: int) -> int:
+    if source_units <= 0:
+        return 0
+    if source_units <= 3:
+        return 8
+    if source_units <= 8:
+        return 20
+    if source_units <= 15:
+        return 40
+    return 70
+
+
+def validate_source_scale_budget(plan: dict[str, Any]) -> list[str]:
+    budget = plan.get("source_scale_budget")
+    if not isinstance(budget, dict):
+        return ["walkthrough_requires_source_scale_budget"]
+    source_units = infer_source_units(plan)
+    public_units = count_public_units(plan)
+    target_min = budget.get("target_public_units_min")
+    if not isinstance(target_min, int) or target_min < 0:
+        target_min = floor_for_source_units(source_units)
+    else:
+        target_min = max(target_min, floor_for_source_units(source_units))
+    errors = []
+    if budget.get("coverage_floor_status") == "block":
+        errors.append("source_scale_budget_blocks_generation")
+    if public_units < int(target_min):
+        errors.append(f"source_scale_budget_public_units_too_low:{public_units}<{int(target_min)}")
+    return errors
+
+
 def validate_plan(plan: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if not get_course_modules(plan):
         errors.append("walkthrough_requires_course_modules_or_legacy_lectures")
+    errors.extend(validate_source_scale_budget(plan))
     profile = plan.get("route_docx_style_profile")
     if not isinstance(profile, dict):
         errors.append("walkthrough_requires_route_docx_style_profile")
@@ -260,6 +242,12 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
         errors.append("walkthrough_style_profile_heading_not_left")
     if profile.get("image_alignment") != "center":
         errors.append("walkthrough_style_profile_image_not_center")
+    if profile.get("text_color") != "black":
+        errors.append("walkthrough_style_profile_text_not_black")
+    if profile.get("theme_colours_allowed") is not False:
+        errors.append("walkthrough_theme_colours_not_disabled")
+    if profile.get("blue_heading_styles_allowed") is not False:
+        errors.append("walkthrough_blue_heading_styles_not_disabled")
     spacing = profile.get("line_spacing")
     if not isinstance(spacing, (int, float)) or not (1.45 <= float(spacing) <= 1.55):
         errors.append("walkthrough_style_profile_line_spacing_not_1_5")
@@ -277,8 +265,7 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
                 errors.append(f"forbidden_advisory_heading_in_plan:{heading}")
             for category in forbidden_non_knowledge_hits(value):
                 errors.append(f"forbidden_non_knowledge_surface_in_plan:{category}")
-    combined_visible_text = "\n".join(visible_strings(plan))
-    for label in repeated_template_label_hits(combined_visible_text):
+    for label in repeated_template_label_hits("\n".join(visible_strings(plan))):
         errors.append(f"repeated_rigid_template_label:{label}")
     return sorted(set(errors))
 
@@ -287,7 +274,6 @@ def write_docx(plan: dict[str, Any], output_dir: Path, qa_dir: Path, strict: boo
     errors = validate_plan(plan)
     if strict and errors:
         return {"status": "fail", "qa_flags": errors, "documents": []}
-
     doc = Document()
     set_document_defaults(doc, plan)
     title = str(plan.get("title") or "Lecture Knowledge Walkthrough")
@@ -295,8 +281,7 @@ def write_docx(plan: dict[str, Any], output_dir: Path, qa_dir: Path, strict: boo
     if plan.get("course_knowledge_map"):
         add_paragraph(doc, "Course Knowledge Map", plan, "heading")
         add_paragraph(doc, str(plan["course_knowledge_map"]), plan, "body")
-
-    manifest = {"walkthrough_id": plan.get("walkthrough_id"), "target_group_key": plan.get("target_group_key"), "title": title, "modules": [], "qa_flags": errors}
+    manifest = {"walkthrough_id": plan.get("walkthrough_id"), "target_group_key": plan.get("target_group_key"), "title": title, "source_scale_budget": plan.get("source_scale_budget"), "public_units": count_public_units(plan), "modules": [], "qa_flags": errors}
     for idx, module in enumerate(get_course_modules(plan)):
         if idx > 0 and bool(style_value(plan, "module_page_breaks")):
             doc.add_page_break()
@@ -305,8 +290,7 @@ def write_docx(plan: dict[str, Any], output_dir: Path, qa_dir: Path, strict: boo
         add_paragraph(doc, str(module.get("module_function") or ""), plan, "body")
         core_questions = module.get("core_questions") or []
         if core_questions:
-            question_sentence = "Core questions: " + "; ".join(str(item).strip() for item in core_questions if str(item).strip())
-            add_paragraph(doc, question_sentence, plan, "body")
+            add_paragraph(doc, "Core questions: " + "; ".join(str(item).strip() for item in core_questions if str(item).strip()), plan, "body")
         module_manifest = {"module_title": module_title, "units": []}
         for unit in module.get("examinable_units", []) or []:
             if not isinstance(unit, dict):
@@ -318,7 +302,6 @@ def write_docx(plan: dict[str, Any], output_dir: Path, qa_dir: Path, strict: boo
             add_paragraph(doc, str(unit.get("common_confusion_or_boundary") or ""), plan, "body")
             module_manifest["units"].append({"title": unit_title, "priority": unit.get("priority")})
         manifest["modules"].append(module_manifest)
-
     output_dir.mkdir(parents=True, exist_ok=True)
     qa_dir.mkdir(parents=True, exist_ok=True)
     filename = "Lecture_Knowledge_Walkthrough.docx"
@@ -340,7 +323,6 @@ def main() -> int:
     parser.add_argument("--strict", action="store_true")
     parser.add_argument("--deliverable-only", action="store_true")
     args = parser.parse_args()
-
     output_dir = args.output_dir
     qa_dir = args.qa_dir or (output_dir if not args.deliverable_only else output_dir.parent / "knowledge_walkthrough_internal_qa")
     if args.clean:
@@ -348,7 +330,6 @@ def main() -> int:
             shutil.rmtree(output_dir)
         if qa_dir.exists() and qa_dir != output_dir:
             shutil.rmtree(qa_dir)
-
     result = write_docx(load_plan(args.plan), output_dir, qa_dir, args.strict)
     print(json.dumps(result, indent=2))
     return 0 if result.get("status") in {"pass", "warn"} else 1
