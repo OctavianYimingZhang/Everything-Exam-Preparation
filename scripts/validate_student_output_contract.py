@@ -12,6 +12,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED_FILES = [
+    "SKILL.md",
+    "references/exam_prep_core_workflow.md",
     "references/student_facing_output_policy.md",
     "references/exam_prep_notes_protocol.md",
     "references/knowledge_walkthrough_docx_protocol.md",
@@ -78,29 +80,25 @@ def validate(root: Path) -> dict[str, Any]:
         if required_preset not in plan_text:
             failures.append({"type": "planner_missing_student_output_preset", "preset": required_preset})
 
+    skill = read(root / "SKILL.md")
+    core_workflow = read(root / "references/exam_prep_core_workflow.md")
     policy = read(root / "references/student_facing_output_policy.md")
     exam_prep_notes = read(root / "references/exam_prep_notes_protocol.md")
     walkthrough = read(root / "references/knowledge_walkthrough_docx_protocol.md")
     knowledge_surface = read(root / "references/knowledge_surface_protocol.md")
-    combined = policy + "\n" + exam_prep_notes + "\n" + walkthrough + "\n" + knowledge_surface
+    combined = "\n".join([skill, core_workflow, policy, exam_prep_notes, walkthrough, knowledge_surface])
+
     for term in [
-        "ExamPrepNotesStudentContract",
-        "Academic Exam-Ready Notes",
+        "SourceRoleMap",
+        "NonKnowledgeNoiseFilter",
+        "ExaminableKnowledgeUnit",
+        "subject_knowledge",
+        "non_knowledge_noise",
+        "CourseModule",
         "Course Knowledge Map",
-        "PublicOutputPoint",
-        "PublicPointBlock",
-        "OutputLanguageProfile",
-        "MCQStudentPointCard",
-        "ShortAnswerPointCard",
-        "Knowledge Walkthrough",
-        "Knowledge-Only Rendering Gate",
-        "PublicPointConsistencyGate",
-        "Lecture Recap",
-        "Canonical Example",
-        "Exam Use",
-        "★★★",
-        "RouteDocxStyleProfile",
-        "compact lecture-note formatting contract",
+        "raw slide bullets",
+        "file-title course maps",
+        "connected explanation",
         "KnowledgeSurfaceContract",
         "NonKnowledgeGate",
         "SurfaceLabelDecision",
@@ -109,6 +107,8 @@ def validate(root: Path) -> dict[str, Any]:
         "source_route_narration",
         "ai_process_or_provenance",
         "rigid_template_bucket",
+        "colon-slot fragmentation",
+        "shorthand arrow chains",
         "EssayAdaptiveBudget",
     ]:
         if term not in combined:
@@ -123,10 +123,19 @@ def validate(root: Path) -> dict[str, Any]:
     if "route_docx_style_profile" not in walkthrough_schema.get("required", []):
         failures.append({"type": "knowledge_walkthrough_schema_missing_route_style_profile"})
     style_profile = walkthrough_schema.get("properties", {}).get("route_docx_style_profile", {})
-    if style_profile.get("properties", {}).get("route", {}).get("const") != "knowledge_walkthrough_docx":
+    style_props = style_profile.get("properties", {})
+    if style_props.get("route", {}).get("const") != "knowledge_walkthrough_docx":
         failures.append({"type": "knowledge_walkthrough_schema_bad_style_route"})
-    if style_profile.get("properties", {}).get("body_alignment", {}).get("const") != "left":
-        failures.append({"type": "knowledge_walkthrough_schema_body_not_left"})
+    if style_props.get("body_alignment", {}).get("const") != "justified":
+        failures.append({"type": "knowledge_walkthrough_schema_body_not_justified"})
+    if style_props.get("heading_alignment", {}).get("const") != "left":
+        failures.append({"type": "knowledge_walkthrough_schema_heading_not_left"})
+    if style_props.get("image_alignment", {}).get("const") != "center":
+        failures.append({"type": "knowledge_walkthrough_schema_image_not_center"})
+    line_spacing = style_props.get("line_spacing", {})
+    if line_spacing.get("minimum") != 1.45 or line_spacing.get("maximum") != 1.55:
+        failures.append({"type": "knowledge_walkthrough_schema_line_spacing_not_1_5"})
+
     if surface_schema.get("title") != "KnowledgeSurfaceContract":
         failures.append({"type": "knowledge_surface_schema_bad_title"})
     surface_text = json.dumps(surface_schema, ensure_ascii=False)
