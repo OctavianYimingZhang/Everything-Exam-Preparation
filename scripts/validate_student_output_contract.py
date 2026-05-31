@@ -24,6 +24,8 @@ REQUIRED_FILES = [
     "schemas/atomic_knowledge_ledger.schema.json",
     "scripts/generate_exam_prep_notes_docx.py",
     "scripts/exam_prep_docx_style_linter.py",
+    "scripts/source_scale_budget_linter.py",
+    "scripts/docx_layout_surface_normalizer.py",
     "scripts/generate_knowledge_walkthrough_docx.py",
     "scripts/knowledge_walkthrough_linter.py",
     "scripts/knowledge_surface_linter.py",
@@ -86,11 +88,18 @@ def validate(root: Path) -> dict[str, Any]:
     exam_prep_notes = read(root / "references/exam_prep_notes_protocol.md")
     walkthrough = read(root / "references/knowledge_walkthrough_docx_protocol.md")
     knowledge_surface = read(root / "references/knowledge_surface_protocol.md")
-    combined = "\n".join([skill, core_workflow, policy, exam_prep_notes, walkthrough, knowledge_surface])
+    scale_linter = read(root / "scripts/source_scale_budget_linter.py")
+    style_linter = read(root / "scripts/exam_prep_docx_style_linter.py")
+    combined = "\n".join([skill, core_workflow, policy, exam_prep_notes, walkthrough, knowledge_surface, scale_linter, style_linter])
 
     for term in [
         "SourceRoleMap",
         "NonKnowledgeNoiseFilter",
+        "SourceScaleBudget",
+        "source-adaptive coverage budget",
+        "coverage_floor",
+        "source_units_count",
+        "minimum_visible_coverage_floor",
         "ExaminableKnowledgeUnit",
         "subject_knowledge",
         "non_knowledge_noise",
@@ -99,6 +108,8 @@ def validate(root: Path) -> dict[str, Any]:
         "raw slide bullets",
         "file-title course maps",
         "connected explanation",
+        "theme colours",
+        "blue heading styles",
         "KnowledgeSurfaceContract",
         "NonKnowledgeGate",
         "SurfaceLabelDecision",
@@ -179,7 +190,7 @@ def main() -> int:
         result = {"pass": False, "failures": [{"type": "read_error", "error": str(exc)}]}
     text = json.dumps(result, indent=2)
     if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.parent.mkdir(parents=True)
         args.output.write_text(text, encoding="utf-8")
     else:
         print(text)
