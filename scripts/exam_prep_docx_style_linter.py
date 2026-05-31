@@ -8,6 +8,7 @@ import json
 import re
 import shutil
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +32,9 @@ FORBIDDEN_INTERNAL_HEADINGS = {
     "Course-Level Exam Map",
     "How To Answer This Exam",
 }
+COLOUR_RE = re.compile(rb"<w:color\b[^>]*/?>")
+VAL_RE = re.compile(rb'w:val="([^"]+)"')
+THEME_RE = re.compile(rb'w:themeColor="([^"]+)"')
 
 
 def iter_docx_paths(path: Path) -> list[Path]:
@@ -131,6 +135,21 @@ def lint_docx(path: Path) -> list[dict[str, Any]]:
             font_names = {name for name in [run.font.name, paragraph.style.font.name if paragraph.style else None] if name}
             if font_names and "Arial" not in font_names:
                 failures.append({"type": "non_arial_text", "path": str(path), "paragraph": index, "fonts": sorted(font_names)})
+    try:
+        with zipfile.ZipFile(path) as archive:
+            name = "word/document.xml"
+            if name in archive.namelist():
+                xml = archive.read(name)
+                for match in COLOUR_RE.finditer(xml):
+                    tag = match.group(0)
+                    value_match = VAL_RE.search(tag)
+                    theme_match = THEME_RE.search(tag)
+                    value = (value_match.group(1) if value_match else b"").decode("ascii", errors="ignore").upper()
+                    theme = (theme_match.group(1) if theme_match else b"").decode("ascii", errors="ignore")
+                    if theme or (value and value not in {"000000", "AUTO"}):
+                        failures.append({"type": "ooxml_non_black_or_theme_colour", "path": str(path), "part": name, "value": value, "theme": theme})
+    except Exception as exc:
+        failures.append({"type": "ooxml_colour_scan_error", "path": str(path), "error": str(exc)})
     return failures
 
 

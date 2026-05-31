@@ -1,1 +1,1 @@
-Compact lecture notes use Arial, dense spacing, left-aligned body text, stable heading hierarchy, black text, and one lecture section per page. This file is layout evidence only.
+Reference lecture notes use Arial, 2.0 cm margins, 1.5 line spacing, justified body text, left-aligned title/headings, stable heading hierarchy, centered images, and black visible text only. This file is layout evidence only.

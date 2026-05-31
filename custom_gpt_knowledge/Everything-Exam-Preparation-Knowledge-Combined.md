@@ -103,6 +103,8 @@ Every protected unit must either appear in public knowledge output or be explici
 
 `ZeroMentionLint`: fail the output when a protected official term has zero visible mentions; a course-backed past-paper term is omitted; a diagram/table/equation is referenced only as a generic graph/figure; a calculation lacks units or conversion logic; a method workflow lacks principle, readout or interpretation; or a named example is hidden under a broad module title.
 
+Reference-caliber rule: if a user supplies a high-quality DOCX exemplar, use it only for density, layout and paragraph-surface calibration. The supplied Experimental Biology style means topic-specific headings, connected explanatory paragraphs, worked calculation or method detail when useful, and no public workflow narration. It is not factual evidence for another course and it is not a length cap for larger courses.
+
 ---
 
 ## 5. KnowledgeSurfaceContract
@@ -116,8 +118,13 @@ Forbidden in ordinary public output:
 - audit traces: source map, confidence band, QA flag, run manifest, evidence score, source anchor, lineage;
 - generic advice in ordinary notes: `How To Answer`, `How To Use`, `A strong answer should`, `Use this module`, `Recommended approach`, `Exam strategy`;
 - repeated rigid buckets for every point: `Definition`, `Principle`, `Mechanism`, `Application`, `Limitation`, `Graph logic`, `Interpretation`.
+- workflow/schema narration: `Selected route`, `Workflow plan`, `SourceRoleMap`, `SourceScaleBudget`, `Coverage floor status`, `KnowledgeSurfaceContract`, `ExaminableKnowledgeUnit`, `CourseModule`, `QA gate`, `Generation process`, or statements about what the Skill included, excluded, checked or generated.
 
 Use semantic-sparse labels. Keep labels only when they prevent ambiguity, especially `Equation`, `Worked example`, `Diagnostic pattern`, `Control`, `Table` or `Comparison`. Otherwise merge the label into a concept-specific heading or sentence.
+
+When a user iteratively revises an output file, the latest compatible instructions become a hard final-file checklist. Safe compression must reduce repetition and improve causal order without deleting protected mechanisms, formulas, worked examples, controls, limitations or figure/table logic. If the user gives a target length range, preserve it unless it would remove protected content. If revising a DOCX and the user says images should not change, preserve image objects, order, size and placement as far as the format allows.
+
+For bilingual or Chinese-facing notes with academic English support, academic terms should receive English annotations at first meaningful use, formulas and calculation labels should be in English, and visible text before colon-style labels should be English unless the user explicitly asks otherwise. Delete intro-only sections that name a topic but do not explain an examinable mechanism, method, calculation, control, data operation, readout, limitation or interpretation rule. If the user asks to remove sentence-ending full stops, remove Chinese full stops and sentence-final English periods while preserving decimals, formula notation, filenames and necessary scientific abbreviations.
 
 Ordinary notes/walkthroughs use:
 
@@ -166,10 +173,12 @@ Ordinary notes/walkthroughs:
 
 - Arial;
 - 2.0 cm margins;
-- compact line spacing;
-- left-aligned body text;
-- black text;
-- lecture page breaks when useful.
+- 1.5 line spacing;
+- justified body text;
+- left-aligned title and headings;
+- centered images;
+- black visible text only;
+- no theme colours, blue heading styles or non-black visible text unless the user explicitly asks for colour.
 
 Essay-style documents:
 
@@ -183,6 +192,8 @@ Essay-style documents:
 - essay-question/topic subtitle is plain, left-aligned, not bold, not italic, not enlarged.
 
 Keep helper artifacts out of student-facing folders unless the user explicitly requests an audit package.
+
+Render-check final DOCX files when tooling is available. Inspect the rendered PDF or page images for missing images, unreadable tables, table-row splits, large blank areas, colour drift, blue/theme text and visible formatting defects before release.
 
 ---
 
@@ -207,6 +218,8 @@ source inventory
 ```
 
 Past papers may add, split, reorder, densify or prioritise, but must not delete, hide or over-compress source-backed baseline modules.
+
+Fail and regenerate when the notes are short relative to source scale, when broad lecture packs are collapsed into a few generic modules, or when the public document explains the workflow instead of teaching the knowledge.
 
 Visible priority labels:
 

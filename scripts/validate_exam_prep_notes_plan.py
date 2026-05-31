@@ -307,12 +307,22 @@ def validate(plan: dict[str, Any]) -> dict[str, Any]:
         line_spacing = number_or_none(style_profile.get("line_spacing"))
         if margin_cm is None or abs(margin_cm - 2.0) > 0.2:
             failures.append({"type": "route_docx_style_profile_bad_margin", "margin_cm": style_profile.get("margin_cm")})
-        if line_spacing is None or not (1.0 <= line_spacing <= 1.2):
+        if line_spacing is None or not (1.45 <= line_spacing <= 1.55):
             failures.append({"type": "route_docx_style_profile_bad_line_spacing", "line_spacing": style_profile.get("line_spacing")})
-        if style_profile.get("body_alignment") != "left":
-            failures.append({"type": "route_docx_style_profile_body_not_left", "body_alignment": style_profile.get("body_alignment")})
-        if style_profile.get("lecture_page_breaks") is not True:
-            failures.append({"type": "route_docx_style_profile_missing_lecture_page_breaks"})
+        if style_profile.get("body_alignment") != "justified":
+            failures.append({"type": "route_docx_style_profile_body_not_justified", "body_alignment": style_profile.get("body_alignment")})
+        if style_profile.get("title_alignment") != "left":
+            failures.append({"type": "route_docx_style_profile_title_not_left", "title_alignment": style_profile.get("title_alignment")})
+        if style_profile.get("heading_alignment") != "left":
+            failures.append({"type": "route_docx_style_profile_heading_not_left", "heading_alignment": style_profile.get("heading_alignment")})
+        if style_profile.get("image_alignment") != "center":
+            failures.append({"type": "route_docx_style_profile_image_not_center", "image_alignment": style_profile.get("image_alignment")})
+        if style_profile.get("text_color") != "black":
+            failures.append({"type": "route_docx_style_profile_text_not_black", "text_color": style_profile.get("text_color")})
+        if style_profile.get("theme_colours_allowed") is not False:
+            failures.append({"type": "route_docx_style_profile_theme_colours_not_disabled"})
+        if style_profile.get("blue_heading_styles_allowed") is not False:
+            failures.append({"type": "route_docx_style_profile_blue_heading_styles_not_disabled"})
 
     render_decisions = plan.get("render_decisions", [])
     if not isinstance(render_decisions, list):

@@ -353,9 +353,11 @@ A knowledge-only rendering gate blocks generic advice in ordinary notes and comp
 
 For Example Essay and Extra Reading citation-source prose, academic author names stay inside parenthetical author-year citations in normal public output. The sentence should state the content claim, mechanism, evidence, limitation, or comparison directly; author-led literature narration is reserved for explicit literature-history requests.
 
-The exam-prep notes DOCX style is route-specific: Arial, 2.0 cm margins, compact 1.05-1.15 line spacing, left-aligned body text, black text, and lecture page breaks. Example Essay DOCX output keeps its separate essay-submission format.
+The exam-prep notes DOCX style is route-specific: Arial, 2.0 cm margins, 1.5 line spacing, justified body text, left-aligned title/headings, centered images, and black visible text. Theme colours, blue heading styles, and non-black visible text are forbidden unless the user explicitly asks for colour. Example Essay DOCX output keeps its separate essay-submission format.
 
-The `knowledge_walkthrough_docx` route remains available for explicitly lecture-first walkthroughs. It uses the same compact lecture-note DOCX style as ordinary notes: Arial, 2.0 cm margins, compact 1.05-1.15 line spacing, left-aligned body text, black text, stable headings, and lecture page breaks. It does not predict papers, write essays, or create practice packs by default.
+The `knowledge_walkthrough_docx` route remains available for explicitly lecture-first walkthroughs. It uses the same public DOCX style as ordinary notes: Arial, 2.0 cm margins, 1.5 line spacing, justified body text, left-aligned title/headings, centered images, black visible text, and stable headings. It does not predict papers, write essays, or create practice packs by default.
+
+When the user iteratively revises a DOCX output, the latest compatible file-level instructions become release requirements for the actual document. The Skill must not overcompress below an explicit safe target range, must preserve source image objects when asked, must delete intro-only content rather than keep decorative topic labels, must use English academic annotations/formula labels/pre-colon labels when requested for bilingual or Chinese-facing notes, and must render-check the final DOCX when tooling is available before release.
 
 Each lecture becomes:
 

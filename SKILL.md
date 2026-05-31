@@ -74,6 +74,8 @@ A `Course Knowledge Map` must be conceptual. It should organise the course into 
 | source inventory / lint / release check | `audit_lint_only` or `github_ready_qa` | QA result only |
 | past-paper pattern or exam format only | `exam_analysis_brief` | chat-only brief unless a report is requested |
 
+Essay and problem-essay prediction uses the label `Predicted essay theme` for a source-qualified theme, scope and practice angle. It must not present a predicted theme as official future question wording.
+
 ## Course Reconstruction
 
 For broad source packs, build conceptual modules:
@@ -92,6 +94,8 @@ Preserve source order when it explains prerequisites. Do not produce one public 
 ## Source-Adaptive Coverage Budget
 
 Never use the same small output size for every course. The amount of public knowledge must scale with the amount of examinable source material.
+
+The reference-quality target is the supplied Experimental Biology style of output: topic-specific headings, dense connected explanations, formulas or worked examples when useful, black Arial text, 2.0 cm margins, 1.5 spacing, left-aligned headings and justified body prose. Use that file only as a style, density and layout exemplar; it is not factual evidence and it is not a length cap.
 
 Before drafting, create:
 
@@ -113,6 +117,7 @@ Rules:
 - Keep a small number of conceptual modules when useful, but include enough examinable units inside each module to cover the source scale.
 - A pack with many lectures, figures, practicals, calculations or mechanisms requires expanded coverage.
 - Do not use Experimental Biology or any other short unit as a size cap for larger courses.
+- If the first draft feels like a route summary, file inventory, checklist, or brief overview, it is not acceptable. Regenerate from the source-distillation pass until the public document teaches the examinable mechanisms, calculations, methods, examples, boundaries and interpretations in connected prose.
 - If the public output falls below the source-scale floor, block the run and regenerate from source distillation instead of releasing a short file.
 
 ## Examinable Knowledge Units
@@ -155,6 +160,23 @@ For ordinary notes and walkthroughs:
 - large blank areas should be reduced by fitting images to context and avoiding unnecessary page breaks.
 
 Public notes must not contain source-route narration, AI-process text, source maps, QA flags, evidence scores, confidence bands, internal manifests, helper JSON or raw extraction text.
+
+Public notes must also not contain visible workflow explanations such as selected route, workflow plan, source role map, source scale budget, coverage floor status, KnowledgeSurfaceContract, ExaminableKnowledgeUnit, CourseModule, QA gate, generation process, or statements about what the Skill did. Keep those objects internal and render only the resulting knowledge.
+
+## Final Output Revision Contract
+
+When the user gives iterative edits to an output file, the latest compatible edit set is a hard release contract. Do not release a DOCX that satisfies the first request but violates later file-level requirements.
+
+For revised notes and walkthrough DOCX files:
+
+- do not overcompress: if the user gives a target length or character range, keep the final public text inside that range unless source protection makes it unsafe;
+- improve expression efficiency by removing repetition, merging duplicate explanations, tightening causal order and keeping formulas, worked examples, method logic, controls, interpretation rules and limitations;
+- delete intro-only sections that introduce a topic without explaining examinable logic, unless they can be rewritten into a specific knowledge unit;
+- if the user asks for bilingual or Chinese-facing notes with academic English support, put academic terms in English at first meaningful use and use English for formula labels, calculation labels, table labels and text before colon-style labels;
+- formulas, variables, units and worked calculation labels should be in English unless the user explicitly requests another language;
+- if revising from an existing DOCX and the user says not to change images, preserve image objects, order, sizing and placement as far as the document format allows;
+- if the user asks to remove sentence-ending full stops, remove Chinese full stops and sentence-final periods from body text while preserving decimal points, formula notation, file names and necessary scientific abbreviations;
+- render the final DOCX to PDF or page images when tooling is available and inspect for missing images, row splits, unreadable tables, large blank areas, colour drift and visible formatting defects before release.
 
 ## Required References
 

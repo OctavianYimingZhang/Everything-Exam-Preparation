@@ -135,6 +135,9 @@
     "non_knowledge_scan",
     "label_decision_scan",
     "route_style_scan",
+    "final_iteration_requirement_scan",
+    "rendered_docx_visual_scan",
+    "image_preservation_scan",
     "essay_adaptive_budget_scan",
     "essay_source_highlight_scan"
   ]

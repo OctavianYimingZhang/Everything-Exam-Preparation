@@ -107,12 +107,24 @@ Compact Public Notes Rule:
 
 - Internally, decompose sources into atomic knowledge items and protect every source-backed definition, criterion, mechanism, method, example, equation, graph, table, and workflow.
 - Publicly, render compact lecture-level exam notes. Do not expose the internal card scaffold.
-- Each lecture starts on a new page.
+- Start major modules on new pages only when it improves readability and does not create large blank areas.
 - Group protected atomic items into readable public points using concise paragraphs, bullets, equations, examples, comparisons, and mechanism chains.
 - Coverage must be complete; formatting must be compact.
-- Compact lecture notes and compatibility walkthroughs use Arial, 2.0 cm margins, compact 1.05-1.15 line spacing, left-aligned body text, black text, and lecture page breaks. Essay-style 2.5 cm margins, 1.5 spacing, and justified body text are reserved for Example Essay outputs.
+- Ordinary notes and compatibility walkthroughs use the Experimental Biology reference surface: Arial, 2.0 cm margins, 1.5 line spacing, left-aligned title/headings, justified body text, black visible text, and centered images. Theme colours, blue heading styles and non-black visible text are never allowed unless the user explicitly asks for colour.
 - A hard knowledge-only rendering gate applies before public DOCX writing. Ordinary notes and compatibility walkthroughs must not render generic advice sections such as `How To Answer`, `How To Use`, `Integrated reasoning`, `Integrated practical reasoning`, `Answer Logic`, `Exam Strategy`, `Recommended Approach`, `A strong answer should`, `Use this module`, or question-type reliability commentary. Keep only the underlying source-backed knowledge, rewritten as knowledge points, definitions, method workflows, calculations, graph/data rules, comparisons, examples, or limitations.
+- A hard workflow-leakage gate applies before public DOCX writing. Ordinary notes and compatibility walkthroughs must not render selected-route text, workflow plans, source-role maps, source-scale budgets, coverage floor reports, QA gate explanations, internal schema object names, generation-process notes, or statements about what the Skill included or excluded.
 - A public-point consistency gate applies before DOCX writing. Every visible internal KnowledgeCard must map to at least one public point, every public point must reference real source cards, and public point, block, and coverage-binding atomic-unit sets must agree.
+
+Final iterative output rules:
+
+- Later user edits override earlier compatible requirements. Before release, build a short internal checklist from the user's last revision instructions and verify the actual DOCX against that checklist.
+- Do not overcompress. If the user gives a target character or word range, stay inside it unless protected source content would be lost; if the target is unsafe, use the largest safe compression and say so outside the DOCX.
+- Expression efficiency means fewer repeated claims and tighter causal order, not deletion of mechanisms, calculations, controls, worked examples, interpretation rules, limitations or figure/table logic.
+- Delete or rewrite sections that only introduce a topic without explaining the examinable mechanism, method, data operation or calculation.
+- For bilingual or Chinese-facing outputs with academic English support, academic terms should receive English annotations at first meaningful use, formulas and calculation labels should be in English, and label text before colon-style labels should be English unless the user explicitly asks otherwise.
+- If revising from a DOCX and the user says images must not be changed, preserve image objects, order, size and placement as far as the format allows. Do not recreate, crop, recolour or resize images for compression convenience.
+- If the user asks to remove sentence-ending full stops, remove Chinese full stops and sentence-final English periods from public body text while preserving decimals, formula notation, file names and necessary scientific abbreviations.
+- Render-check the final DOCX when tooling is available. Inspect page images or PDF for missing images, bad table row splits, unreadable tables, large blank gaps, colour drift, blue/theme text, and formatting defects before release.
 
 Visible public point:
 

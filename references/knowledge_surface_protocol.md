@@ -22,6 +22,8 @@ A public sentence, heading, bullet, table row, figure caption, or note is allowe
 
 A public item is forbidden when its main function is to describe the Skill, the source route, the AI workflow, the exam-prediction workflow, the evidence audit, or how the student should use the document.
 
+This includes visible mentions of selected route, workflow plan, source role map, source scale budget, coverage floor status, QA gate, KnowledgeSurfaceContract, ExaminableKnowledgeUnit, CourseModule, SourceDistillationPass, generation process, or statements such as what the Skill included, excluded, checked, or generated. These objects are internal only.
+
 ## KnowledgeSurfaceContract
 
 Use this object before any public DOCX is written:
@@ -118,6 +120,15 @@ The notes say...
 According to page...
 PPT page...
 English explanations extracted from...
+Selected route...
+Workflow plan...
+Source scale budget...
+Coverage floor status...
+KnowledgeSurfaceContract...
+ExaminableKnowledgeUnit...
+CourseModule...
+QA gate...
+Generation process...
 ```
 
 Rewrite by deleting the source-route wrapper and keeping only the knowledge.
@@ -360,6 +371,19 @@ Rules:
 - Treat 10-15% mechanism-detail and 10-15% Extra Reading as target bands, not padding quotas. If insufficient verified material exists, do not fabricate or inflate.
 - The conclusion is mandatory unless the user explicitly asks for a fragment rather than a complete essay.
 - The conclusion must synthesise the answer and should not introduce new evidence.
+
+## Final Iterative File Contract
+
+When a user revises the requested output over several messages, the latest compatible instructions control the final file. A DOCX must not be released merely because the content is correct if it still violates a later file-level instruction.
+
+Apply these gates when the user has requested them or supplied a reference that implies them:
+
+- safe compression: expression efficiency removes repetition and improves logic, but does not delete protected mechanisms, formulas, worked examples, controls, limitations, figure/table logic or source-backed detail;
+- target range: explicit word or character ranges are enforced on the public DOCX unless they would remove protected source content;
+- image preservation: when revising a DOCX and the user says images should not change, preserve image objects, order, size, crop and placement as far as the format allows;
+- academic-English support: bilingual or Chinese-facing outputs can require English annotations for academic terms, English formulas, and English pre-colon labels;
+- punctuation: when the user asks to remove full stops, remove Chinese full stops and sentence-final English periods while preserving decimals, formula notation, filenames and necessary scientific abbreviations;
+- render verification: render the final DOCX to PDF or page images when tooling is available and inspect for missing images, unreadable tables, row splits, large blank areas, colour drift and other visible defects.
 
 ## Highlight Surface Rules For Essays
 

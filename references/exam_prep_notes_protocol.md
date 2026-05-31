@@ -86,6 +86,7 @@ Rules:
 - Keep central definitions, distinctions, causal mechanisms, process order, evidence, formulas, units, worked calculations, method logic, interpretation rules and named examples that teach a reusable concept.
 - Merge adjacent source fragments when they explain the same concept. For example, a method principle, readout and limitation normally belong in one explanatory unit, not three isolated labels.
 - Drop headings that are only source navigation, such as `Introduction`, `Contents`, `Today`, `Summary`, `Part 1`, `Next module`, or file names.
+- Drop or rewrite intro-only blocks that name a topic but do not explain an examinable mechanism, method, calculation, control, data operation, readout, limitation or interpretation rule.
 - Convert vague source headings into concept-specific headings. Example: `Lecture 1` is not a public heading; `Internal membranes create organelle-specific chemical environments` can be.
 - Never write the public notes directly from extracted bullet text.
 
@@ -174,8 +175,11 @@ The route should be selective. The goal is high-information explanation, not max
 - A method/calculation unit should keep formula, units and worked example together.
 - A mechanism unit should keep cause, process, evidence and consequence together.
 - A disease/drug/example unit should include only details that teach the reusable concept.
+- A broad course pack must meet the source-scale floor before release. If there are many lectures, figures, calculations, practicals, pathways, named examples or methods, expand the number of public units instead of compressing them into a short overview.
+- Calibrate public density against high-quality exemplars such as the supplied Experimental Biology DOCX: concept-specific headings, no workflow narration, and paragraphs that teach the mechanism, calculation, readout or boundary directly.
 
 Fail if the output looks like copied extraction text with `★★` headings before nearly every slide heading.
+Fail if the output looks like a workflow/status report rather than a knowledge walkthrough.
 
 ## Question-Type Overlay
 
@@ -204,7 +208,16 @@ Module 2: concept-specific heading
 
 Do not render sections named `How To Use This Document`, `What This Lecture Is About`, `What This Module Explains`, `Core Exam Claim`, `Exam Specificity`, `Exam Use`, `Common Error / Trap`, `Must Master`, `Source Coverage`, `Evidence Used`, `Extraction Quality` or equivalent internal fields.
 
+Do not render workflow/schema sections named `Selected Route`, `Workflow Plan`, `SourceRoleMap`, `NonKnowledgeNoiseFilter`, `SourceDistillationPass`, `SourceScaleBudget`, `Coverage Floor`, `KnowledgeSurfaceContract`, `ExaminableKnowledgeUnit`, `CourseModule`, `QA Gate`, `Generation Process`, or equivalent internal planning fields.
+
 Use `SurfaceLabelDecision`, `LabelDecision` and `semantic_sparse` label policy: labels are kept only when they improve readability for equations, worked examples, diagnostic patterns, controls, comparisons or tables. Otherwise merge the label into the heading or prose. This prevents `colon-slot fragmentation` and `shorthand arrow chains` from becoming the visible document style.
+
+When the output language is bilingual or Chinese-facing with academic English support:
+
+- academic terms should receive English annotations at first meaningful use;
+- formulas, variables, unit labels, calculation labels and table calculation headings should be in English unless the user explicitly asks otherwise;
+- visible text before colon-style labels should be English, for example `Formula:`, `Calculation:`, `Control logic:` or `Interpretation:`;
+- do not repeat the same bilingual annotation every time the term appears if it harms expression efficiency.
 
 ## Public DOCX Layout
 
@@ -226,6 +239,8 @@ RouteDocxStyleProfile:
 
 Images must be centered and scaled to the content area while preserving readability. Avoid large blank areas and unnecessary page breaks.
 
+If the input is an existing DOCX and the user says images should not change, preserve source image order, placement, crop and size as far as the Word format allows. Do not use image removal, image resizing or table/image reflow as a shortcut for compression.
+
 ## KnowledgeSurfaceContract
 
 Before public rendering, apply the `KnowledgeSurfaceContract` and run the `NonKnowledgeGate`. Public notes must not contain:
@@ -236,6 +251,8 @@ Before public rendering, apply the `KnowledgeSurfaceContract` and run the `NonKn
 - internal QA or audit fields;
 - source maps, run manifests, lineage files or helper JSON;
 - source file names as knowledge map content.
+
+If the user supplied iterative final edits, run a final-release checklist against the generated DOCX itself. The checklist must include any explicit length range, image-preservation rule, language/annotation rule, formula-language rule, punctuation rule, table readability issue and render-inspection issue from the latest compatible user messages.
 
 ## QA Gate
 
@@ -251,5 +268,6 @@ Block and rewrite if any of these appear:
 - shorthand arrow chains used as the main explanation;
 - unsupported claims, fake citations or over-strong scientific claims;
 - public AI-process text, source anchors, QA JSON, manifests or lineage files.
+- visible workflow, route, source-scale, QA, schema or generation-process explanations.
 
 When the QA gate fails, regenerate from the `SourceDistillationPass`; do not patch the final DOCX by deleting a few bad lines.

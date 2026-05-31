@@ -26,13 +26,17 @@ FORBIDDEN_ADVISORY_PHRASES = [
     "question-type dependent",
     "recommended approach",
     "recommended output route",
+    "selected route",
     "source coverage",
     "source limits",
     "source rules",
+    "source role map",
+    "source scale budget",
     "this pack uses only",
     "the notes are organised",
     "this document is organised",
     "use this module",
+    "workflow plan",
 ]
 
 FORBIDDEN_ADVISORY_HEADINGS = [
@@ -45,9 +49,13 @@ FORBIDDEN_ADVISORY_HEADINGS = [
     "Integrated Reasoning",
     "Must Master",
     "Recommended Approach",
+    "Selected Route",
     "Source Coverage",
     "Source Limits",
     "Source Rules",
+    "Source Role Map",
+    "Source Scale Budget",
+    "Workflow Plan",
     "What This Lecture Is About",
     "What This Module Explains",
 ]
@@ -68,6 +76,14 @@ FORBIDDEN_NON_KNOWLEDGE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "public_source_workflow_scaffold",
         re.compile(r"\b(?:Source\s+Rules|Included\s+Unit\s+Files|Source\s+Coverage|Source\s+Limits|Course\s+folders\s+listed\s+in\s+this\s+thread|local\s+extracted\s+materials|extracted\s+characters|PDF/page\s+sources|slide\s+sources|legacy\s+PPT\s+strings)\b", re.I),
+    ),
+    (
+        "public_workflow_or_schema_scaffold",
+        re.compile(r"\b(?:Selected\s+Route|Workflow\s+Plan|SourceRoleMap|Source\s+Role\s+Map|NonKnowledgeNoiseFilter|SourceDistillationPass|SourceScaleBudget|Source\s+Scale\s+Budget|Coverage\s+Floor(?:\s+Status)?|KnowledgeSurfaceContract|ExaminableKnowledgeUnit|CourseModule|QA\s+Gate|Generation\s+Process)\b", re.I),
+    ),
+    (
+        "public_workflow_or_schema_scaffold",
+        re.compile(r"\b(?:route\s+selected|selected\s+route|workflow\s+used|generation\s+workflow|internal\s+workflow|coverage\s+floor\s+(?:passes|fails|status)|public\s+surface\s+gate)\b", re.I),
     ),
     (
         "public_source_workflow_scaffold",

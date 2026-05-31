@@ -48,25 +48,6 @@ STYLE_DEFAULTS = {
     "blue_heading_styles_allowed": False,
 }
 
-FORBIDDEN_KEYS = {
-    "source_anchor",
-    "source_anchors_visible",
-    "confidence",
-    "evidence",
-    "evidence_score",
-    "recurrence_count",
-    "examiner_operation",
-    "discriminator_axis",
-    "exam_specificity",
-    "core_exam_claim",
-    "exam_use",
-    "common_error_or_trap",
-    "must_master",
-    "practice_question",
-    "answer_key",
-    "prediction_score",
-}
-
 FORBIDDEN_TEXT = {
     "source anchor",
     "confidence",
@@ -176,18 +157,6 @@ def add_paragraph(doc: Document, text: str, plan: dict[str, Any], kind: str = "b
     return paragraph
 
 
-def walk_values(value: Any) -> list[tuple[str, Any]]:
-    found: list[tuple[str, Any]] = []
-    if isinstance(value, dict):
-        for key, child in value.items():
-            found.append((str(key), child))
-            found.extend(walk_values(child))
-    elif isinstance(value, list):
-        for child in value:
-            found.extend(walk_values(child))
-    return found
-
-
 def get_course_modules(plan: dict[str, Any]) -> list[dict[str, Any]]:
     return [module for module in plan.get("course_modules", []) or [] if isinstance(module, dict)]
 
@@ -261,6 +230,27 @@ def validate_source_scale_budget(plan: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_public_density(plan: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    short_units = []
+    for module in get_course_modules(plan):
+        for unit in module.get("examinable_units", []) or []:
+            if not isinstance(unit, dict):
+                continue
+            explanation = str(unit.get("explanation") or "").strip()
+            if len(explanation.split()) < 35:
+                short_units.append(str(unit.get("title") or "Knowledge unit"))
+    if short_units:
+        errors.append("examinable_units_too_short_for_reference_caliber:" + "; ".join(short_units[:5]))
+    combined = "\n".join(visible_strings(plan))
+    word_count = len([token for token in combined.replace("\n", " ").split(" ") if token.strip()])
+    budget = plan.get("source_scale_budget")
+    target_words_min = budget.get("target_words_min") if isinstance(budget, dict) else None
+    if isinstance(target_words_min, int) and target_words_min > 0 and word_count < target_words_min:
+        errors.append(f"source_scale_budget_visible_words_too_low:{word_count}<{target_words_min}")
+    return errors
+
+
 def validate_plan(plan: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if plan.get("object_type") != "ExamPrepNotesPlan":
@@ -268,6 +258,7 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
     if not get_course_modules(plan):
         errors.append("exam_prep_notes_requires_course_modules")
     errors.extend(validate_source_scale_budget(plan))
+    errors.extend(validate_public_density(plan))
     profile = plan.get("route_docx_style_profile")
     if not isinstance(profile, dict):
         errors.append("exam_prep_notes_requires_route_docx_style_profile")
@@ -276,6 +267,8 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
         errors.append("exam_prep_notes_style_profile_wrong_route")
     if profile.get("body_alignment") != "justified":
         errors.append("exam_prep_notes_style_profile_body_not_justified")
+    if profile.get("title_alignment") != "left":
+        errors.append("exam_prep_notes_style_profile_title_not_left")
     if profile.get("heading_alignment") != "left":
         errors.append("exam_prep_notes_style_profile_heading_not_left")
     if profile.get("image_alignment") != "center":
@@ -289,20 +282,17 @@ def validate_plan(plan: dict[str, Any]) -> list[str]:
     spacing = profile.get("line_spacing")
     if not isinstance(spacing, (int, float)) or not (1.45 <= float(spacing) <= 1.55):
         errors.append("exam_prep_notes_style_profile_line_spacing_not_1_5")
-    for key, value in walk_values(plan):
-        if key in FORBIDDEN_KEYS:
-            errors.append(f"forbidden_key_visible_in_plan:{key}")
-        if isinstance(value, str):
-            lowered = value.lower()
-            for phrase in FORBIDDEN_TEXT:
-                if phrase in lowered:
-                    errors.append(f"forbidden_text_in_plan:{phrase}")
-            for phrase in forbidden_advisory_phrase_hits(value):
-                errors.append(f"forbidden_advisory_phrase_in_plan:{phrase}")
-            for heading in forbidden_advisory_heading_hits(value):
-                errors.append(f"forbidden_advisory_heading_in_plan:{heading}")
-            for category in forbidden_non_knowledge_hits(value):
-                errors.append(f"forbidden_non_knowledge_surface_in_plan:{category}")
+    for value in visible_strings(plan):
+        lowered = value.lower()
+        for phrase in FORBIDDEN_TEXT:
+            if phrase in lowered:
+                errors.append(f"forbidden_text_in_plan:{phrase}")
+        for phrase in forbidden_advisory_phrase_hits(value):
+            errors.append(f"forbidden_advisory_phrase_in_plan:{phrase}")
+        for heading in forbidden_advisory_heading_hits(value):
+            errors.append(f"forbidden_advisory_heading_in_plan:{heading}")
+        for category in forbidden_non_knowledge_hits(value):
+            errors.append(f"forbidden_non_knowledge_surface_in_plan:{category}")
     combined_visible_text = "\n".join(visible_strings(plan))
     for label in repeated_template_label_hits(combined_visible_text):
         errors.append(f"repeated_rigid_template_label:{label}")

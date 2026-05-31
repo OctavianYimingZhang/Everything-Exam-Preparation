@@ -61,6 +61,13 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def resolve_schema_ref(schema: dict[str, Any], node: dict[str, Any]) -> dict[str, Any]:
+    ref = node.get("$ref")
+    if isinstance(ref, str) and ref.startswith("#/$defs/"):
+        return schema.get("$defs", {}).get(ref.rsplit("/", 1)[-1], node)
+    return node
+
+
 def validate(root: Path) -> dict[str, Any]:
     failures: list[dict[str, Any]] = []
     for rel_path in REQUIRED_FILES:
@@ -133,7 +140,7 @@ def validate(root: Path) -> dict[str, Any]:
     walkthrough_schema = load_json(root / "schemas/knowledge_walkthrough_plan.schema.json")
     if "route_docx_style_profile" not in walkthrough_schema.get("required", []):
         failures.append({"type": "knowledge_walkthrough_schema_missing_route_style_profile"})
-    style_profile = walkthrough_schema.get("properties", {}).get("route_docx_style_profile", {})
+    style_profile = resolve_schema_ref(walkthrough_schema, walkthrough_schema.get("properties", {}).get("route_docx_style_profile", {}))
     style_props = style_profile.get("properties", {})
     if style_props.get("route", {}).get("const") != "knowledge_walkthrough_docx":
         failures.append({"type": "knowledge_walkthrough_schema_bad_style_route"})

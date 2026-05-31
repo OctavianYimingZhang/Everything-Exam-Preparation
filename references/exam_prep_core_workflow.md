@@ -59,6 +59,8 @@ The default public notes must not contain:
 
 The walkthrough must be scaled to the source set. A short post-lab or mock exam should not become the size of a whole-course notebook. A whole-course source pack must not be compressed to the size of a short practical unit.
 
+Use any supplied high-quality DOCX only as a calibration exemplar for density, layout and paragraph style. The Experimental Biology exemplar demonstrates the target public surface: topic-specific headings, explanatory paragraphs, calculation detail when needed, 2.0 cm margins, black Arial text, 1.5 spacing, left-aligned headings and justified body text. It must not supply factual claims for another course and must not cap larger outputs.
+
 Before drafting, create an internal budget:
 
 ```yaml
@@ -84,6 +86,7 @@ Budget rules:
 - Do not use Experimental Biology or any short practical unit as a size cap for larger courses.
 - Do not use page count alone. Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, or named experimental evidence.
 - If source material is large but the output is short, record a `coverage_floor_failure` and regenerate from the distillation pass.
+- If the public draft reads like a workflow explanation, file inventory, source-role report, or high-level revision guide rather than a knowledge document, it fails even if the word count is high.
 
 Indicative internal floors, to be adapted by evidence density:
 
@@ -203,6 +206,11 @@ Definition
 Key point
 Evidence used
 Source coverage
+Selected route
+Workflow plan
+Source scale budget
+Coverage floor status
+Generation process
 ```
 
 ## QA Gate

@@ -1,7 +1,111 @@
 {
   "object_type": "ExamPrepNotesPlan",
   "notes_plan_id": "notes_plan_fixture_001",
+  "title": "Generic Mechanism Exam-Ready Knowledge Notes",
   "target_group_key": "generic_current",
+  "source_scale_budget": {
+    "source_units_count": 1,
+    "readable_source_blocks": 1,
+    "source_pages_or_slides_estimate": 6,
+    "source_types": ["official_notes"],
+    "protected_knowledge_units_total": 8,
+    "excluded_non_knowledge_units_total": 0,
+    "target_public_units_min": 8,
+    "target_words_min": 420,
+    "target_words_max": 1400,
+    "compression_mode": "standard",
+    "compression_reason": "Single fixture source with eight protected conceptual units.",
+    "coverage_floor_status": "pass"
+  },
+  "course_knowledge_map": "The fixture course is organised around causal mechanisms: defining the system, identifying input, tracing process, reading output, stating limitations, using examples, avoiding unsupported inference, and connecting the pieces into one examinable explanation.",
+  "course_modules": [
+    {
+      "object_type": "CourseModule",
+      "module_id": "module_001",
+      "module_title": "Source-backed mechanisms connect inputs, processes and outputs",
+      "module_function": "This module turns a generic mechanism source into a reference-caliber explanatory knowledge walkthrough.",
+      "source_lectures": ["fixture_lecture_1"],
+      "core_questions": [
+        "What counts as a mechanism?",
+        "How does input change become output change?",
+        "Which boundary prevents over-interpretation?"
+      ],
+      "examinable_units": [
+        {
+          "object_type": "ExaminableKnowledgeUnit",
+          "unit_id": "unit_001",
+          "title": "A mechanism is a causal explanation from input to output",
+          "priority": "high",
+          "source_support": ["fixture_lecture_1"],
+          "explanation": "A mechanism is more than a named topic because it explains how an input produces an output through an ordered process. The examinable value comes from naming the starting condition, describing the intermediate change, and linking that change to the final readout. A student answer that states only the output is incomplete because it skips the causal bridge that makes the answer testable.",
+          "common_confusion_or_boundary": "Do not replace the mechanism with a label; the label is only useful when the causal sequence is explained."
+        },
+        {
+          "object_type": "ExaminableKnowledgeUnit",
+          "unit_id": "unit_002",
+          "title": "Input conditions define what the mechanism can explain",
+          "priority": "high",
+          "source_support": ["fixture_lecture_1"],
+          "explanation": "The input is the condition, signal, substrate, stimulus or perturbation that starts the explanation. It matters because the same process can have different meanings when the input changes. A source-backed explanation should therefore state the input before interpreting the output, otherwise the student may describe a true process but apply it to the wrong condition.",
+          "common_confusion_or_boundary": "An input is not a decorative context line; it controls the scope of the mechanism."
+        },
+        {
+          "object_type": "ExaminableKnowledgeUnit",
+          "unit_id": "unit_003",
+          "title": "The process step is the part that earns explanatory credit",
+          "priority": "high",
+          "source_support": ["fixture_lecture_1"],
+          "explanation": "The process step links input and output by showing what changes inside the system. In biological, chemical or methodological material this may be an enzyme step, binding event, transport process, signal transduction step, assay operation or calculation conversion. It should be written as connected prose so the reader can follow cause, sequence and consequence rather than memorising disconnected fragments.",
+          "common_confusion_or_boundary": "A list of components is not enough unless it explains how the components change the readout."
+        },
+        {
+          "object_type": "ExaminableKnowledgeUnit",
+          "unit_id": "unit_004",
+          "title": "Outputs need interpretation, not just naming",
+          "priority": "medium",
+          "source_support": ["fixture_lecture_1"],
+          "explanation": "The output is the observed result, measurement, phenotype, graph pattern, band pattern, concentration, rate or decision point that follows from the process. It becomes examinable only when the answer explains what the output means. A measured change should therefore be tied back to the mechanism, because the same output can be misleading if the mechanism, control or limitation is ignored.",
+          "common_confusion_or_boundary": "Treat the output as evidence to interpret, not as the entire answer."
+        },
+        {
+          "object_type": "ExaminableKnowledgeUnit",
+          "unit_id": "unit_005",
+          "title": "Limitations define the boundary of the claim",
+          "priority": "medium",
+          "source_support": ["fixture_lecture_1"],
+          "explanation": "A limitation states where the mechanism stops being a reliable explanation. This may be a missing control, a condition outside the tested range, a measurement that is indirect, or a step that depends on another variable. Including the limitation improves accuracy because it prevents the student from turning a supported mechanism into an over-strong universal claim.",
+          "common_confusion_or_boundary": "A limitation should change interpretation; it should not be a generic caution."
+        },
+        {
+          "object_type": "ExaminableKnowledgeUnit",
+          "unit_id": "unit_006",
+          "title": "Examples should demonstrate the same causal chain",
+          "priority": "medium",
+          "source_support": ["fixture_lecture_1"],
+          "explanation": "A source-backed example is useful when it makes the abstract mechanism concrete. The example should preserve the same input, process, output and limitation structure instead of adding unsupported detail. This keeps the public notes dense because the example deepens the explanation rather than becoming a separate anecdote that distracts from the examinable rule.",
+          "common_confusion_or_boundary": "Do not import facts from an unrelated example unless they are verified in the target source."
+        },
+        {
+          "object_type": "ExaminableKnowledgeUnit",
+          "unit_id": "unit_007",
+          "title": "Priority reflects answer value, not hidden scoring data",
+          "priority": "low",
+          "source_support": ["fixture_lecture_1"],
+          "explanation": "Visible priority is useful only when it helps the student decide what to master first. A high-priority point should be a definition, mechanism, calculation, graph rule, method workflow, named example or decision boundary that can produce marks directly. The reason for the priority should be converted into knowledge content rather than shown as hidden scoring or audit language.",
+          "common_confusion_or_boundary": "Do not expose hidden scoring fields in ordinary notes."
+        },
+        {
+          "object_type": "ExaminableKnowledgeUnit",
+          "unit_id": "unit_008",
+          "title": "A complete answer reconnects the causal chain",
+          "priority": "high",
+          "source_support": ["fixture_lecture_1"],
+          "explanation": "The final synthesis should reconnect input, process, output and limitation in one causal explanation. This is the difference between revision notes that merely list facts and notes that prepare a student to answer a question. When the public unit is written as a coherent paragraph, the reader can see how each detail changes the next step and why the conclusion follows.",
+          "common_confusion_or_boundary": "If the explanation still reads like a checklist, it should be rewritten as connected prose."
+        }
+      ]
+    }
+  ],
   "course_sections": [
     {
       "section_id": "section_001",
@@ -94,13 +198,19 @@
   "route_docx_style_profile": {
     "route": "exam_prep_notes_docx",
     "margin_cm": 2.0,
-    "line_spacing": 1.08,
-    "body_alignment": "left",
+    "line_spacing": 1.5,
+    "body_alignment": "justified",
+    "title_alignment": "left",
+    "heading_alignment": "left",
+    "image_alignment": "center",
     "body_font_pt": 10.5,
+    "title_font_pt": 14.0,
     "heading_font_pt": 12,
-    "lecture_heading_font_pt": 14,
+    "module_heading_font_pt": 14,
     "text_color": "black",
-    "lecture_page_breaks": true
+    "module_page_breaks": false,
+    "theme_colours_allowed": false,
+    "blue_heading_styles_allowed": false
   },
   "render_decisions": [
     {
@@ -197,7 +307,7 @@
       "message": "Every visible card has source support, star priority, exam specificity, protected coverage, and coverage status."
     }
   ],
-  "student_visible_structure": ["Course Knowledge Map", "Lecture", "PublicOutputPoint", "Definitions", "Criteria", "Mechanism", "Example"],
+  "student_visible_structure": ["Course Knowledge Map", "CourseModule", "ExaminableKnowledgeUnit", "PublicOutputPoint", "Definitions", "Criteria", "Mechanism", "Example"],
   "forbidden_student_fields": ["source_anchor", "confidence", "examiner_operation", "exam_specificity", "core_exam_claim", "exam_use", "common_error_or_trap", "must_master"],
   "qa_flags": [],
   "qa_status": "pass"

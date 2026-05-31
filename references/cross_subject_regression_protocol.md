@@ -120,7 +120,7 @@ When an Example Essay DOCX directory is supplied to the regression checker, vali
 - complete essays are present in the requested DOCX output, either inside `Essay_Module_Example_Essays.docx` or as separate `.docx` files when separate files are requested;
 - internal QA artefacts such as `example_essay_manifest.json` and `example_essay_source_audit.json` exist in a separate internal QA directory unless the user explicitly asks for an audit package;
 - no generated Example Essay exists only as a spreadsheet row;
-- DOCX formatting passes the route-specific contract: Example Essay artifacts use Arial, 2.5 cm margins, 1.5 line spacing, justified body, centered title, and left-aligned subtitles/headings; exam-prep notes and compatibility lecture walkthroughs use compact margins, compact line spacing, left-aligned body text, and lecture page breaks;
+- DOCX formatting passes the route-specific contract: Example Essay artifacts use Arial, 2.5 cm margins, 1.5 line spacing, justified body, centered title, and left-aligned subtitles/headings; exam-prep notes and compatibility lecture walkthroughs use Arial, 2.0 cm margins, 1.5 line spacing, justified body text, left-aligned titles/headings, black visible text, and centered images;
 - yellow-highlighted runs map to uploaded Extra Reading Book chapter/section anchors;
 - green-highlighted runs map to read lecture-slide citation originals and include author-year in-text citation;
 - every body paragraph has source anchors;

@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import tempfile
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,9 @@ BLUE_RGB = {"0000FF", "0563C1", "2F5496", "1F4E79", "4472C4", "5B9BD5"}
 FORBIDDEN_TEXT = {"source anchor", "confidence", "evidence score", "recurrence count", "examiner operation", "discriminator axis", "essay plan", "full example essay", "practice question", "answer key", "past paper year", "prediction score", "according to slide", "english explanations extracted", "ppt page", "slide mentions", "slides say", "the final slide", "the first slide", "the next slide", "the second slide", "this slide"}
 OLD_VISIBLE_SCAFFOLD_HEADINGS = {"How To Answer This Exam", "What This Lecture Is About", "What This Module Explains", "Knowledge Walkthrough", "Key Logic", "Knowledge Points", "Must Master", "Lecture Recap"}
 SEMANTIC_HEADINGS = {"Knowledge map", "Key distinctions", "Core knowledge points", "Synthesis", "Course Knowledge Map"}
+COLOUR_RE = re.compile(rb"<w:color\b[^>]*/?>")
+VAL_RE = re.compile(rb'w:val="([^"]+)"')
+THEME_RE = re.compile(rb'w:themeColor="([^"]+)"')
 
 
 def collect_docx(path: Path) -> list[Path]:
@@ -148,6 +152,22 @@ def lint_docx(path: Path) -> dict[str, Any]:
                 failures.append({"type": "run_font_colour_not_black", "paragraph": visible_index, "run": run_idx, "colour": colour})
             if colour in BLUE_RGB or (colour or "").startswith("theme:"):
                 failures.append({"type": "blue_or_theme_text_detected", "paragraph": visible_index, "run": run_idx, "colour": colour})
+
+    try:
+        with zipfile.ZipFile(path) as archive:
+            name = "word/document.xml"
+            if name in archive.namelist():
+                xml = archive.read(name)
+                for match in COLOUR_RE.finditer(xml):
+                    tag = match.group(0)
+                    value_match = VAL_RE.search(tag)
+                    theme_match = THEME_RE.search(tag)
+                    value = (value_match.group(1) if value_match else b"").decode("ascii", errors="ignore").upper()
+                    theme = (theme_match.group(1) if theme_match else b"").decode("ascii", errors="ignore")
+                    if theme or (value and value not in {"000000", "AUTO"}):
+                        failures.append({"type": "ooxml_non_black_or_theme_colour", "part": name, "value": value, "theme": theme})
+    except Exception as exc:
+        failures.append({"type": "ooxml_colour_scan_error", "error": str(exc)})
 
     return {"docx": str(path), "status": "pass" if not failures else "fail", "failures": failures, "paragraph_count": len([p for p in doc.paragraphs if p.text.strip() or paragraph_has_image(p)])}
 

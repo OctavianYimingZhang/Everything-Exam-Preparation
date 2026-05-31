@@ -141,8 +141,8 @@
       "required_properties": ["profile_id", "requested_language", "source_languages", "output_language_policy", "public_label_policy", "explicit_language_request"]
     },
     "RouteDocxStyleProfile": {
-      "description": "Route-specific DOCX style contract so ordinary notes and lecture walkthroughs use compact revision-note formatting while essay outputs keep essay-submission formatting.",
-      "required_properties": ["style_profile_id", "route", "margin_cm", "line_spacing", "body_alignment", "body_font_pt", "heading_font_pt", "lecture_heading_font_pt", "lecture_page_breaks"]
+      "description": "Route-specific DOCX style contract so ordinary notes and lecture walkthroughs use the black Arial, 2.0 cm, 1.5-spacing, justified-body reference surface while essay outputs keep essay-submission formatting.",
+      "required_properties": ["style_profile_id", "route", "margin_cm", "line_spacing", "body_alignment", "title_alignment", "heading_alignment", "image_alignment", "body_font_pt", "heading_font_pt", "text_color", "theme_colours_allowed", "blue_heading_styles_allowed"]
     },
     "RenderDecision": {
       "description": "Internal decision that hides a planning field, suppresses a public label, or rewrites a planning field as a public knowledge block.",

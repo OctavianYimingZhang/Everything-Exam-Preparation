@@ -85,11 +85,36 @@ def floor_for_source_units(source_units: int) -> tuple[int, int]:
     return (70, 8000)
 
 
+def declared_budget_floor(plan: dict[str, Any]) -> tuple[int | None, int | None, str | None]:
+    budget = plan.get("source_scale_budget") or plan.get("SourceScaleBudget")
+    if not isinstance(budget, dict):
+        return None, None, "missing_source_scale_budget"
+    min_units, min_words = floor_for_source_units(infer_source_units(plan))
+    target_units = budget.get("target_public_units_min")
+    target_words = budget.get("target_words_min")
+    if isinstance(target_units, int):
+        min_units = max(min_units, target_units)
+    if isinstance(target_words, int):
+        min_words = max(min_words, target_words)
+    protected_total = budget.get("protected_knowledge_units_total")
+    if isinstance(protected_total, int) and protected_total > 0:
+        min_units = max(min_units, min(70, max(8, protected_total // 2)))
+    return min_units, min_words, None
+
+
 def lint_plan(plan: dict[str, Any], *, docx_path: Path | None = None) -> dict[str, Any]:
     source_units = infer_source_units(plan)
     public_units = count_public_units(plan)
-    min_units, min_words = floor_for_source_units(source_units)
+    declared_units, declared_words, budget_failure = declared_budget_floor(plan)
+    fallback_units, fallback_words = floor_for_source_units(source_units)
+    min_units = declared_units if declared_units is not None else fallback_units
+    min_words = declared_words if declared_words is not None else fallback_words
     failures: list[dict[str, Any]] = []
+    if budget_failure:
+        failures.append({"type": budget_failure})
+    budget = plan.get("source_scale_budget") or plan.get("SourceScaleBudget")
+    if isinstance(budget, dict) and budget.get("coverage_floor_status") == "block":
+        failures.append({"type": "coverage_floor_status_blocks_release"})
     if source_units and public_units < min_units:
         failures.append(
             {
