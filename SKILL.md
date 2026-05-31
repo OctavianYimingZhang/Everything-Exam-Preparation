@@ -65,13 +65,13 @@ A `Course Knowledge Map` must be conceptual. It should organise the course into 
 
 | User request | Route | Public output |
 | --- | --- | --- |
-| revise / make notes / go through lectures / general preparation | `exam_prep_notes_docx` | `Lecture_Knowledge_Walkthrough.docx` |
+| revise / make notes / go through lectures / general preparation / analyse this course | `exam_prep_notes_docx` | `Lecture_Knowledge_Walkthrough.docx` |
 | explicitly source-order walkthrough | `knowledge_walkthrough_docx` | `Lecture_Knowledge_Walkthrough.docx` |
 | MCQ / single-best-answer | `mcq_exam_prep` | core walkthrough plus MCQ add-on |
 | short answer | `short_answer_exam_prep` | core walkthrough plus short-answer add-on |
 | long answer / project / scenario / practical / data / calculation | `long_answer_project_scenario_prep` | core walkthrough plus long-answer/data add-on |
 | essay preparation / full essay-style answers | `essay_exam_prep` | core walkthrough plus essay add-on |
-| source inventory / lint / release check | `audit_lint_only` or `github_ready_qa` | QA result only |
+| source inventory / lint / release check / information profile only | `audit_lint_only` or `github_ready_qa` | QA result only |
 | past-paper pattern or exam format only | `exam_analysis_brief` | chat-only brief unless a report is requested |
 
 Essay and problem-essay prediction uses the label `Predicted essay theme` for a source-qualified theme, scope and practice angle. It must not present a predicted theme as official future question wording.
@@ -96,6 +96,8 @@ Preserve source order when it explains prerequisites. Do not produce one public 
 Never use the same small output size for every course. The amount of public knowledge must scale with the amount of examinable source material.
 
 The reference-quality target is the supplied Experimental Biology style of output: topic-specific headings, dense connected explanations, formulas or worked examples when useful, black Arial text, 2.0 cm margins, 1.5 spacing, left-aligned headings and justified body prose. Use that file only as a style, density and layout exemplar; it is not factual evidence and it is not a length cap.
+
+When the user says `analyse this course`, `分析这门课`, or asks for course-level prep analysis without explicitly requesting an audit-only file, produce the core knowledge walkthrough. Do not satisfy that request with a short metrics report, source profile summary, or sample-only file. If an audit/profile file is also useful, it is an add-on and must not replace the knowledge document.
 
 Before drafting, create:
 
@@ -141,6 +143,7 @@ Rules:
   - 501-800 pages/slides: at least 150 public units and about 20k visible words.
   - 801+ pages/slides: at least 180 public units and about 25k visible words, or split into multiple deliverable volumes.
 - `information_mass_units` can raise the floor above the coarse page bands when many pages are dense. Use `scripts/source_information_profiler.py` and `scripts/source_scale_budget_linter.py` as the local reference implementation.
+- If a reference-quality DOCX such as Experimental Biology is supplied, run reference-density calibration. A course-analysis or walkthrough DOCX for a larger source pack must exceed the reference in visible knowledge prose unless the information profile proves the source pack is smaller or sparse. A 500-1000 word course-analysis file for a broad source pack is a failure even if it contains correct metrics.
 - If `target_public_units_min` or `target_words_min` is below the derived source-scale floor, the budget is invalid even if the draft is polished.
 - If the first draft feels like a route summary, file inventory, checklist, or brief overview, it is not acceptable. Regenerate from the source-distillation pass until the public document teaches the examinable mechanisms, calculations, methods, examples, boundaries and interpretations in connected prose.
 - If the public output falls below the source-scale floor, block the run and regenerate from source distillation instead of releasing a short file.
@@ -246,6 +249,7 @@ python3 scripts/validate_interaction_contract.py
 python3 scripts/validate_student_output_contract.py
 python3 scripts/source_information_profiler.py --self-test
 python3 scripts/source_scale_budget_linter.py --self-test
+python3 scripts/reference_density_linter.py --self-test
 python3 scripts/skill_architecture_linter.py --self-test
 python3 scripts/zero_mention_lint.py --self-test
 python3 scripts/knowledge_surface_linter.py --self-test

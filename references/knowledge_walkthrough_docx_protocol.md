@@ -36,6 +36,8 @@ SourceRoleMap
 
 The important change is that `SourceScaleBudget` comes before drafting. A large lecture pack must not be collapsed into a short practical-style summary. A small practical pack can be concise, but a full-course pack needs enough modules and examinable units to cover the source scale.
 
+If the user asks for course analysis or course preparation analysis, this route still produces the knowledge walkthrough. A short profile table plus sample-unit report is an audit artifact, not the public preparation document.
+
 ## Source Scale Budget
 
 Before writing, estimate:
@@ -65,6 +67,7 @@ Rules:
 - Profile every slide/page before applying the floor. Exclude covers, title-only pages, lecture plans, video placeholders, admin/logistics and blank pages from the informative count; score real information-bearing pages by text, speaker notes, diagrams, tables, equations, calculations, methods, graph logic, examples and mechanism density.
 - When an information profile exists, use `informative_page_count` and `information_mass_units` to decide how much to write. Raw page count remains visible to internal QA but does not by itself inflate a mostly non-informative deck.
 - If no reliable information profile exists, `source_pages_or_slides_estimate` drives the minimum size when it is larger than the lecture count. Large course decks should not be allowed to declare a small `target_words_min`: 201-500 slides/pages usually needs at least 105 public units and about 14k visible words; 501-800 needs at least 150 public units and about 20k visible words; 801+ needs at least 180 public units and about 25k visible words or multiple volumes.
+- When a high-quality reference DOCX is supplied, check the final walkthrough against it. If the target source pack is larger or denser than the reference, the target walkthrough must contain more visible knowledge prose than the reference unless the information profile proves the target is sparse.
 - If the output is much shorter than the source scale budget, regenerate from source distillation.
 
 ## Student-Facing Structure

@@ -6,6 +6,8 @@
 Lecture_Knowledge_Walkthrough.docx
 ```
 
+It is also the default route when the user asks to analyse a course for preparation. A short `Course_Exam_Prep_Analysis.docx` containing only metrics, source-scale budget and a few examples is not a valid replacement for the walkthrough unless the user explicitly requested audit-only output.
+
 The route is a synthesis route, not an extraction route. Its job is to turn source material into clear examinable knowledge. It must not preserve every slide heading, file title, raw bullet, administrative line, or OCR fragment.
 
 ## Route Purpose
@@ -181,6 +183,7 @@ The route should be selective. The goal is high-information explanation, not max
 - A broad course pack must meet the source-scale floor before release. If there are many lectures, figures, calculations, practicals, pathways, named examples or methods, expand the number of public units instead of compressing them into a short overview.
 - Calibrate public density against high-quality exemplars such as the supplied Experimental Biology DOCX: concept-specific headings, no workflow narration, and paragraphs that teach the mechanism, calculation, readout or boundary directly.
 - Treat the Experimental Biology exemplar as a density floor for similar-sized source packs, not as a length cap. If a target course has hundreds more slides/pages than that exemplar, the walkthrough must expand proportionally enough to teach the additional source-backed mechanisms, methods, examples, data rules and boundaries.
+- Compare any generated course-analysis or walkthrough DOCX against the supplied Experimental Biology exemplar when available. If the target source pack is larger or denser, the target file must not have fewer visible words, fewer body paragraphs, or only a handful of sample units. Metrics tables and CSV profiles do not count as knowledge prose.
 - Large slide decks require visible source-scale floors before release: 201-500 slides/pages usually means at least 105 public units and about 14k visible words; 501-800 means at least 150 public units and about 20k visible words; 801+ means at least 180 public units and about 25k visible words or a multi-volume split.
 - A plan whose declared `target_words_min` or `target_public_units_min` is lower than the derived source-scale floor is invalid. Regenerate the budget before drafting instead of releasing a short, polished DOCX.
 

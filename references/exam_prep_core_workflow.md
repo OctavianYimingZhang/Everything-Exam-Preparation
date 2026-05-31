@@ -14,6 +14,8 @@ Lecture_Knowledge_Walkthrough.docx
 
 Question-type reports are add-ons. They are never allowed to replace the knowledge walkthrough.
 
+Course-level analysis requests are knowledge requests unless the user explicitly says audit only, profile only, or QA only. A file containing only source metrics, information-profile totals and a few sample units is an audit artifact, not a valid exam-prep analysis for a broad course.
+
 ## First-Principles Workflow
 
 ```text
@@ -102,6 +104,7 @@ Budget rules:
 - Do not use page count alone. Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, or named experimental evidence.
 - Do use `source_pages_or_slides_estimate` as a hard lower-bound input. For 501-800 slides/pages, the public notes normally need at least 150 public knowledge units and roughly 20k visible words. For 801+ slides/pages, they normally need at least 180 public knowledge units and roughly 25k visible words, or a deliberate multi-volume split.
 - Let `information_mass_units` raise the floor above the coarse page bands when many informative pages are dense. Use the source information profiler and budget linter as the local implementation of this rule.
+- Use reference-density calibration when the user supplies a high-quality DOCX such as Experimental Biology. For any source pack that is larger or denser than the reference, the released public DOCX must contain at least reference-scale visible knowledge prose and normally substantially more. A broad-course analysis under roughly the reference's visible-word and body-paragraph count fails even if the source metrics are correct.
 - If a broad course has several times the source scale of the Experimental Biology exemplar, the final public output must also be materially larger unless the exclusion ledger proves that most pages/slides are duplicates, administrative content, unreadable material, or non-knowledge.
 - `target_public_units_min` and `target_words_min` must be greater than or equal to the derived source-scale floor. Low declared targets do not override source scale.
 - If source material is large but the output is short, record a `coverage_floor_failure` and regenerate from the distillation pass.
@@ -238,6 +241,8 @@ Generation process
 Fail and rewrite if any of these are true:
 
 - the output is much shorter than the source scale budget without a defensible compression reason;
+- a course-analysis file is only a metrics/profile report or sample excerpt instead of the core knowledge walkthrough;
+- a larger source pack produces less visible knowledge prose than a supplied reference-quality DOCX without a source-scale justification;
 - more than a small minority of visible lines are copied slide bullets;
 - the output contains course admin or staff/contact/logistics text;
 - the course map is mostly a list of file titles;

@@ -413,8 +413,9 @@ Before publishing any public DOCX, run this sequence:
 3. Explanatory-form scan: reject colon-slot fragmentation and shorthand arrow chains when they replace explanation.
 4. Label-decision scan: delete or merge rigid template labels unless the label is semantically necessary.
 5. Source-scale scan: reject ordinary notes/walkthroughs that fall below the derived unit or visible-word floor from informative pages, information mass, source units, raw pages/slides when no profile exists, or protected knowledge count.
-6. Route-style scan: notes use black Arial, left-aligned headings, justified body text, centered images, 1.5 spacing, and readability-preserving image fit.
-7. Essay-specific scan: adaptive budget, conclusion, source-class highlights, citation colour, and word-count efficiency.
+6. Reference-density scan: when a reference-quality DOCX is supplied, reject broad-course analysis/walkthrough files whose visible knowledge prose is below the reference without a defensible source-scale reason.
+7. Route-style scan: notes use black Arial, left-aligned headings, justified body text, centered images, 1.5 spacing, and readability-preserving image fit.
+8. Essay-specific scan: adaptive budget, conclusion, source-class highlights, citation colour, and word-count efficiency.
 ```
 
 If any scan fails, rewrite the public surface rather than adding a disclaimer.
