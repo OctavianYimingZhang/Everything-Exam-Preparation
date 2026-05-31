@@ -103,6 +103,18 @@ Before drafting, create:
 SourceScaleBudget:
   source_units_count:
   source_pages_or_slides_estimate:
+  source_information_profile_status: measured | estimated | missing | not_applicable
+  informative_page_count:
+  non_informative_page_count:
+  information_mass_units:
+  average_information_score:
+  page_information_profile:
+    - source_id:
+      page_index:
+      category: knowledge_dense | knowledge_standard | light_context | cover | lecture_plan_or_admin | video_or_media_placeholder | blank
+      informative: true | false
+      information_score:
+      exclusion_reason:
   source_types:
   conceptual_module_target_range:
   examinable_unit_target_range:
@@ -114,6 +126,9 @@ SourceScaleBudget:
 Rules:
 
 - A broad course pack must not be compressed to the size of a short practical or mock paper.
+- Before budgeting, inspect every slide/page for information. Exclude covers, title-only pages, lecture plans, reading/admin pages, pure video/media placeholders and blank pages from `informative_page_count`, but record them in `page_information_profile` with an exclusion reason.
+- Quantify each informative slide/page. Use higher scores for dense mechanism text, definitions, equations, diagrams, tables, graph logic, calculations, method workflows, named examples, speaker-note detail and source-backed explanations. Use low scores for light context.
+- When `source_information_profile_status` is `measured` or `estimated`, derive the public size from `informative_page_count` and `information_mass_units`. Raw slide/page count is then audit context, not the main length driver.
 - Keep a small number of conceptual modules when useful, but include enough examinable units inside each module to cover the source scale.
 - A pack with many lectures, figures, practicals, calculations or mechanisms requires expanded coverage.
 - Do not use Experimental Biology or any other short unit as a size cap for larger courses.
@@ -125,6 +140,7 @@ Rules:
   - 201-500 pages/slides: at least 105 public units and about 14k visible words.
   - 501-800 pages/slides: at least 150 public units and about 20k visible words.
   - 801+ pages/slides: at least 180 public units and about 25k visible words, or split into multiple deliverable volumes.
+- `information_mass_units` can raise the floor above the coarse page bands when many pages are dense. Use `scripts/source_information_profiler.py` and `scripts/source_scale_budget_linter.py` as the local reference implementation.
 - If `target_public_units_min` or `target_words_min` is below the derived source-scale floor, the budget is invalid even if the draft is polished.
 - If the first draft feels like a route summary, file inventory, checklist, or brief overview, it is not acceptable. Regenerate from the source-distillation pass until the public document teaches the examinable mechanisms, calculations, methods, examples, boundaries and interpretations in connected prose.
 - If the public output falls below the source-scale floor, block the run and regenerate from source distillation instead of releasing a short file.
@@ -228,6 +244,8 @@ python3 scripts/no_identity_trigger_linter.py --forbid-legacy-label
 python3 scripts/validate_workflow_planning_contract.py
 python3 scripts/validate_interaction_contract.py
 python3 scripts/validate_student_output_contract.py
+python3 scripts/source_information_profiler.py --self-test
+python3 scripts/source_scale_budget_linter.py --self-test
 python3 scripts/skill_architecture_linter.py --self-test
 python3 scripts/zero_mention_lint.py --self-test
 python3 scripts/knowledge_surface_linter.py --self-test

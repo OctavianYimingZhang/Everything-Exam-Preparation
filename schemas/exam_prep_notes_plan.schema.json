@@ -58,6 +58,27 @@
         "source_units_count": { "type": "integer", "minimum": 0 },
         "readable_source_blocks": { "type": "integer", "minimum": 0 },
         "source_pages_or_slides_estimate": { "type": "integer", "minimum": 0 },
+        "source_information_profile_status": { "enum": ["measured", "estimated", "missing", "not_applicable"] },
+        "informative_page_count": { "type": "integer", "minimum": 0 },
+        "non_informative_page_count": { "type": "integer", "minimum": 0 },
+        "information_mass_units": { "type": "number", "minimum": 0 },
+        "average_information_score": { "type": "number", "minimum": 0 },
+        "page_information_profile": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source_id", "page_index", "category", "informative", "information_score"],
+            "properties": {
+              "source_id": { "type": "string" },
+              "page_index": { "type": "integer", "minimum": 1 },
+              "category": { "type": "string" },
+              "informative": { "type": "boolean" },
+              "information_score": { "type": "number", "minimum": 0 },
+              "exclusion_reason": { "type": ["string", "null"] }
+            },
+            "additionalProperties": true
+          }
+        },
         "source_types": { "type": "array", "items": { "type": "string" } },
         "protected_knowledge_units_total": { "type": "integer", "minimum": 0 },
         "excluded_non_knowledge_units_total": { "type": "integer", "minimum": 0 },

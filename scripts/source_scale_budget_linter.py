@@ -3,7 +3,9 @@
 
 The check is deliberately conservative. It does not reward padding. It only blocks
 obvious failures where a broad source pack is collapsed into a small practical-style
-summary without enough examinable knowledge units or visible words.
+summary without enough examinable knowledge units or visible words. When page
+information profiling is available, the floor follows informative pages and
+information mass rather than raw slide count.
 """
 
 from __future__ import annotations
@@ -96,7 +98,13 @@ def lint_plan(plan: dict[str, Any], *, docx_path: Path | None = None) -> dict[st
         failures.append({"type": "coverage_floor_status_blocks_release"})
     has_source_scale = any(
         int(scale_floor[key]) > 0
-        for key in ["source_units", "source_pages_or_slides_estimate", "protected_knowledge_units_total"]
+        for key in [
+            "source_units",
+            "source_pages_or_slides_estimate",
+            "informative_page_count",
+            "information_mass_units",
+            "protected_knowledge_units_total",
+        ]
     )
     if has_source_scale and public_units < min_units:
         failures.append(
@@ -123,6 +131,9 @@ def lint_plan(plan: dict[str, Any], *, docx_path: Path | None = None) -> dict[st
         "pass": not failures,
         "source_units": source_units,
         "source_pages_or_slides_estimate": scale_floor["source_pages_or_slides_estimate"],
+        "informative_page_count": scale_floor["informative_page_count"],
+        "non_informative_page_count": scale_floor["non_informative_page_count"],
+        "information_mass_units": scale_floor["information_mass_units"],
         "protected_knowledge_units_total": scale_floor["protected_knowledge_units_total"],
         "scale_band": scale_floor["scale_band"],
         "public_units": public_units,
@@ -138,6 +149,9 @@ def self_test() -> dict[str, Any]:
         "source_scale_budget": {
             "source_units_count": 22,
             "source_pages_or_slides_estimate": 867,
+            "informative_page_count": 760,
+            "non_informative_page_count": 107,
+            "information_mass_units": 930,
             "target_public_units_min": 70,
             "target_words_min": 8000,
         },
@@ -166,14 +180,39 @@ def self_test() -> dict[str, Any]:
             }
         ],
     }
+    sparse_profile_plan = {
+        "source_scale_budget": {
+            "source_units_count": 4,
+            "source_pages_or_slides_estimate": 100,
+            "informative_page_count": 6,
+            "non_informative_page_count": 94,
+            "information_mass_units": 6.5,
+            "target_public_units_min": 8,
+            "target_words_min": 420,
+        },
+        "course_modules": [
+            {
+                "module_title": "Sparse deck after information profiling",
+                "module_function": "Most pages are covers, plans, video placeholders or admin.",
+                "source_lectures": ["Lecture 1", "Lecture 2", "Lecture 3", "Lecture 4"],
+                "examinable_units": [
+                    {"title": f"Unit {idx}", "explanation": "A connected explanation of one real information-bearing page."}
+                    for idx in range(1, 9)
+                ],
+            }
+        ],
+    }
     bad = lint_plan(bad_plan)
     good = lint_plan(good_plan)
+    sparse = lint_plan(sparse_profile_plan)
     failures: list[dict[str, Any]] = []
     if bad["pass"]:
         failures.append({"type": "bad_plan_not_rejected", "result": bad})
     if not good["pass"]:
         failures.append({"type": "good_plan_rejected", "result": good})
-    return {"pass": not failures, "bad_result": bad, "good_result": good, "failures": failures}
+    if not sparse["pass"]:
+        failures.append({"type": "sparse_profile_plan_rejected", "result": sparse})
+    return {"pass": not failures, "bad_result": bad, "good_result": good, "sparse_profile_result": sparse, "failures": failures}
 
 
 def main() -> int:

@@ -328,6 +328,7 @@ def main() -> int:
                     ],
                     expect_failure=True,
                 ),
+                run_command("source_information_profiler_self_test", [py, "scripts/source_information_profiler.py", "--self-test"]),
                 run_command("source_scale_budget_linter_self_test", [py, "scripts/source_scale_budget_linter.py", "--self-test"]),
                 run_command(
                     "exam_prep_notes_linter_generic_protected_item_fixture",

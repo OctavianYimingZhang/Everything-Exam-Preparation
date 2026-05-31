@@ -170,6 +170,9 @@ Use bullets only when the items are naturally parallel, such as formula variable
 
 The route should be selective. The goal is high-information explanation, not maximum line count.
 
+- Run a page-information pass before deciding length. For each slide/page, classify it as `informative` or excluded. Exclude only content-free pages: covers, title-only separators, pure video placeholders, lecture plans, reading/admin pages, repeated logistics and blank pages.
+- For every informative slide/page, estimate information score from visible text, speaker notes, definitions, mechanisms, equations, calculations, diagrams, tables, graphs, experimental methods, workflows, named examples and dense lists. Use this score to compute `information_mass_units`.
+- Decide length from `informative_page_count` and `information_mass_units`. A raw slide count with many content-free pages should not inflate output; a smaller set of very dense mechanism/data pages should still produce expanded notes.
 - A broad first-year course should not create hundreds of tiny visible points.
 - A short practical unit may need fewer but deeper units.
 - A method/calculation unit should keep formula, units and worked example together.

@@ -67,6 +67,18 @@ Before drafting, create an internal budget:
 SourceScaleBudget:
   source_units_count:
   source_pages_or_slides_estimate:
+  source_information_profile_status: measured | estimated | missing | not_applicable
+  informative_page_count:
+  non_informative_page_count:
+  information_mass_units:
+  average_information_score:
+  page_information_profile:
+    - source_id:
+      page_index:
+      category:
+      informative:
+      information_score:
+      exclusion_reason:
   source_types:
   conceptual_module_target_range:
   examinable_unit_target_range:
@@ -81,11 +93,15 @@ SourceScaleBudget:
 Budget rules:
 
 - Small practical/mock/post-lab packs can be concise when the examinable domain is narrow.
+- First classify every slide/page as information-bearing or non-information-bearing. Covers, title pages, pure video pages, lecture-plan pages, reading/admin logistics, duplicated separators and blank pages are excluded from the informative count, but the internal profile must record the exclusion reason.
+- Score each information-bearing slide/page before drafting. Increase `information_mass_units` for definitions, mechanisms, equations, calculations, labelled figures, graph/data interpretation, methods, workflows, named examples, speaker-note explanations and dense lists. Give only light weight to context, transition and orientation pages.
+- When a measured or estimated `page_information_profile` exists, derive the length floor from `informative_page_count` and `information_mass_units`, not raw slide count alone. Raw slide/page count remains a warning signal and audit field.
 - Medium lecture packs need enough modules to cover all conceptual areas, not only the first few lectures.
 - Broad course packs need expanded coverage. A 10-20 lecture source pack normally requires many more examinable units than a short practical pack, even after compression.
 - Do not use Experimental Biology or any short practical unit as a size cap for larger courses.
 - Do not use page count alone. Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, or named experimental evidence.
 - Do use `source_pages_or_slides_estimate` as a hard lower-bound input. For 501-800 slides/pages, the public notes normally need at least 150 public knowledge units and roughly 20k visible words. For 801+ slides/pages, they normally need at least 180 public knowledge units and roughly 25k visible words, or a deliberate multi-volume split.
+- Let `information_mass_units` raise the floor above the coarse page bands when many informative pages are dense. Use the source information profiler and budget linter as the local implementation of this rule.
 - If a broad course has several times the source scale of the Experimental Biology exemplar, the final public output must also be materially larger unless the exclusion ledger proves that most pages/slides are duplicates, administrative content, unreadable material, or non-knowledge.
 - `target_public_units_min` and `target_words_min` must be greater than or equal to the derived source-scale floor. Low declared targets do not override source scale.
 - If source material is large but the output is short, record a `coverage_floor_failure` and regenerate from the distillation pass.

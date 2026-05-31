@@ -241,6 +241,35 @@ Protected atomic units include:
 
 Administrative units, exam timing, mark splits, reading-list logistics, course-admin pages, and repeated duplicates may be excluded from the student view, but the ledger must record the exclusion reason. Knowledge units must be bound to final modules or named submodules before public generation.
 
+Before building the atomic ledger, create an internal `PageInformationProfile` for slide/page-based sources:
+
+```yaml
+PageInformationProfile:
+  source_id:
+  page_index:
+  page_kind: slide | pdf_page | notes_page
+  category: knowledge_dense | knowledge_standard | light_context | cover | lecture_plan_or_admin | video_or_media_placeholder | blank
+  informative: true | false
+  information_score:
+  evidence_features:
+    text_words:
+    speaker_note_words:
+    diagrams:
+    tables:
+    equations:
+    calculations:
+    method_workflows:
+    named_examples:
+  exclusion_reason:
+```
+
+Classification rules:
+
+- Mark covers, title-only separators, pure video/media placeholders, lecture plans, reading/admin logistics, repeated housekeeping and blank pages as non-informative.
+- Mark a page informative when it contains a definition, mechanism, method, equation, calculation, graph/data rule, labelled diagram/table, named example, experimental evidence, speaker-note explanation or source-backed list.
+- Use low scores for light orientation/context pages; standard scores for ordinary teachable pages; high scores for dense mechanism, data, method or calculation pages.
+- Use the sum of page scores as `information_mass_units`; use informative page count and information mass to set the public-output floor before drafting.
+
 ### Extra Reading Book Extraction
 
 For Extra Reading Books:
