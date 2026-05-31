@@ -8,19 +8,28 @@ from typing import Any
 
 FORBIDDEN_ADVISORY_PHRASES = [
     "a strong answer should",
+    "all unit sections are separated",
     "answer logic",
     "exam strategy",
     "generic exam advice",
     "how to answer",
     "how to use this document",
+    "included unit files",
     "integrated practical reasoning",
     "integrated reasoning",
+    "lecture/practical facts come from",
+    "local course folders listed in this thread",
     "not driven by question type",
     "not reliable by question type",
+    "past papers are used only",
+    "prior compiled preview material",
     "question-type dependent",
     "recommended approach",
     "recommended output route",
     "source coverage",
+    "source limits",
+    "source rules",
+    "this pack uses only",
     "the notes are organised",
     "this document is organised",
     "use this module",
@@ -31,10 +40,14 @@ FORBIDDEN_ADVISORY_HEADINGS = [
     "Exam Strategy",
     "How To Answer This Exam",
     "How To Use This Document",
+    "Included Unit Files",
     "Integrated Practical Reasoning",
     "Integrated Reasoning",
     "Must Master",
     "Recommended Approach",
+    "Source Coverage",
+    "Source Limits",
+    "Source Rules",
     "What This Lecture Is About",
     "What This Module Explains",
 ]
@@ -51,6 +64,14 @@ FORBIDDEN_NON_KNOWLEDGE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "source_route_narration",
         re.compile(r"\b(?:slide|slides|ppt|page)\s+(?:shows|say|says|mention|mentions|illustrate|illustrates)\b", re.I),
+    ),
+    (
+        "public_source_workflow_scaffold",
+        re.compile(r"\b(?:Source\s+Rules|Included\s+Unit\s+Files|Source\s+Coverage|Source\s+Limits|Course\s+folders\s+listed\s+in\s+this\s+thread|local\s+extracted\s+materials|extracted\s+characters|PDF/page\s+sources|slide\s+sources|legacy\s+PPT\s+strings)\b", re.I),
+    ),
+    (
+        "public_source_workflow_scaffold",
+        re.compile(r"\b(?:All\s+Unit\s+sections\s+are\s+separated|lecture/practical\s+facts\s+come\s+from|prior\s+compiled\s+preview\s+material\s+was\s+excluded|Past\s+papers\s+(?:are|were)\s+used\s+only)\b", re.I),
     ),
     (
         "ai_process_or_provenance",
@@ -101,6 +122,7 @@ FRAGMENT_SLOT_LABELS = [
     "Caveat",
     "Components",
     "Concept",
+    "Core knowledge spans",
     "Design",
     "Direction",
     "Elution mechanism",
@@ -109,11 +131,13 @@ FRAGMENT_SLOT_LABELS = [
     "Failure mode",
     "Formula",
     "Forward primer",
+    "High-Yield Knowledge",
     "Identity",
     "Key detail",
     "Key point",
     "Logic",
     "Mechanism",
+    "Practice Operations",
     "Protein charge",
     "Purpose",
     "Readout",
@@ -142,6 +166,7 @@ COLON_LABEL_RE = re.compile(r"(?im)^\s*(?:[-•*]\s*)?([A-Z][A-Za-z0-9 /+().-]{1
 ARROW_CHAIN_RE = re.compile(r"(?m)^.{0,220}(?:->|→).{0,220}(?:->|→).*$")
 RAW_BULLET_RE = re.compile(r"^\s*(?:[-•*]||◦|▪|▫)\s+")
 FILE_EXTENSION_RE = re.compile(r"\b(?:pptx?|pdf|docx?|pptm)\b", re.I)
+UNIT_CODE_RE = re.compile(r"\b(?:BIOL|CHEM)\d{5}\b", re.I)
 
 
 def normalized_text(value: Any) -> str:
@@ -174,11 +199,15 @@ def forbidden_non_knowledge_hits(text: str) -> list[str]:
             hits.append(name)
 
     lines = _visible_lines(text)
-    first_block = "\n".join(lines[:80])
-    if "Core knowledge spans" in first_block and (first_block.count(";") >= 6 or len(FILE_EXTENSION_RE.findall(first_block)) >= 3):
+    first_block = "\n".join(lines[:100])
+    if "Core knowledge spans" in first_block and (first_block.count(";") >= 3 or len(FILE_EXTENSION_RE.findall(first_block)) >= 2):
         hits.append("course_map_file_title_dump")
-    if "Course Knowledge Map" in first_block and len([line for line in lines[:60] if re.search(r"\b(?:Lecture|Module|slides?|handout|presentation|ppt)\b", line, re.I)]) >= 12:
+    if "Course Knowledge Map" in first_block and len([line for line in lines[:80] if re.search(r"\b(?:Lecture|Module|slides?|handout|presentation|ppt|source|Unit\s+Files)\b", line, re.I)]) >= 8:
         hits.append("course_map_file_title_dump")
+    if "Included Unit Files" in first_block and len(UNIT_CODE_RE.findall(first_block)) >= 2:
+        hits.append("multi_unit_inventory_in_public_output")
+    if len(UNIT_CODE_RE.findall(first_block)) >= 8 and re.search(r"(?im)^\s*[-•*]\s*(?:BIOL|CHEM)\d{5}\b", first_block):
+        hits.append("multi_unit_inventory_in_public_output")
 
     return sorted(set(hits))
 
@@ -224,7 +253,6 @@ def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
     if len(bullet_lines) >= 18 and len(bullet_lines) / visible_line_count >= 0.35:
         hits.append("raw_slide_bullet_dump")
 
-    # Catch outputs that keep many OCR fragments as one- or two-word lines.
     short_fragment_lines = [line for line in lines if len(line.split()) <= 3 and not line.endswith(('.', ':', ';'))]
     if len(short_fragment_lines) >= 25 and len(short_fragment_lines) / visible_line_count >= 0.25:
         hits.append("ocr_fragment_dump")
