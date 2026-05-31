@@ -72,6 +72,14 @@ FORBIDDEN_NON_KNOWLEDGE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
         "evidence_justification_trace",
         re.compile(r"\b(?:evidence\s+used|coverage\s+note|extraction\s+quality|ELM\s+should\s+be\s+checked)\b", re.I),
     ),
+    (
+        "admin_logistics_noise",
+        re.compile(r"\b(?:Unit\s+Attendance|SEAtS|Mentimeter|QR\s+code|Blackboard|SoftChalk|Unit\s+Assessment|Meet\s+the\s+Staff|Unit\s+Coordinator|office\s+hours|Lecture\s+Theatre|live\s+face[- ]to[- ]face|closed\s+book|coursework\s*-?\s*\d+%|End\s+of\s+Semester\s+Exam|available\s+in\s+(?:Main\s+)?Library)\b", re.I),
+    ),
+    (
+        "admin_contact_noise",
+        re.compile(r"(?:\b(?:Tel|Telephone|Phone|Location)\s*:|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})", re.I),
+    ),
 ]
 
 RIGID_TEMPLATE_LABELS = [
@@ -85,9 +93,6 @@ RIGID_TEMPLATE_LABELS = [
     "Principle",
 ]
 
-# Labels that often appear when a plan has been torn into slots instead of
-# being rewritten as an explanatory knowledge point. These are not banned as
-# single labels, but high density is a public-surface failure.
 FRAGMENT_SLOT_LABELS = [
     "A280",
     "A550",
@@ -124,7 +129,6 @@ FRAGMENT_SLOT_LABELS = [
     "Workflow",
 ]
 
-# Labels that can remain visible when they genuinely prevent ambiguity.
 ESSENTIAL_VISIBLE_LABELS = {
     "Equation",
     "Worked example",
@@ -136,6 +140,8 @@ ESSENTIAL_VISIBLE_LABELS = {
 
 COLON_LABEL_RE = re.compile(r"(?im)^\s*(?:[-•*]\s*)?([A-Z][A-Za-z0-9 /+().-]{1,42})\s*:")
 ARROW_CHAIN_RE = re.compile(r"(?m)^.{0,220}(?:->|→).{0,220}(?:->|→).*$")
+RAW_BULLET_RE = re.compile(r"^\s*(?:[-•*]||◦|▪|▫)\s+")
+FILE_EXTENSION_RE = re.compile(r"\b(?:pptx?|pdf|docx?|pptm)\b", re.I)
 
 
 def normalized_text(value: Any) -> str:
@@ -155,6 +161,10 @@ def forbidden_advisory_heading_hits(text: str) -> list[str]:
     return hits
 
 
+def _visible_lines(text: str) -> list[str]:
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
 def forbidden_non_knowledge_hits(text: str) -> list[str]:
     """Return non-knowledge public-surface categories detected in text."""
 
@@ -162,11 +172,15 @@ def forbidden_non_knowledge_hits(text: str) -> list[str]:
     for name, pattern in FORBIDDEN_NON_KNOWLEDGE_PATTERNS:
         if pattern.search(text):
             hits.append(name)
+
+    lines = _visible_lines(text)
+    first_block = "\n".join(lines[:80])
+    if "Core knowledge spans" in first_block and (first_block.count(";") >= 6 or len(FILE_EXTENSION_RE.findall(first_block)) >= 3):
+        hits.append("course_map_file_title_dump")
+    if "Course Knowledge Map" in first_block and len([line for line in lines[:60] if re.search(r"\b(?:Lecture|Module|slides?|handout|presentation|ppt)\b", line, re.I)]) >= 12:
+        hits.append("course_map_file_title_dump")
+
     return sorted(set(hits))
-
-
-def _visible_lines(text: str) -> list[str]:
-    return [line.strip() for line in text.splitlines() if line.strip()]
 
 
 def _colon_fragment_labels(text: str) -> list[str]:
@@ -181,12 +195,7 @@ def _colon_fragment_labels(text: str) -> list[str]:
 
 
 def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
-    """Flag rigid labels, arrow chains and colon-slot fragmentation in public notes.
-
-    Occasional semantic labels are acceptable. Failure means the public surface
-    reads like a planning schema (``Components:``, ``Workflow:``, ``Logic:``)
-    or a shorthand flow chart rather than a connected explanation of a knowledge point.
-    """
+    """Flag rigid labels, arrow chains, raw bullet dumps and colon-slot fragmentation."""
 
     hits: list[str] = []
     for label in RIGID_TEMPLATE_LABELS:
@@ -198,9 +207,9 @@ def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
     normalized_fragments = [normalized_text(label) for label in fragment_labels]
     nonessential_set = {normalized_text(label) for label in RIGID_TEMPLATE_LABELS + FRAGMENT_SLOT_LABELS}
     nonessential_hits = [label for label in normalized_fragments if label in nonessential_set]
-    visible_line_count = max(1, len(_visible_lines(text)))
+    lines = _visible_lines(text)
+    visible_line_count = max(1, len(lines))
 
-    # Catch high-density one-word slot labels that tear a concept into fragments.
     if len(nonessential_hits) >= 8 or (len(nonessential_hits) >= 5 and len(nonessential_hits) / visible_line_count >= 0.25):
         hits.append("colon_fragment_label_density")
 
@@ -208,9 +217,16 @@ def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
         if normalized_text(label) in nonessential_set and fragment_labels.count(label) >= 2:
             hits.append(label)
 
-    # Catch public prose that is really a shorthand workflow chain. Equations
-    # can be shown, but method logic must be explained in prose or compact bullets.
     if ARROW_CHAIN_RE.search(text):
         hits.append("arrow_chain_fragmentation")
+
+    bullet_lines = [line for line in lines if RAW_BULLET_RE.search(line)]
+    if len(bullet_lines) >= 18 and len(bullet_lines) / visible_line_count >= 0.35:
+        hits.append("raw_slide_bullet_dump")
+
+    # Catch outputs that keep many OCR fragments as one- or two-word lines.
+    short_fragment_lines = [line for line in lines if len(line.split()) <= 3 and not line.endswith(('.', ':', ';'))]
+    if len(short_fragment_lines) >= 25 and len(short_fragment_lines) / visible_line_count >= 0.25:
+        hits.append("ocr_fragment_dump")
 
     return sorted(set(hits))
