@@ -135,6 +135,7 @@ ESSENTIAL_VISIBLE_LABELS = {
 }
 
 COLON_LABEL_RE = re.compile(r"(?im)^\s*(?:[-•*]\s*)?([A-Z][A-Za-z0-9 /+().-]{1,42})\s*:")
+ARROW_CHAIN_RE = re.compile(r"(?m)^.{0,220}(?:->|→).{0,220}(?:->|→).*$")
 
 
 def normalized_text(value: Any) -> str:
@@ -180,11 +181,11 @@ def _colon_fragment_labels(text: str) -> list[str]:
 
 
 def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
-    """Flag rigid labels and colon-slot fragmentation in public notes.
+    """Flag rigid labels, arrow chains and colon-slot fragmentation in public notes.
 
     Occasional semantic labels are acceptable. Failure means the public surface
     reads like a planning schema (``Components:``, ``Workflow:``, ``Logic:``)
-    rather than a connected explanation of a knowledge point.
+    or a shorthand flow chart rather than a connected explanation of a knowledge point.
     """
 
     hits: list[str] = []
@@ -199,13 +200,17 @@ def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
     nonessential_hits = [label for label in normalized_fragments if label in nonessential_set]
     visible_line_count = max(1, len(_visible_lines(text)))
 
-    # Catch the current failure mode: many different one-word slot labels that
-    # look individually harmless but collectively tear a concept into fragments.
+    # Catch high-density one-word slot labels that tear a concept into fragments.
     if len(nonessential_hits) >= 8 or (len(nonessential_hits) >= 5 and len(nonessential_hits) / visible_line_count >= 0.25):
         hits.append("colon_fragment_label_density")
 
     for label in sorted(set(fragment_labels)):
         if normalized_text(label) in nonessential_set and fragment_labels.count(label) >= 2:
             hits.append(label)
+
+    # Catch public prose that is really a shorthand workflow chain. Equations
+    # can be shown, but method logic must be explained in prose or compact bullets.
+    if ARROW_CHAIN_RE.search(text):
+        hits.append("arrow_chain_fragmentation")
 
     return sorted(set(hits))
