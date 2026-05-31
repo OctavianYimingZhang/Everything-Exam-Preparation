@@ -6,6 +6,7 @@ This post-processor enforces the notes/walkthrough layout surface:
 - titles, lecture headings and subheadings left aligned;
 - images centered;
 - default text line spacing 1.5;
+- all visible text black Arial, including inherited Word heading styles;
 - images scaled to the available content area while preserving aspect ratio.
 """
 
@@ -17,19 +18,25 @@ from pathlib import Path
 try:
     from docx import Document  # type: ignore
     from docx.enum.text import WD_ALIGN_PARAGRAPH  # type: ignore
+    from docx.enum.style import WD_STYLE_TYPE  # type: ignore
     from docx.oxml.ns import qn  # type: ignore
     from docx.shared import Cm, Pt, RGBColor  # type: ignore
 except Exception as exc:  # pragma: no cover
     raise SystemExit(f"python-docx is required: {exc}")
 
 EMU_PER_CM = 360000
+BLACK = RGBColor(0, 0, 0)
+
+
+def set_font_defaults(font, *, font_name: str = "Arial", font_size_pt: float | None = None) -> None:
+    font.name = font_name
+    if font_size_pt is not None:
+        font.size = Pt(font_size_pt)
+    font.color.rgb = BLACK
 
 
 def set_run_defaults(run, *, font_name: str = "Arial", font_size_pt: float | None = None) -> None:
-    run.font.name = font_name
-    if font_size_pt is not None:
-        run.font.size = Pt(font_size_pt)
-    run.font.color.rgb = RGBColor(0, 0, 0)
+    set_font_defaults(run.font, font_name=font_name, font_size_pt=font_size_pt)
     if run._element.rPr is not None:
         run._element.rPr.rFonts.set(qn("w:eastAsia"), font_name)
 
@@ -43,13 +50,31 @@ def paragraph_is_heading(paragraph, visible_index: int) -> bool:
     style_name = str(getattr(paragraph.style, "name", "") or "").lower()
     if visible_index == 1:
         return True
-    if any(marker in style_name for marker in ["title", "heading", "subheading", "lecture"]):
+    if any(marker in style_name for marker in ["title", "heading", "subheading", "lecture", "module"]):
         return True
-    if text.startswith("Lecture:"):
+    if text.startswith(("Lecture:", "Module:")):
         return True
     if len(text) <= 130 and text and not text.endswith(".") and any(run.bold for run in paragraph.runs):
         return True
     return False
+
+
+def normalise_styles(doc: Document, *, body_font_pt: float, line_spacing: float) -> int:
+    changed = 0
+    for style in doc.styles:
+        if style.type != WD_STYLE_TYPE.PARAGRAPH:
+            continue
+        try:
+            set_font_defaults(style.font, font_size_pt=body_font_pt)
+            style.paragraph_format.line_spacing = line_spacing
+            style.paragraph_format.space_before = Pt(0)
+            style.paragraph_format.space_after = Pt(3)
+            if style._element.rPr is not None:
+                style._element.rPr.rFonts.set(qn("w:eastAsia"), "Arial")
+            changed += 1
+        except Exception:
+            continue
+    return changed
 
 
 def scale_inline_shapes(doc: Document, max_width_cm: float, max_height_cm: float) -> int:
@@ -80,22 +105,13 @@ def normalise_docx(
     max_image_height_cm: float = 8.0,
 ) -> dict[str, int | str]:
     doc = Document(input_path)
-    section = doc.sections[0]
-    section.top_margin = Cm(margin_cm)
-    section.bottom_margin = Cm(margin_cm)
-    section.left_margin = Cm(margin_cm)
-    section.right_margin = Cm(margin_cm)
+    for section in doc.sections:
+        section.top_margin = Cm(margin_cm)
+        section.bottom_margin = Cm(margin_cm)
+        section.left_margin = Cm(margin_cm)
+        section.right_margin = Cm(margin_cm)
 
-    for style_name in ["Normal", "Body Text"]:
-        if style_name in doc.styles:
-            style = doc.styles[style_name]
-            style.font.name = "Arial"
-            style.font.size = Pt(body_font_pt)
-            style.font.color.rgb = RGBColor(0, 0, 0)
-            style.paragraph_format.line_spacing = line_spacing
-            if style._element.rPr is not None:
-                style._element.rPr.rFonts.set(qn("w:eastAsia"), "Arial")
-
+    changed_styles = normalise_styles(doc, body_font_pt=body_font_pt, line_spacing=line_spacing)
     changed_images = scale_inline_shapes(doc, max_image_width_cm, max_image_height_cm)
 
     visible_index = 0
@@ -122,7 +138,7 @@ def normalise_docx(
             body_paragraphs += 1
         for run in paragraph.runs:
             if run.text:
-                set_run_defaults(run, font_size_pt=body_font_pt if paragraph.style.name == "Normal" else None)
+                set_run_defaults(run, font_size_pt=body_font_pt if not paragraph_is_heading(paragraph, visible_index) else None)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(output_path)
@@ -134,6 +150,7 @@ def normalise_docx(
         "heading_paragraphs": heading_paragraphs,
         "image_paragraphs": image_paragraphs,
         "scaled_images": changed_images,
+        "normalised_styles": changed_styles,
     }
 
 
