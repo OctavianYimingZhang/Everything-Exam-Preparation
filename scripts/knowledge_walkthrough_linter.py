@@ -28,8 +28,8 @@ from knowledge_only_rendering_rules import (
 STYLE_LIMITS = {
     "margin_cm": 2.0,
     "margin_tolerance_cm": 0.08,
-    "line_spacing_min": 1.0,
-    "line_spacing_max": 1.2,
+    "line_spacing_min": 1.45,
+    "line_spacing_max": 1.55,
     "body_font_min_pt": 9.5,
     "body_font_max_pt": 11.5,
 }
@@ -95,7 +95,7 @@ def build_bad_style_fixture(path: Path) -> None:
     section.right_margin = Cm(2.5)
     title = doc.add_paragraph()
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    title.paragraph_format.line_spacing = 1.5
+    title.paragraph_format.line_spacing = 1.0
     title.add_run("Lecture Knowledge Walkthrough").font.name = "Times New Roman"
     for text in [
         "English explanations extracted from the shared ChatGPT page",
@@ -110,14 +110,33 @@ def build_bad_style_fixture(path: Path) -> None:
         "Definition: two",
         "Definition: three",
         "Definition: four",
+        "Components: PCR tubes and thermocycler.",
+        "Workflow: DNA extraction -> PCR -> digest -> gel.",
     ]:
         paragraph = doc.add_paragraph()
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        paragraph.paragraph_format.line_spacing = 1.5
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        paragraph.paragraph_format.line_spacing = 1.0
         run = paragraph.add_run(text)
         run.font.name = "Times New Roman"
         run.font.size = Pt(12)
     doc.save(path)
+
+
+def paragraph_has_image(paragraph) -> bool:
+    return bool(paragraph._p.xpath(".//w:drawing"))
+
+
+def paragraph_is_heading(paragraph, text: str, visible_index: int) -> bool:
+    style_name = str(getattr(paragraph.style, "name", "") or "").lower()
+    if visible_index == 1:
+        return True
+    if "heading" in style_name or "title" in style_name or "lecture" in style_name or "subheading" in style_name:
+        return True
+    if text in SEMANTIC_HEADINGS or text.startswith("Lecture:"):
+        return True
+    if len(text) <= 120 and not text.endswith(".") and paragraph.runs and any(run.bold for run in paragraph.runs):
+        return True
+    return False
 
 
 def lint_docx(path: Path) -> dict[str, Any]:
@@ -145,30 +164,32 @@ def lint_docx(path: Path) -> dict[str, Any]:
     if any(abs(value - STYLE_LIMITS["margin_cm"]) > STYLE_LIMITS["margin_tolerance_cm"] for value in margins_cm):
         failures.append({"type": "margins_not_compact_2_0_cm", "margins_cm": margins_cm})
 
-    heading_terms = set(SEMANTIC_HEADINGS)
     visible_index = 0
     for paragraph in doc.paragraphs:
-        if not paragraph.text.strip():
+        text_value = paragraph.text.strip()
+        if not text_value and not paragraph_has_image(paragraph):
             continue
         visible_index += 1
         line_spacing = paragraph.paragraph_format.line_spacing
-        if line_spacing is None or not (STYLE_LIMITS["line_spacing_min"] <= float(line_spacing) <= STYLE_LIMITS["line_spacing_max"]):
-            failures.append({"type": "line_spacing_not_compact", "paragraph": visible_index, "line_spacing": line_spacing})
-        if visible_index == 1:
+        if paragraph_has_image(paragraph):
             if paragraph.alignment != WD_ALIGN_PARAGRAPH.CENTER:
-                failures.append({"type": "title_not_centered"})
-        elif paragraph.text in heading_terms or paragraph.text.startswith("Lecture:"):
+                failures.append({"type": "image_not_centered", "paragraph": visible_index})
+        elif paragraph_is_heading(paragraph, text_value, visible_index):
             if paragraph.alignment != WD_ALIGN_PARAGRAPH.LEFT:
-                failures.append({"type": "heading_not_left", "paragraph": visible_index, "text": paragraph.text[:80]})
+                failures.append({"type": "heading_not_left", "paragraph": visible_index, "text": text_value[:80]})
+            if line_spacing is None or not (STYLE_LIMITS["line_spacing_min"] <= float(line_spacing) <= STYLE_LIMITS["line_spacing_max"]):
+                failures.append({"type": "heading_line_spacing_not_1_5", "paragraph": visible_index, "line_spacing": line_spacing})
         else:
-            if paragraph.alignment != WD_ALIGN_PARAGRAPH.LEFT:
-                failures.append({"type": "body_not_left_aligned", "paragraph": visible_index, "text": paragraph.text[:80]})
+            if paragraph.alignment != WD_ALIGN_PARAGRAPH.JUSTIFY:
+                failures.append({"type": "body_not_justified", "paragraph": visible_index, "text": text_value[:80]})
+            if line_spacing is None or not (STYLE_LIMITS["line_spacing_min"] <= float(line_spacing) <= STYLE_LIMITS["line_spacing_max"]):
+                failures.append({"type": "body_line_spacing_not_1_5", "paragraph": visible_index, "line_spacing": line_spacing})
         for run_idx, run in enumerate([run for run in paragraph.runs if run.text], start=1):
             if run.font.name != "Arial":
                 failures.append({"type": "run_font_not_arial", "paragraph": visible_index, "run": run_idx, "font": run.font.name})
             size = run_size_pt(run)
-            if size is not None and not (STYLE_LIMITS["body_font_min_pt"] <= size <= 15.0):
-                failures.append({"type": "run_font_size_outside_compact_range", "paragraph": visible_index, "run": run_idx, "font_size_pt": size})
+            if size is not None and not (STYLE_LIMITS["body_font_min_pt"] <= size <= 16.0):
+                failures.append({"type": "run_font_size_outside_readable_range", "paragraph": visible_index, "run": run_idx, "font_size_pt": size})
             color = run.font.color.rgb
             if color is not None and str(color) != "000000":
                 failures.append({"type": "run_font_color_not_black", "paragraph": visible_index, "run": run_idx, "color": str(color)})
@@ -177,7 +198,7 @@ def lint_docx(path: Path) -> dict[str, Any]:
         "docx": str(path),
         "status": "pass" if not failures else "fail",
         "failures": failures,
-        "paragraph_count": len([p for p in doc.paragraphs if p.text.strip()]),
+        "paragraph_count": len([p for p in doc.paragraphs if p.text.strip() or paragraph_has_image(p)]),
     }
 
 
