@@ -3,13 +3,48 @@
   "$id": "https://example.invalid/everything-exam-preparation/knowledge_walkthrough_plan.schema.json",
   "title": "KnowledgeWalkthroughPlan",
   "type": "object",
-  "required": ["walkthrough_id", "title", "target_group_key", "lecture_order", "route_docx_style_profile", "lectures"],
+  "required": ["walkthrough_id", "title", "target_group_key", "route_docx_style_profile"],
   "properties": {
     "object_type": { "const": "KnowledgeWalkthroughPlan" },
     "walkthrough_id": { "type": "string" },
     "title": { "type": "string" },
     "target_group_key": { "type": "string" },
-    "lecture_order": { "type": "array", "items": { "type": "string" } },
+    "course_knowledge_map": { "type": "string" },
+    "course_modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["module_title", "module_function", "examinable_units"],
+        "properties": {
+          "object_type": { "const": "CourseModule" },
+          "module_id": { "type": "string" },
+          "module_title": { "type": "string" },
+          "module_function": { "type": "string" },
+          "source_lectures": { "type": "array", "items": { "type": "string" } },
+          "core_questions": { "type": "array", "items": { "type": "string" } },
+          "examinable_units": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["title", "explanation"],
+              "properties": {
+                "object_type": { "const": "ExaminableKnowledgeUnit" },
+                "unit_id": { "type": "string" },
+                "title": { "type": "string" },
+                "priority": { "enum": ["high", "medium", "low", "★★★", "★★", "★"] },
+                "source_support": { "type": "array", "items": { "type": "string" } },
+                "explanation": { "type": "string" },
+                "optional_equation_or_example": { "type": "string" },
+                "common_confusion_or_boundary": { "type": "string" },
+                "image_refs": { "type": "array", "items": { "type": "string" } }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
     "route_docx_style_profile": {
       "type": "object",
       "required": [
@@ -18,11 +53,11 @@
         "margin_cm",
         "line_spacing",
         "body_alignment",
+        "heading_alignment",
+        "image_alignment",
         "body_font_pt",
         "heading_font_pt",
-        "lecture_heading_font_pt",
-        "text_color",
-        "lecture_page_breaks"
+        "text_color"
       ],
       "properties": {
         "style_profile_id": { "type": "string" },
@@ -38,60 +73,13 @@
         "heading_font_pt": { "type": "number", "minimum": 11.0, "maximum": 13.0 },
         "lecture_heading_font_pt": { "type": "number", "minimum": 13.0, "maximum": 15.0 },
         "text_color": { "const": "black" },
-        "lecture_page_breaks": { "const": true },
-        "essay_style_spacing_forbidden": { "const": true }
+        "module_page_breaks": { "type": "boolean", "default": false }
       },
       "additionalProperties": false
     },
-    "forbidden_student_fields": { "type": "array", "items": { "type": "string" } },
-    "student_visible_structure": { "type": "array", "items": { "type": "string" } },
-    "lectures": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["lecture_id", "lecture_title", "lecture_overview", "module_map", "modules", "lecture_recap"],
-        "properties": {
-          "lecture_id": { "type": "string" },
-          "lecture_title": { "type": "string" },
-          "lecture_overview": { "type": "string" },
-          "core_logic": { "type": "string" },
-          "module_map": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["module_id", "module_title", "one_sentence"],
-              "properties": {
-                "module_id": { "type": "string" },
-                "module_title": { "type": "string" },
-                "one_sentence": { "type": "string" }
-              },
-              "additionalProperties": true
-            }
-          },
-          "modules": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["module_id", "module_title", "module_overview", "knowledge_walkthrough", "key_logic", "must_master"],
-              "properties": {
-                "object_type": { "const": "LectureModule" },
-                "module_id": { "type": "string" },
-                "module_title": { "type": "string" },
-                "module_overview": { "type": "string" },
-                "knowledge_walkthrough": { "type": "string" },
-                "key_logic": { "type": "string" },
-                "common_confusions": { "type": "array", "items": { "type": "string" } },
-                "must_master": { "type": "array", "items": { "type": "string" } },
-                "source_anchors": { "type": "array", "items": { "type": "string" } },
-                "student_visible": { "type": "boolean" }
-              },
-              "additionalProperties": true
-            }
-          },
-          "lecture_recap": { "type": "array", "items": { "type": "string" } }
-        },
-        "additionalProperties": true
-      }
+    "legacy_lectures": {
+      "description": "Backwards-compatible input only. New plans should use course_modules.",
+      "type": "array"
     },
     "qa_status": { "type": "string" }
   },
