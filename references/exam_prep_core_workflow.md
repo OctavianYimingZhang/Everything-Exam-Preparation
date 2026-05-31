@@ -19,12 +19,13 @@ Question-type reports are add-ons. They are never allowed to replace the knowled
 ```text
 1. Classify source roles.
 2. Remove non-knowledge noise.
-3. Read the source set for meaning.
-4. Reconstruct the course into modules.
-5. Build a small set of examinable knowledge units.
-6. Explain each unit in connected prose.
-7. Add question-type overlays only after the knowledge is clear.
-8. Run surface, noise and layout QA.
+3. Estimate source scale and coverage budget.
+4. Read the source set for meaning.
+5. Reconstruct the course into modules.
+6. Build enough examinable knowledge units for the source scale.
+7. Explain each unit in connected prose.
+8. Add question-type overlays only after the knowledge is clear.
+9. Run surface, density, noise and layout QA.
 ```
 
 The model must not be forced to write from slide fragments. The model should use source order to understand prerequisites and teaching sequence, then organise the output by exam-useful conceptual logic.
@@ -37,6 +38,7 @@ For every input block, classify it as one of:
 - `exam_pattern`: past-paper question wording, mark distribution, question type, command verb, recurring operation.
 - `practical_operation`: protocol steps, apparatus, reagents, controls, calculations, safety-relevant handling when it changes interpretation.
 - `extra_reading`: recommended book chapter, cited paper, review or primary paper.
+- `style_or_layout_example`: reference output used only for structure, density, language and layout.
 - `non_knowledge_noise`: contact details, staff lists, attendance, course admin, assessment logistics, QR codes, URLs, reading-list logistics, image credits, copyright, acknowledgements, decorative quotes, slide agenda, lecture schedule, generic learning outcomes and generic advice.
 
 Only `subject_knowledge`, relevant `practical_operation`, and verified `extra_reading` can become public knowledge prose. `exam_pattern` informs emphasis and add-ons but must not appear as raw exam prediction content in the DOCX unless the user explicitly requests an audit. `non_knowledge_noise` is discarded from student-facing artifacts.
@@ -49,9 +51,48 @@ The default public notes must not contain:
 - SEAtS, Mentimeter, QR code, attendance-code, Blackboard, live session or lecture-room instructions;
 - assessment logistics, coursework percentages, exam date/time, closed-book logistics or mark-split admin, except inside a chat-only exam-analysis brief requested by the user;
 - bookshop adverts, library-availability notes, URL-only lines, image credits, copyright notices or source filenames;
-- decorative quotations, thank-you slides, lecture agendas, “contents” slides, “what you will learn” slides, or generic ILOs unless the ILO contains a specific examinable concept;
+- decorative quotations, thank-you slides, lecture agendas, contents slides, what-you-will-learn slides, or generic ILOs unless the ILO contains a specific examinable concept;
 - raw slide bullets copied line-by-line;
 - broken OCR fragments that do not form a biological, chemical, clinical, mathematical or methodological claim.
+
+## Source Scale Budget
+
+The walkthrough must be scaled to the source set. A short post-lab or mock exam should not become the size of a whole-course notebook. A whole-course source pack must not be compressed to the size of a short practical unit.
+
+Before drafting, create an internal budget:
+
+```yaml
+SourceScaleBudget:
+  source_units_count:
+  source_pages_or_slides_estimate:
+  source_types:
+  conceptual_module_target_range:
+  examinable_unit_target_range:
+  explanation_depth:
+    - concise
+    - standard
+    - expanded
+  minimum_visible_coverage_floor:
+  compression_reason:
+```
+
+Budget rules:
+
+- Small practical/mock/post-lab packs can be concise when the examinable domain is narrow.
+- Medium lecture packs need enough modules to cover all conceptual areas, not only the first few lectures.
+- Broad course packs need expanded coverage. A 10-20 lecture source pack normally requires many more examinable units than a short practical pack, even after compression.
+- Do not use Experimental Biology or any short practical unit as a size cap for larger courses.
+- Do not use page count alone. Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, or named experimental evidence.
+- If source material is large but the output is short, record a `coverage_floor_failure` and regenerate from the distillation pass.
+
+Indicative internal floors, to be adapted by evidence density:
+
+- 1-3 source units: usually 8-20 examinable units.
+- 4-8 source units: usually 20-45 examinable units.
+- 9-15 source units: usually 40-80 examinable units.
+- 16+ source units or whole-course packs: usually 70+ examinable units or multiple deliverable volumes.
+
+These are not student-visible promises. They prevent accidental over-compression.
 
 ## Course Reconstruction
 
@@ -66,7 +107,7 @@ CourseModule:
   examinable_units:
 ```
 
-A course map should normally contain 4-10 conceptual modules, not one line per uploaded slide deck. It should say what the course teaches, not list every file title.
+A course map should normally contain conceptual modules, not one line per uploaded slide deck. It should say what the course teaches, not list every file title. For broad courses, use as many conceptual modules as needed to preserve the main knowledge areas; do not force every course into 4-10 modules if that hides content.
 
 ## Examinable Knowledge Unit
 
@@ -113,9 +154,11 @@ Discard:
 
 - administrative lines;
 - duplicate slide titles;
-- generic “aims” and “learning outcomes” unless rewritten into a real knowledge claim;
+- generic aims and learning outcomes unless rewritten into a real knowledge claim;
 - one-word fragments, orphaned labels, page numbers and source artefacts;
 - named people, institutions or citation debris unless the identity is examinable content.
+
+Compression must preserve coverage of the main examinable mechanisms. It may remove repetition; it may not remove entire lecture blocks, mechanisms, calculations, experiments or conceptual families without an explicit source-role reason.
 
 ## Question-Type Add-ons
 
@@ -136,9 +179,9 @@ Default DOCX structure:
 Title
 Course Knowledge Map
 Module 1: topic-specific module heading
-  concise connected notes
+  connected notes
 Module 2: topic-specific module heading
-  concise connected notes
+  connected notes
 ...
 ```
 
@@ -166,6 +209,7 @@ Source coverage
 
 Fail and rewrite if any of these are true:
 
+- the output is much shorter than the source scale budget without a defensible compression reason;
 - more than a small minority of visible lines are copied slide bullets;
 - the output contains course admin or staff/contact/logistics text;
 - the course map is mostly a list of file titles;
