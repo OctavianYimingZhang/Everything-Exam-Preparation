@@ -1,6 +1,6 @@
 # Knowledge Surface Protocol
 
-This protocol controls the last public-rendering layer for all student-facing outputs. It sits after evidence extraction, ontology construction, planning, and route-specific drafting.
+This protocol controls the last public-rendering layer for all student-facing outputs. It sits after evidence extraction, source structuring, planning, and route-specific drafting.
 
 The problem it prevents is not factual inaccuracy alone. It prevents the Skill from exposing planning scaffolds, source-route narration, AI process notes, rigid bucket labels, colon-slot fragments, or shorthand flow charts as if they were revision content.
 
