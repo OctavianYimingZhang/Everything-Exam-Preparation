@@ -58,62 +58,67 @@
     "exam_prep_notes_student_contract": {
       "type": "object",
       "properties": {
-        "course_knowledge_map": { "type": "string" },
-        "lecture_mapping": { "type": "array", "items": { "type": "string" } },
-        "exam_ready_knowledge_notes": {
+        "public_lecture_sections": {
           "type": "array",
-          "items": { "$ref": "#/properties/public_output_point" }
-        },
-        "question_type_addons": { "type": "array", "items": { "type": "object" } },
-        "optional_visual_aids": { "type": "array", "items": { "type": "string" } }
+          "items": { "$ref": "#/properties/public_lecture_section" }
+        }
       },
       "additionalProperties": false
     },
-    "public_output_point": {
+    "public_lecture_section": {
       "type": "object",
-      "required": ["point_title", "priority", "point_kind", "main_text", "blocks", "covered_atomic_units"],
+      "required": ["lecture_title", "modules"],
       "properties": {
-        "point_title": { "type": "string" },
-        "priority": { "enum": ["★★★", "★★", "★"] },
-        "point_kind": {
-          "enum": [
-            "definition",
-            "mechanism",
-            "method_workflow",
-            "criteria_list",
-            "comparison",
-            "calculation",
-            "graph_or_data_interpretation",
-            "canonical_example",
-            "compact_background"
-          ]
+        "lecture_title": { "type": "string" },
+        "lecture_scope": { "type": "string" },
+        "modules": { "type": "array", "items": { "$ref": "#/properties/public_lecture_module" } }
+      },
+      "additionalProperties": false
+    },
+    "public_lecture_module": {
+      "type": "object",
+      "required": ["module_title", "knowledge_functions", "explanation", "blocks"],
+      "properties": {
+        "module_title": { "type": "string" },
+        "knowledge_functions": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "enum": [
+              "definition_boundary",
+              "mechanism_process",
+              "method_readout",
+              "graph_data_interpretation",
+              "calculation_unit_worked_example",
+              "named_example",
+              "limitation_trap"
+            ]
+          }
         },
-        "main_text": { "type": "string" },
-        "blocks": { "type": "array", "items": { "$ref": "#/properties/public_point_block" } },
-        "covered_atomic_units": { "type": "array", "items": { "type": "string" } }
+        "explanation": { "type": "string" },
+        "blocks": { "type": "array", "items": { "$ref": "#/properties/public_point_block" } }
       },
       "additionalProperties": false
     },
     "public_point_block": {
       "type": "object",
-      "required": ["block_type", "label", "content"],
+      "required": ["block_type", "content"],
       "properties": {
         "block_type": {
           "enum": [
-            "definitions",
-            "key_points",
-            "criteria",
-            "steps",
+            "definition",
             "mechanism",
-            "equation",
-            "calculation_logic",
-            "graph_logic",
-            "comparison",
+            "method",
+            "graph_data",
+            "calculation",
             "example",
-            "limitation"
+            "limitation",
+            "comparison",
+            "table",
+            "explanation"
           ]
         },
-        "label": { "type": ["string", "null"] },
+        "label": { "type": "string" },
         "content": {
           "anyOf": [
             { "type": "string" },

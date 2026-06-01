@@ -8,7 +8,6 @@ import json
 import re
 import shutil
 import tempfile
-import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -21,20 +20,28 @@ except Exception as exc:  # pragma: no cover
 
 BLUE_RGB = {"0000FF", "0563C1", "2F5496", "1F4E79", "4472C4", "5B9BD5"}
 EXPECTED_MARGIN_CM = 2.0
-MIN_LINE_SPACING = 1.45
-MAX_LINE_SPACING = 1.55
+MIN_LINE_SPACING = 1.05
+MAX_LINE_SPACING = 1.15
 FORBIDDEN_INTERNAL_HEADINGS = {
+    "A strong answer should",
+    "Conceptual Course Map",
+    "Course Knowledge Map",
     "Exam Specificity",
     "Core Exam Claim",
     "Exam Use",
     "Common Error / Trap",
     "Must Master",
     "Course-Level Exam Map",
+    "Examinable Knowledge Units",
     "How To Answer This Exam",
+    "Predicted Essay Theme",
+    "Section A Strategy",
+    "Section B Strategy",
+    "Source Role Summary",
+    "Source Scope",
+    "Study Order",
+    "Use This Module",
 }
-COLOUR_RE = re.compile(rb"<w:color\b[^>]*/?>")
-VAL_RE = re.compile(rb'w:val="([^"]+)"')
-THEME_RE = re.compile(rb'w:themeColor="([^"]+)"')
 
 
 def iter_docx_paths(path: Path) -> list[Path]:
@@ -116,8 +123,8 @@ def lint_docx(path: Path) -> list[dict[str, Any]]:
             if paragraph.alignment not in {None, WD_ALIGN_PARAGRAPH.LEFT}:
                 failures.append({"type": "heading_not_left_aligned", "path": str(path), "paragraph": index})
         else:
-            if paragraph.alignment != WD_ALIGN_PARAGRAPH.JUSTIFY:
-                failures.append({"type": "body_not_justified", "path": str(path), "paragraph": index, "alignment": str(paragraph.alignment)})
+            if paragraph.alignment not in {None, WD_ALIGN_PARAGRAPH.LEFT}:
+                failures.append({"type": "body_not_left_aligned", "path": str(path), "paragraph": index, "alignment": str(paragraph.alignment)})
         if spacing is not None and not (MIN_LINE_SPACING <= spacing <= MAX_LINE_SPACING) and not has_image:
             failures.append({"type": "bad_line_spacing", "path": str(path), "paragraph": index, "line_spacing": round(spacing, 3)})
 
@@ -135,21 +142,6 @@ def lint_docx(path: Path) -> list[dict[str, Any]]:
             font_names = {name for name in [run.font.name, paragraph.style.font.name if paragraph.style else None] if name}
             if font_names and "Arial" not in font_names:
                 failures.append({"type": "non_arial_text", "path": str(path), "paragraph": index, "fonts": sorted(font_names)})
-    try:
-        with zipfile.ZipFile(path) as archive:
-            name = "word/document.xml"
-            if name in archive.namelist():
-                xml = archive.read(name)
-                for match in COLOUR_RE.finditer(xml):
-                    tag = match.group(0)
-                    value_match = VAL_RE.search(tag)
-                    theme_match = THEME_RE.search(tag)
-                    value = (value_match.group(1) if value_match else b"").decode("ascii", errors="ignore").upper()
-                    theme = (theme_match.group(1) if theme_match else b"").decode("ascii", errors="ignore")
-                    if theme or (value and value not in {"000000", "AUTO"}):
-                        failures.append({"type": "ooxml_non_black_or_theme_colour", "path": str(path), "part": name, "value": value, "theme": theme})
-    except Exception as exc:
-        failures.append({"type": "ooxml_colour_scan_error", "path": str(path), "error": str(exc)})
     return failures
 
 

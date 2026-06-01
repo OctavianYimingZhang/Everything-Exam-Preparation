@@ -10,10 +10,10 @@ presets:
     modules: ["source_inventory", "exam_regime", "question_type"]
     student_outputs: ["exam format diagnosis"]
   exam_prep_notes_docx:
-    purpose: "Build source-first Academic Exam-Ready Notes from official course sources, atomic knowledge coverage, optional past-paper overlay, question-type add-ons, and optional visual aids."
+    purpose: "Build default English lecture-first public knowledge notes from official course sources, with optional question-type add-ons kept separate."
     required_source_classes: ["readable_course_notes"]
     recommended_source_classes: ["formal_past_papers", "practical_materials", "extra_reading"]
-    modules: ["source_inventory", "fragment_index", "course_section_reconstruction", "lecture_session_mapping", "lecture_concept_module_extraction", "knowledge_points", "atomic_knowledge_ledger", "source_baseline_notes_plan", "baseline_coverage_floor_qa", "exam_emphasis_profile", "exam_overlay_pass", "overlay_did_not_damage_coverage_qa", "knowledge_only_student_view_filter", "exam_prep_notes_plan", "question_type_addon_generation", "visual_aid_planning", "visual_aid_generation_optional", "exam_prep_notes_docx_generation", "exam_prep_docx_style_linter", "exam_prep_notes_linter", "deliverable_qa"]
+    modules: ["source_inventory", "fragment_index", "lecture_session_mapping", "lecture_concept_module_extraction", "knowledge_points", "source_baseline_notes_plan", "baseline_coverage_floor_qa", "knowledge_only_student_view_filter", "public_output_point_build", "exam_prep_notes_plan", "question_type_addon_generation", "visual_aid_planning", "visual_aid_generation_optional", "exam_prep_notes_docx_generation", "exam_prep_docx_style_linter", "exam_prep_notes_linter", "deliverable_qa"]
     student_outputs: ["Lecture Knowledge Walkthrough DOCX"]
   knowledge_walkthrough_docx:
     purpose: "Compatibility route for an explicitly lecture-first Word walkthrough that explains each lecture through AI-inferred conceptual modules."
@@ -46,7 +46,7 @@ presets:
     modules: ["source_inventory", "fragment_index", "course_section_reconstruction", "lecture_session_mapping", "lecture_concept_module_extraction", "knowledge_points", "atomic_knowledge_ledger", "source_baseline_notes_plan", "baseline_coverage_floor_qa", "exam_emphasis_profile", "exam_overlay_pass", "overlay_did_not_damage_coverage_qa", "knowledge_only_student_view_filter", "exam_prep_notes_plan", "question_type_addon_generation", "visual_aid_planning", "visual_aid_generation_optional", "exam_prep_notes_docx_generation", "exam_prep_docx_style_linter", "exam_prep_notes_linter", "essay_coverage_plan", "citation_resolution", "essay_module_example_essays_docx", "deliverable_qa"]
     student_outputs: ["Lecture Knowledge Walkthrough DOCX", "Essay Module Example Essays DOCX"]
   audit_lint_only:
-    purpose: "Run source, ontology, language, deliverable, or release checks without generating new student outputs."
+    purpose: "Run source, workflow, language, deliverable, or release checks without generating new student outputs."
     required_source_classes: []
     modules: ["audit"]
     student_outputs: ["QA report"]

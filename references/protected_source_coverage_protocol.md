@@ -172,10 +172,7 @@ Example:
 Before public output is approved:
 
 1. Build or conceptually maintain `SlideAtomicLedger`.
-2. Build `PageInformationProfile`; exclude non-information pages only with a recorded reason.
-3. Mark protected units.
-4. Bind each protected unit to public output.
-5. Run zero-mention lint.
-6. Run source-scale lint. The public output must meet the derived unit and visible-word floor from source units, informative pages, information mass, and protected knowledge count; declared low targets do not override the floor.
-7. Run reference-density lint when a reference-quality DOCX is supplied. Larger or denser courses must not release a public DOCX with less visible knowledge prose than the reference.
-8. Run knowledge-surface lint so the coverage does not expose audit/provenance text.
+2. Mark protected units.
+3. Bind each protected unit to public output.
+4. Run zero-mention lint.
+5. Run knowledge-surface lint so the coverage does not expose audit/provenance text.

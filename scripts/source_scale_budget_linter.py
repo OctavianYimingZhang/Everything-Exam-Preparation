@@ -45,6 +45,11 @@ def docx_text(path: Path) -> str:
 
 def count_public_units(plan: dict[str, Any]) -> int:
     count = 0
+    for lecture in plan.get("public_lecture_sections", []) or []:
+        if isinstance(lecture, dict):
+            count += len([module for module in lecture.get("modules", []) or [] if isinstance(module, dict)])
+    if count:
+        return count
     for module in plan.get("course_modules", []) or []:
         if isinstance(module, dict):
             count += len([unit for unit in module.get("examinable_units", []) or [] if isinstance(unit, dict)])

@@ -14,8 +14,6 @@ Lecture_Knowledge_Walkthrough.docx
 
 Question-type reports are add-ons. They are never allowed to replace the knowledge walkthrough.
 
-Course-level analysis requests are knowledge requests unless the user explicitly says audit only, profile only, or QA only. A file containing only source metrics, information-profile totals and a few sample units is an audit artifact, not a valid exam-prep analysis for a broad course.
-
 ## First-Principles Workflow
 
 ```text
@@ -23,10 +21,10 @@ Course-level analysis requests are knowledge requests unless the user explicitly
 2. Remove non-knowledge noise.
 3. Estimate source scale and coverage budget.
 4. Read the source set for meaning.
-5. Reconstruct the course into modules.
-6. Build enough examinable knowledge units for the source scale.
-7. Explain each unit in connected prose.
-8. Add question-type overlays only after the knowledge is clear.
+5. Reconstruct lecture/session order and concept modules.
+6. Build enough public lecture modules for the source scale.
+7. Explain each module in connected prose.
+8. Keep question-type overlays separate unless explicitly requested.
 9. Run surface, density, noise and layout QA.
 ```
 
@@ -61,7 +59,7 @@ The default public notes must not contain:
 
 The walkthrough must be scaled to the source set. A short post-lab or mock exam should not become the size of a whole-course notebook. A whole-course source pack must not be compressed to the size of a short practical unit.
 
-Use any supplied high-quality DOCX only as a calibration exemplar for density, layout and paragraph style. The Experimental Biology exemplar demonstrates the target public surface: topic-specific headings, explanatory paragraphs, calculation detail when needed, 2.0 cm margins, black Arial text, 1.5 spacing, left-aligned headings and justified body text. It must not supply factual claims for another course and must not cap larger outputs.
+When the user asks to `analyse this course`, `分析这门课`, or asks for course-level prep analysis without explicitly requesting an audit-only profile, treat the request as a knowledge walkthrough request. A short source inventory, metrics report, or sample-only profile is not a substitute for the public knowledge document.
 
 Before drafting, create an internal budget:
 
@@ -77,13 +75,15 @@ SourceScaleBudget:
   page_information_profile:
     - source_id:
       page_index:
-      category:
-      informative:
+      category: knowledge_dense | knowledge_standard | light_context | cover | lecture_plan_or_admin | video_or_media_placeholder | blank
+      informative: true | false
       information_score:
       exclusion_reason:
   source_types:
   conceptual_module_target_range:
   examinable_unit_target_range:
+  target_public_units_min:
+  target_words_min:
   explanation_depth:
     - concise
     - standard
@@ -95,45 +95,43 @@ SourceScaleBudget:
 Budget rules:
 
 - Small practical/mock/post-lab packs can be concise when the examinable domain is narrow.
-- First classify every slide/page as information-bearing or non-information-bearing. Covers, title pages, pure video pages, lecture-plan pages, reading/admin logistics, duplicated separators and blank pages are excluded from the informative count, but the internal profile must record the exclusion reason.
-- Score each information-bearing slide/page before drafting. Increase `information_mass_units` for definitions, mechanisms, equations, calculations, labelled figures, graph/data interpretation, methods, workflows, named examples, speaker-note explanations and dense lists. Give only light weight to context, transition and orientation pages.
-- When a measured or estimated `page_information_profile` exists, derive the length floor from `informative_page_count` and `information_mass_units`, not raw slide count alone. Raw slide/page count remains a warning signal and audit field.
 - Medium lecture packs need enough modules to cover all conceptual areas, not only the first few lectures.
 - Broad course packs need expanded coverage. A 10-20 lecture source pack normally requires many more examinable units than a short practical pack, even after compression.
 - Do not use Experimental Biology or any short practical unit as a size cap for larger courses.
-- Do not use page count alone. Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, or named experimental evidence.
-- Do use `source_pages_or_slides_estimate` as a hard lower-bound input. For 501-800 slides/pages, the public notes normally need at least 150 public knowledge units and roughly 20k visible words. For 801+ slides/pages, they normally need at least 180 public knowledge units and roughly 25k visible words, or a deliberate multi-volume split.
-- Let `information_mass_units` raise the floor above the coarse page bands when many informative pages are dense. Use the source information profiler and budget linter as the local implementation of this rule.
-- Use reference-density calibration when the user supplies a high-quality DOCX such as Experimental Biology. For any source pack that is larger or denser than the reference, the released public DOCX must contain at least reference-scale visible knowledge prose and normally substantially more. A broad-course analysis under roughly the reference's visible-word and body-paragraph count fails even if the source metrics are correct.
-- If a broad course has several times the source scale of the Experimental Biology exemplar, the final public output must also be materially larger unless the exclusion ledger proves that most pages/slides are duplicates, administrative content, unreadable material, or non-knowledge.
-- `target_public_units_min` and `target_words_min` must be greater than or equal to the derived source-scale floor. Low declared targets do not override source scale.
+- Do not use page count alone. First profile each slide/page when practical. Covers, title-only separators, lecture plans, reading/admin pages, pure video placeholders and blanks can be excluded from `informative_page_count`, but the exclusion ledger must record why.
+- Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, labelled diagrams/tables, speaker-note detail, graph logic, or named experimental evidence.
+- If `informative_page_count` and `information_mass_units` are available, they set the main floor. Raw page/slide count remains audit context unless no reliable information profile exists.
+- If `target_public_units_min` or `target_words_min` is below the derived floor, the budget is invalid. A polished short document is still a failed release if it falls below the source-scale floor.
+- If a high-quality reference DOCX is supplied, use it for density and layout calibration only. A larger or denser target course must exceed the reference's visible knowledge prose unless the information profile proves the target is smaller or sparse.
 - If source material is large but the output is short, record a `coverage_floor_failure` and regenerate from the distillation pass.
-- If the public draft reads like a workflow explanation, file inventory, source-role report, or high-level revision guide rather than a knowledge document, it fails even if the word count is high.
 
 Indicative internal floors, to be adapted by evidence density:
 
-- 1-3 source units: usually 8-20 examinable units.
-- 4-8 source units: usually 20-45 examinable units.
-- 9-15 source units: usually 40-80 examinable units.
-- 16-30 source units or whole-course packs: usually 80+ examinable units.
-- 31+ source units or broad whole-course packs: usually 120+ examinable units, with the pages/slides floor controlling when it is higher.
+- 1-10 pages/slides: at least 8 public units and about 420 visible words.
+- 11-80 pages/slides: at least 12-25 public units and 1k-3k visible words.
+- 81-200 pages/slides: at least 50 public units and about 5.8k visible words.
+- 201-500 pages/slides: at least 105 public units and about 14k visible words.
+- 501-800 pages/slides: at least 150 public units and about 20k visible words.
+- 801+ pages/slides: at least 180 public units and about 25k visible words, or multiple deliverable volumes.
 
 These are not student-visible promises. They prevent accidental over-compression.
 
-## Course Reconstruction
+## Lecture-First Reconstruction
 
-Before writing, reconstruct a compact course map:
+Before writing, reconstruct the public lecture plan:
 
 ```yaml
-CourseModule:
-  module_title:
-  module_function:
-  source_lectures:
-  core_questions:
-  examinable_units:
+PublicLectureNotesPlan:
+  public_lecture_sections:
+    - lecture_title:
+      modules:
+        - module_title:
+          knowledge_functions:
+          explanation:
+          blocks:
 ```
 
-A course map should normally contain conceptual modules, not one line per uploaded slide deck. It should say what the course teaches, not list every file title. For broad courses, use as many conceptual modules as needed to preserve the main knowledge areas; do not force every course into 4-10 modules if that hides content.
+The public document starts with the title and then lecture/session headings. `Course Knowledge Map` is internal-only. Do not list uploaded file titles or source inventories in the public document.
 
 ## Examinable Knowledge Unit
 
@@ -203,10 +201,11 @@ Default DOCX structure:
 
 ```text
 Title
-Course Knowledge Map
-Module 1: topic-specific module heading
+Lecture 1: source/session-specific heading
+  topic-specific module heading
   connected notes
-Module 2: topic-specific module heading
+Lecture 2: source/session-specific heading
+  topic-specific module heading
   connected notes
 ...
 ```
@@ -229,11 +228,6 @@ Definition
 Key point
 Evidence used
 Source coverage
-Selected route
-Workflow plan
-Source scale budget
-Coverage floor status
-Generation process
 ```
 
 ## QA Gate
@@ -241,11 +235,9 @@ Generation process
 Fail and rewrite if any of these are true:
 
 - the output is much shorter than the source scale budget without a defensible compression reason;
-- a course-analysis file is only a metrics/profile report or sample excerpt instead of the core knowledge walkthrough;
-- a larger source pack produces less visible knowledge prose than a supplied reference-quality DOCX without a source-scale justification;
 - more than a small minority of visible lines are copied slide bullets;
 - the output contains course admin or staff/contact/logistics text;
-- the course map is mostly a list of file titles;
+- the output contains Course Knowledge Map, source role summary, extraction limitation, strategy or prediction sections;
 - a section is mostly names without explanations;
 - labels and bullets replace connected explanation;
 - the model preserved broken OCR instead of reconstructing meaning;

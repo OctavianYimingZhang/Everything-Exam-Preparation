@@ -94,58 +94,40 @@ Visible structure:
 
 ```yaml
 ExamPrepNotesStudentContract:
-  course_knowledge_map: string
-  lecture_mapping: list[string]
-  exam_ready_knowledge_notes: list[PublicOutputPoint]
-  question_type_addons: list[QuestionTypeAddOn]
-  optional_visual_aids: list[GeneratedVisualAidCaption]
+  public_lecture_sections: list[PublicLectureSection]
 ```
 
-The visible top matter is `Course Knowledge Map`, not `Course-Level Exam Map`. It may state how the knowledge is organised, list knowledge sections, and map lectures/topics to those sections. Generic exam advice stays internal unless the user asks for a question-type add-on.
-
-When a user asks for course analysis as exam preparation, the student-facing artifact is still the knowledge walkthrough. Short analysis reports, information-profile summaries, CSV profiles, QA manifests and sample-only documents are audit add-ons, not substitutes for the public knowledge document.
+The visible top matter is only the document title. `Course Knowledge Map`, `Source Role Summary`, extraction limitations, prediction sections and generic exam advice stay internal unless the user explicitly requests a separate audit or exam-analysis report.
 
 Compact Public Notes Rule:
 
 - Internally, decompose sources into atomic knowledge items and protect every source-backed definition, criterion, mechanism, method, example, equation, graph, table, and workflow.
 - Publicly, render compact lecture-level exam notes. Do not expose the internal card scaffold.
-- Start major modules on new pages only when it improves readability and does not create large blank areas.
+- The public route is lecture-first: each official lecture/session becomes a visible lecture section, with concept-specific modules inside it.
 - Group protected atomic items into readable public points using concise paragraphs, bullets, equations, examples, comparisons, and mechanism chains.
 - Coverage must be complete; formatting must be compact.
-- Ordinary notes and compatibility walkthroughs use the Experimental Biology reference surface: Arial, 2.0 cm margins, 1.5 line spacing, left-aligned title/headings, justified body text, black visible text, and centered images. Theme colours, blue heading styles and non-black visible text are never allowed unless the user explicitly asks for colour.
-- Ordinary notes and compatibility walkthroughs must be source-scale outputs. The Experimental Biology reference controls density and surface quality only; it does not cap larger courses. Hundreds of source slides/pages require a substantially larger public knowledge document or a clearly split multi-volume document.
-- Source-scale output should be information-scale output when slide/page profiling is available. Do not count covers, lecture plans, video placeholders, admin pages or blanks as knowledge demand; do count dense mechanism, method, equation, graph, table, figure, speaker-note and named-example pages.
-- Reference-density calibration is part of release QA when a high-quality reference DOCX is supplied. For a larger or denser source pack, the public DOCX must exceed the reference's visible knowledge prose. A short analysis report below the reference's visible word/body-paragraph count is not acceptable for broad-course preparation.
+- Compact lecture notes and compatibility walkthroughs use Arial, 2.0 cm margins, compact 1.05-1.15 line spacing, left-aligned body text, black text, and lecture page breaks. Essay-style 2.5 cm margins, 1.5 spacing, and justified body text are reserved for Example Essay outputs.
 - A hard knowledge-only rendering gate applies before public DOCX writing. Ordinary notes and compatibility walkthroughs must not render generic advice sections such as `How To Answer`, `How To Use`, `Integrated reasoning`, `Integrated practical reasoning`, `Answer Logic`, `Exam Strategy`, `Recommended Approach`, `A strong answer should`, `Use this module`, or question-type reliability commentary. Keep only the underlying source-backed knowledge, rewritten as knowledge points, definitions, method workflows, calculations, graph/data rules, comparisons, examples, or limitations.
-- A hard workflow-leakage gate applies before public DOCX writing. Ordinary notes and compatibility walkthroughs must not render selected-route text, workflow plans, source-role maps, source-scale budgets, coverage floor reports, QA gate explanations, internal schema object names, generation-process notes, or statements about what the Skill included or excluded.
 - A public-point consistency gate applies before DOCX writing. Every visible internal KnowledgeCard must map to at least one public point, every public point must reference real source cards, and public point, block, and coverage-binding atomic-unit sets must agree.
 
-Final iterative output rules:
-
-- Later user edits override earlier compatible requirements. Before release, build a short internal checklist from the user's last revision instructions and verify the actual DOCX against that checklist.
-- Do not overcompress. If the user gives a target character or word range, stay inside it unless protected source content would be lost; if the target is unsafe, use the largest safe compression and say so outside the DOCX.
-- Expression efficiency means fewer repeated claims and tighter causal order, not deletion of mechanisms, calculations, controls, worked examples, interpretation rules, limitations or figure/table logic.
-- Delete or rewrite sections that only introduce a topic without explaining the examinable mechanism, method, data operation or calculation.
-- For bilingual or Chinese-facing outputs with academic English support, academic terms should receive English annotations at first meaningful use, formulas and calculation labels should be in English, and label text before colon-style labels should be English unless the user explicitly asks otherwise.
-- If revising from a DOCX and the user says images must not be changed, preserve image objects, order, size and placement as far as the format allows. Do not recreate, crop, recolour or resize images for compression convenience.
-- If the user asks to remove sentence-ending full stops, remove Chinese full stops and sentence-final English periods from public body text while preserving decimals, formula notation, file names and necessary scientific abbreviations.
-- Render-check the final DOCX when tooling is available. Inspect page images or PDF for missing images, bad table row splits, unreadable tables, large blank gaps, colour drift, blue/theme text, and formatting defects before release.
-
-Visible public point:
+Visible public module:
 
 ```yaml
-PublicOutputPoint:
-  point_id: string
-  lecture_session_id: string
-  point_title: string
-  priority: ★★★ | ★★ | ★
-  point_kind: definition | mechanism | method_workflow | criteria_list | comparison | calculation | graph_or_data_interpretation | canonical_example | compact_background
-  main_text: string
+PublicLectureSection:
+  lecture_title: string
+  lecture_scope: string
+  modules: list[PublicLectureModule]
+
+PublicLectureModule:
+  module_title: string
+  knowledge_functions: list[
+    definition_boundary | mechanism_process | method_readout | graph_data_interpretation | calculation_unit_worked_example | named_example | limitation_trap
+  ]
+  explanation: string
   blocks: list[PublicPointBlock]
-  covered_atomic_units: list[string]
 
 PublicPointBlock:
-  block_type: definitions | key_points | criteria | steps | mechanism | equation | calculation_logic | graph_logic | comparison | example | limitation
+  block_type: definition | mechanism | method | graph_data | calculation | example | limitation | comparison | table | explanation
   label: string | null
   content: string | list[string]
 ```

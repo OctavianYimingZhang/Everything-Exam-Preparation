@@ -32,7 +32,7 @@ wizard:
         - "strict_publish_gate"
         - "require_lineage"
         - "run_language_lint"
-        - "run_ontology_validator"
+        - "run_workflow_validator"
         - "fail_on_blocking_flags"
     - id: "plan_preview"
       label: "Plan Preview"

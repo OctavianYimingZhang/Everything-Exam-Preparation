@@ -1,314 +1,73 @@
 {
-  "object_type": "ExamPrepNotesPlan",
-  "notes_plan_id": "notes_plan_fixture_001",
-  "title": "Generic Mechanism Exam-Ready Knowledge Notes",
-  "target_group_key": "generic_current",
+  "object_type": "PublicLectureNotesPlan",
+  "notes_plan_id": "valid_exam_prep_notes_plan",
+  "title": "Lecture Knowledge Walkthrough",
+  "target_group_key": "sample_course",
   "source_scale_budget": {
-    "source_units_count": 1,
-    "readable_source_blocks": 1,
-    "source_pages_or_slides_estimate": 6,
-    "source_types": ["official_notes"],
-    "protected_knowledge_units_total": 8,
-    "excluded_non_knowledge_units_total": 0,
-    "target_public_units_min": 8,
-    "target_words_min": 420,
-    "target_words_max": 1400,
-    "compression_mode": "standard",
-    "compression_reason": "Single fixture source with eight protected conceptual units.",
+    "source_units_count": 2,
+    "readable_source_blocks": 8,
+    "protected_knowledge_units_total": 4,
+    "excluded_non_knowledge_units_total": 1,
+    "target_public_units_min": 2,
+    "target_words_min": 90,
+    "compression_mode": "explain_not_dump",
     "coverage_floor_status": "pass"
   },
-  "course_knowledge_map": "The fixture course is organised around causal mechanisms: defining the system, identifying input, tracing process, reading output, stating limitations, using examples, avoiding unsupported inference, and connecting the pieces into one examinable explanation.",
-  "course_modules": [
-    {
-      "object_type": "CourseModule",
-      "module_id": "module_001",
-      "module_title": "Source-backed mechanisms connect inputs, processes and outputs",
-      "module_function": "This module turns a generic mechanism source into a reference-caliber explanatory knowledge walkthrough.",
-      "source_lectures": ["fixture_lecture_1"],
-      "core_questions": [
-        "What counts as a mechanism?",
-        "How does input change become output change?",
-        "Which boundary prevents over-interpretation?"
-      ],
-      "examinable_units": [
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "unit_001",
-          "title": "A mechanism is a causal explanation from input to output",
-          "priority": "high",
-          "source_support": ["fixture_lecture_1"],
-          "explanation": "A mechanism is more than a named topic because it explains how an input produces an output through an ordered process. The examinable value comes from naming the starting condition, describing the intermediate change, and linking that change to the final readout. A student answer that states only the output is incomplete because it skips the causal bridge that makes the answer testable.",
-          "common_confusion_or_boundary": "Do not replace the mechanism with a label; the label is only useful when the causal sequence is explained."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "unit_002",
-          "title": "Input conditions define what the mechanism can explain",
-          "priority": "high",
-          "source_support": ["fixture_lecture_1"],
-          "explanation": "The input is the condition, signal, substrate, stimulus or perturbation that starts the explanation. It matters because the same process can have different meanings when the input changes. A source-backed explanation should therefore state the input before interpreting the output, otherwise the student may describe a true process but apply it to the wrong condition.",
-          "common_confusion_or_boundary": "An input is not a decorative context line; it controls the scope of the mechanism."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "unit_003",
-          "title": "The process step is the part that earns explanatory credit",
-          "priority": "high",
-          "source_support": ["fixture_lecture_1"],
-          "explanation": "The process step links input and output by showing what changes inside the system. In biological, chemical or methodological material this may be an enzyme step, binding event, transport process, signal transduction step, assay operation or calculation conversion. It should be written as connected prose so the reader can follow cause, sequence and consequence rather than memorising disconnected fragments.",
-          "common_confusion_or_boundary": "A list of components is not enough unless it explains how the components change the readout."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "unit_004",
-          "title": "Outputs need interpretation, not just naming",
-          "priority": "medium",
-          "source_support": ["fixture_lecture_1"],
-          "explanation": "The output is the observed result, measurement, phenotype, graph pattern, band pattern, concentration, rate or decision point that follows from the process. It becomes examinable only when the answer explains what the output means. A measured change should therefore be tied back to the mechanism, because the same output can be misleading if the mechanism, control or limitation is ignored.",
-          "common_confusion_or_boundary": "Treat the output as evidence to interpret, not as the entire answer."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "unit_005",
-          "title": "Limitations define the boundary of the claim",
-          "priority": "medium",
-          "source_support": ["fixture_lecture_1"],
-          "explanation": "A limitation states where the mechanism stops being a reliable explanation. This may be a missing control, a condition outside the tested range, a measurement that is indirect, or a step that depends on another variable. Including the limitation improves accuracy because it prevents the student from turning a supported mechanism into an over-strong universal claim.",
-          "common_confusion_or_boundary": "A limitation should change interpretation; it should not be a generic caution."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "unit_006",
-          "title": "Examples should demonstrate the same causal chain",
-          "priority": "medium",
-          "source_support": ["fixture_lecture_1"],
-          "explanation": "A source-backed example is useful when it makes the abstract mechanism concrete. The example should preserve the same input, process, output and limitation structure instead of adding unsupported detail. This keeps the public notes dense because the example deepens the explanation rather than becoming a separate anecdote that distracts from the examinable rule.",
-          "common_confusion_or_boundary": "Do not import facts from an unrelated example unless they are verified in the target source."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "unit_007",
-          "title": "Priority reflects answer value, not hidden scoring data",
-          "priority": "low",
-          "source_support": ["fixture_lecture_1"],
-          "explanation": "Visible priority is useful only when it helps the student decide what to master first. A high-priority point should be a definition, mechanism, calculation, graph rule, method workflow, named example or decision boundary that can produce marks directly. The reason for the priority should be converted into knowledge content rather than shown as hidden scoring or audit language.",
-          "common_confusion_or_boundary": "Do not expose hidden scoring fields in ordinary notes."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "unit_008",
-          "title": "A complete answer reconnects the causal chain",
-          "priority": "high",
-          "source_support": ["fixture_lecture_1"],
-          "explanation": "The final synthesis should reconnect input, process, output and limitation in one causal explanation. This is the difference between revision notes that merely list facts and notes that prepare a student to answer a question. When the public unit is written as a coherent paragraph, the reader can see how each detail changes the next step and why the conclusion follows.",
-          "common_confusion_or_boundary": "If the explanation still reads like a checklist, it should be rewritten as connected prose."
-        }
-      ]
-    }
-  ],
-  "course_sections": [
-    {
-      "section_id": "section_001",
-      "section_title": "Generic Mechanism",
-      "section_function": "Explains how a source-backed mechanism produces a measurable output.",
-      "source_anchors": ["fake_lecture.txt:1"]
-    }
-  ],
-  "lecture_mapping": [
-    {
-      "lecture_session_id": "lecture_001",
-      "section_id": "section_001",
-      "source_order": 1,
-      "title": "Generic Lecture",
-      "source_anchors": ["fake_lecture.txt:1"]
-    }
-  ],
-  "knowledge_cards": [
-    {
-      "card_id": "card_001",
-      "kp_id": "kp_001",
-      "section_id": "section_001",
-      "lecture_session_id": "lecture_001",
-      "module_id": "module_001",
-      "module_title": "Generic mechanism as a source-backed causal module",
-      "source_baseline_card_id": "baseline_card_001",
-      "priority": "★★★",
-      "exam_specificity": "mechanism",
-      "core_exam_claim": "A source-backed mechanism links input, process, output, and limitation.",
-      "key_definitions": ["A mechanism is a source-backed causal explanation from input to output."],
-      "exam_ready_knowledge_synthesis": "The examinable point is the causal link between mechanism and output, with the limitation stated explicitly.",
-      "criteria_components_steps": ["Identify input.", "Explain process.", "State output.", "State limitation."],
-      "mechanism_or_process_logic": "Input changes the mechanism; the mechanism changes the readout; the limitation defines scope.",
-      "canonical_example": "A source-backed example demonstrates the same causal chain without adding unsupported detail.",
-      "exam_use": "Use this module to answer a short-answer or case prompt asking why the output changes.",
-      "common_error_or_trap": "Do not state the output without the causal process.",
-      "must_master": ["Define the mechanism.", "Link input to output.", "State the limitation."],
-      "protected_source_items_covered": ["official definition", "mechanism chain", "summary point"],
-      "source_anchors": ["fake_lecture.txt:1"],
-      "coverage_status": "tested",
-      "student_visible": true
-    }
-  ],
-  "public_output_points": [
-    {
-      "point_id": "public_point_001",
-      "lecture_session_id": "lecture_001",
-      "source_card_ids": ["card_001"],
-      "point_title": "Generic mechanism as a source-backed causal module",
-      "priority": "★★★",
-      "point_kind": "mechanism",
-      "main_text": "A source-backed mechanism links input, process, output, and limitation. The examinable knowledge is the causal link between mechanism and output, with the limitation stated explicitly.",
-      "blocks": [
-        {
-          "block_type": "definitions",
-          "label": "Definitions",
-          "content": ["A mechanism is a source-backed causal explanation from input to output."],
-          "covered_atomic_units": ["aku_definition"]
-        },
-        {
-          "block_type": "criteria",
-          "label": "Criteria",
-          "content": ["Identify input.", "Explain process.", "State output.", "State limitation."],
-          "covered_atomic_units": ["aku_steps"]
-        },
-        {
-          "block_type": "mechanism",
-          "label": "Mechanism",
-          "content": "Input changes the mechanism; the mechanism changes the readout; the limitation defines scope.",
-          "covered_atomic_units": ["aku_mechanism"]
-        },
-        {
-          "block_type": "example",
-          "label": "Example",
-          "content": "A source-backed example demonstrates the same causal chain without adding unsupported detail.",
-          "covered_atomic_units": ["aku_example"]
-        }
-      ],
-      "covered_atomic_units": ["aku_definition", "aku_steps", "aku_mechanism", "aku_example"]
-    }
-  ],
   "output_language_profile": {
-    "requested_language": null,
-    "source_languages": ["English"],
-    "output_language_policy": ["default_english_unless_requested"],
-    "public_label_policy": ["default_english_labels"],
-    "explicit_language_request": false,
-    "user_requested_mixed_language": false
+    "output_language": "English",
+    "allow_bilingual": false,
+    "preserve_technical_terms": true
   },
   "route_docx_style_profile": {
     "route": "exam_prep_notes_docx",
     "margin_cm": 2.0,
-    "line_spacing": 1.5,
-    "body_alignment": "justified",
+    "line_spacing": 1.1,
+    "body_alignment": "left",
     "title_alignment": "left",
     "heading_alignment": "left",
     "image_alignment": "center",
     "body_font_pt": 10.5,
     "title_font_pt": 14.0,
-    "heading_font_pt": 12,
-    "module_heading_font_pt": 14,
+    "lecture_heading_font_pt": 13.0,
+    "module_heading_font_pt": 11.5,
     "text_color": "black",
-    "module_page_breaks": false,
+    "lecture_page_breaks": false,
     "theme_colours_allowed": false,
     "blue_heading_styles_allowed": false
   },
-  "render_decisions": [
+  "public_lecture_sections": [
     {
-      "decision_id": "render_decision_001",
-      "source_field": "exam_specificity",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "Exam specificity controls planning and priority, not ordinary note headings."
+      "lecture_title": "Lecture 1: Membranes as selective chemical boundaries",
+      "modules": [
+        {
+          "module_title": "Bilayer chemistry explains selective permeability",
+          "knowledge_functions": ["definition_boundary", "mechanism_process"],
+          "explanation": "A phospholipid bilayer is a chemical boundary because hydrophilic head groups face water while hydrophobic tails form an internal non-polar core. Small non-polar molecules cross more easily than ions because charged solutes must shed hydration shells and enter an energetically unfavourable core.",
+          "blocks": [
+            {
+              "block_type": "limitation",
+              "content": "Permeability is not absolute: transport proteins change the effective boundary for specific ions or polar solutes."
+            }
+          ]
+        }
+      ]
     },
     {
-      "decision_id": "render_decision_002",
-      "source_field": "core_exam_claim",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "The claim is merged into compact public prose."
-    },
-    {
-      "decision_id": "render_decision_003",
-      "source_field": "exam_use",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "Generic exam advice is not rendered in ordinary notes."
-    },
-    {
-      "decision_id": "render_decision_004",
-      "source_field": "common_error_or_trap",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "Trap wording belongs in question-type add-ons unless requested."
-    },
-    {
-      "decision_id": "render_decision_005",
-      "source_field": "must_master",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "Checklist content is integrated into public blocks instead of exposed as an internal heading."
+      "lecture_title": "Lecture 2: Transport proteins convert gradients into flux",
+      "modules": [
+        {
+          "module_title": "Electrochemical gradients combine concentration and voltage",
+          "knowledge_functions": ["mechanism_process", "calculation_unit_worked_example"],
+          "explanation": "An electrochemical gradient has a concentration component and an electrical component. A cation may move down its concentration gradient but against the membrane voltage, so the direction of net movement depends on the combined free-energy difference rather than concentration alone.",
+          "blocks": [
+            {
+              "block_type": "calculation",
+              "label": "Worked example",
+              "content": "For an ion, compare the chemical term with the voltage term before predicting net flux direction."
+            }
+          ]
+        }
+      ]
     }
-  ],
-  "point_coverage_bindings": [
-    {
-      "binding_id": "point_binding_001",
-      "point_id": "public_point_001",
-      "covered_atomic_units": ["aku_definition", "aku_steps", "aku_mechanism", "aku_example"],
-      "protected_items_preserved": true,
-      "missing_protected_items": [],
-      "qa_status": "pass"
-    }
-  ],
-  "official_definition_records": [
-    {
-      "term": "generic mechanism",
-      "definition_text": "A source-backed causal explanation from input to output.",
-      "verification_status": "official",
-      "source_anchors": ["fake_lecture.txt:1"]
-    }
-  ],
-  "atomic_knowledge_ledger_binding": {
-    "ledger_id": "atomic_ledger_fixture_001",
-    "knowledge_units_total": 3,
-    "student_visible_units_bound": 3,
-    "administrative_units_excluded": 0,
-    "missing_units": []
-  },
-  "source_baseline_binding": {
-    "baseline_plan_id": "baseline_plan_fixture_001",
-    "coverage_floor_status": "pass",
-    "protected_source_items_total": 3,
-    "limitations": []
-  },
-  "exam_emphasis_binding": {
-    "formal_papers_used": true,
-    "compatible_question_types": ["mcq", "short_answer"],
-    "limitations": ["Past papers control emphasis only, not factual truth or exact future wording."]
-  },
-  "exam_overlay_binding": {
-    "overlay_id": "overlay_fixture_001",
-    "overlay_status": "pass",
-    "protected_items_preserved": true,
-    "limitations": []
-  },
-  "knowledge_only_student_view_binding": {
-    "view_id": "knowledge_only_view_fixture_001",
-    "course_knowledge_map_used": true,
-    "administrative_exam_text_removed": true,
-    "forbidden_public_phrases": []
-  },
-  "question_type_addons": [],
-  "optional_visual_aids": [],
-  "content_coverage_checks": [
-    {
-      "check_id": "coverage_001",
-      "status": "pass",
-      "scope": "student_visible_knowledge_cards",
-      "message": "Every visible card has source support, star priority, exam specificity, protected coverage, and coverage status."
-    }
-  ],
-  "student_visible_structure": ["Course Knowledge Map", "CourseModule", "ExaminableKnowledgeUnit", "PublicOutputPoint", "Definitions", "Criteria", "Mechanism", "Example"],
-  "forbidden_student_fields": ["source_anchor", "confidence", "examiner_operation", "exam_specificity", "core_exam_claim", "exam_use", "common_error_or_trap", "must_master"],
-  "qa_flags": [],
-  "qa_status": "pass"
+  ]
 }

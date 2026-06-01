@@ -141,16 +141,6 @@ Compression must preserve causal strength, scope qualifiers, negative distinctio
 
 If the user asks for a percentage reduction that would delete protected source skeleton or citation-supported detail, reject that target and use the largest safe reduction. The final answer should not mention internal compression targets or word-count budgeting.
 
-If the user gives iterative final-output edits, treat them as a release checklist for the actual DOCX. Preserve compatible later requirements such as target character range, image preservation, English academic annotations, English formula or calculation labels, no sentence-ending full stops, and render inspection. Do not satisfy a compression request by deleting the source skeleton, images, worked calculations, method controls, figure/table logic, limitations, or named examples that still improve understanding.
-
-For bilingual or Chinese-facing notes, expression efficiency normally means:
-
-- academic terms are annotated in English at first meaningful use, then not repeated mechanically;
-- text before colon-style labels is English when the user asks for that convention;
-- formulas, units, variables and calculation labels are in English unless the user requests another language;
-- intro-only paragraphs are deleted or rewritten into a mechanism, method, calculation, control, readout, limitation or interpretation rule;
-- visible prose is smoother and more causal, not shorter by arbitrary deletion.
-
 ## Detail-Level Discipline
 
 Named detail is valuable only when it improves the answer's function. Do not include a list of channels, receptors, nuclei, genes, cell classes, molecules, methods, firms, case names, equations, or pathways unless the lecture/source logic or exact question requires that level.

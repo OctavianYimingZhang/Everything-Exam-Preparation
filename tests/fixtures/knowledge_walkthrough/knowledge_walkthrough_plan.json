@@ -1,208 +1,72 @@
 {
-  "object_type": "KnowledgeWalkthroughPlan",
-  "walkthrough_id": "kw_fixture_001",
+  "object_type": "PublicLectureNotesPlan",
+  "walkthrough_id": "valid_knowledge_walkthrough_plan",
   "title": "Lecture Knowledge Walkthrough",
-  "target_group_key": "generic_current",
+  "target_group_key": "sample_course",
   "source_scale_budget": {
-    "source_units_count": 1,
-    "readable_source_blocks": 1,
-    "source_pages_or_slides_estimate": 8,
-    "source_types": ["lecture"],
-    "protected_knowledge_units_total": 8,
-    "excluded_non_knowledge_units_total": 0,
-    "target_public_units_min": 8,
-    "target_words_min": 420,
-    "target_words_max": 1400,
-    "compression_mode": "standard",
-    "compression_reason": "Single lecture fixture with eight protected conceptual units.",
+    "source_units_count": 2,
+    "readable_source_blocks": 8,
+    "protected_knowledge_units_total": 4,
+    "excluded_non_knowledge_units_total": 1,
+    "target_public_units_min": 2,
+    "target_words_min": 90,
+    "compression_mode": "explain_not_dump",
     "coverage_floor_status": "pass"
   },
-  "course_knowledge_map": "The lecture is organised around metabolic integration: pathway purpose, input molecules, regulatory checkpoints, flux changes, tissue context, hormonal signals, energy charge, and common interpretation boundaries.",
-  "course_modules": [
-    {
-      "object_type": "CourseModule",
-      "module_id": "kw_module_001",
-      "module_title": "Metabolic pathways are controlled conversions rather than enzyme lists",
-      "module_function": "This module explains how pathway purpose, regulation and physiological context combine into an examinable mechanism.",
-      "source_lectures": ["lecture_1"],
-      "core_questions": [
-        "What problem does the pathway solve?",
-        "How is flux changed?",
-        "Why does tissue and energy state matter?"
-      ],
-      "examinable_units": [
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "kw_unit_001",
-          "title": "Pathway purpose is defined by input, output and physiological use",
-          "priority": "high",
-          "source_support": ["lecture_1"],
-          "explanation": "A metabolic pathway should be understood as a controlled conversion of input molecules into an output that solves a physiological problem. The pathway name is only the label; the examinable explanation comes from identifying the substrate supply, the useful product, and the condition in which that product matters. This prevents revision from becoming a list of intermediates without biological meaning."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "kw_unit_002",
-          "title": "Substrate supply changes pathway flux before enzyme regulation is considered",
-          "priority": "medium",
-          "source_support": ["lecture_1"],
-          "explanation": "Flux depends first on whether the input molecule is available. Feeding, fasting, exercise or stress can change the supply of glucose, fatty acids, amino acids or stored substrates, so the same enzymatic pathway may have different activity in different states. A good explanation therefore begins with the source of the substrate before moving to the regulatory step."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "kw_unit_003",
-          "title": "Regulatory checkpoints control commitment and rate",
-          "priority": "high",
-          "source_support": ["lecture_1"],
-          "explanation": "A checkpoint is usually placed at a committed or rate-limiting step because changing that enzyme changes downstream flux. This is why a pathway can be present but not active: the cell may contain the enzymes, yet the signal state keeps the key checkpoint low. Exam answers should name the checkpoint and explain how its activity changes the pathway outcome."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "kw_unit_004",
-          "title": "Energy charge links pathway activity to cellular demand",
-          "priority": "high",
-          "source_support": ["lecture_1"],
-          "explanation": "Energy charge describes whether the cell has enough usable energy. High ATP generally signals that energy-producing pathways can slow, whereas AMP or ADP signals demand and can activate pathways that restore ATP. This connection matters because it turns a molecular pathway into a control system that responds to the cell's current energetic state."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "kw_unit_005",
-          "title": "Hormonal signals connect cell metabolism to whole-body state",
-          "priority": "medium",
-          "source_support": ["lecture_1"],
-          "explanation": "Insulin and glucagon are useful examples because they tell tissues whether the body is in a fed or fasting state. Their effect on pathway enzymes coordinates storage, mobilisation and fuel use across tissues. A pathway explanation is therefore stronger when it links the local enzyme change to the whole-body signal that made the change useful."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "kw_unit_006",
-          "title": "Tissue context explains why the same pathway has different consequences",
-          "priority": "medium",
-          "source_support": ["lecture_1"],
-          "explanation": "Different tissues have different metabolic roles, stores and demands. Liver metabolism often supports blood fuel homeostasis, muscle metabolism supports contraction and energy turnover, and adipose tissue supports storage and mobilisation. The same regulatory principle can therefore lead to different outcomes depending on tissue context, so tissue identity should be part of the interpretation."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "kw_unit_007",
-          "title": "Pathway outputs must be interpreted through control state",
-          "priority": "medium",
-          "source_support": ["lecture_1"],
-          "explanation": "A product concentration, flux change or graph trend does not explain itself. It must be interpreted through substrate availability, checkpoint control, energy state and hormonal context. This is why the same output may indicate storage in one condition but mobilisation or compensation in another. The mechanism and context make the readout meaningful."
-        },
-        {
-          "object_type": "ExaminableKnowledgeUnit",
-          "unit_id": "kw_unit_008",
-          "title": "The complete pathway answer links condition to consequence",
-          "priority": "high",
-          "source_support": ["lecture_1"],
-          "explanation": "A complete metabolic answer moves from condition to substrate supply, then to checkpoint regulation, flux, output and physiological consequence. This structure is useful because it keeps memorised details attached to a causal explanation. It also exposes common mistakes, such as describing an enzyme without saying why the pathway is active in that condition."
-        }
-      ]
-    }
-  ],
-  "lecture_order": ["lecture_1"],
+  "output_language_profile": {
+    "output_language": "English",
+    "allow_bilingual": false,
+    "preserve_technical_terms": true
+  },
   "route_docx_style_profile": {
-    "style_profile_id": "kw_style_fixture_001",
     "route": "knowledge_walkthrough_docx",
     "margin_cm": 2.0,
-    "line_spacing": 1.5,
-    "body_alignment": "justified",
+    "line_spacing": 1.1,
+    "body_alignment": "left",
     "title_alignment": "left",
     "heading_alignment": "left",
     "image_alignment": "center",
     "body_font_pt": 10.5,
     "title_font_pt": 14.0,
-    "heading_font_pt": 12.0,
-    "lecture_heading_font_pt": 14.0,
+    "lecture_heading_font_pt": 13.0,
+    "module_heading_font_pt": 11.5,
     "text_color": "black",
-    "module_page_breaks": false,
+    "lecture_page_breaks": false,
     "theme_colours_allowed": false,
     "blue_heading_styles_allowed": false
   },
-  "student_visible_structure": [
-    "lecture_title",
-    "lecture_overview",
-    "module_map",
-    "module_title",
-    "module_overview",
-    "knowledge_walkthrough",
-    "key_logic",
-    "key_distinctions",
-    "knowledge_points",
-    "lecture_recap"
-  ],
-  "forbidden_student_fields": [
-    "source_anchor",
-    "confidence",
-    "evidence_score",
-    "recurrence_count",
-    "examiner_operation",
-    "discriminator_axis",
-    "essay_plan",
-    "practice_question",
-    "answer_key"
-  ],
-  "lectures": [
+  "public_lecture_sections": [
     {
-      "lecture_id": "lecture_1",
-      "lecture_title": "Generic Metabolic Integration",
-      "lecture_overview": "This lecture explains how a pathway is controlled by substrate supply, energy state, and tissue context. The main idea is that cells do not run pathways as isolated lists of enzymes; they coordinate intake, storage, mobilisation, and disposal according to physiological demand.",
-      "core_logic": "substrate supply -> regulatory checkpoint -> pathway flux -> tissue-level consequence",
-      "module_map": [
-        {
-          "module_id": "module_1_1",
-          "module_title": "Pathway purpose",
-          "one_sentence": "Explains why the pathway exists and what problem it solves."
-        },
-        {
-          "module_id": "module_1_2",
-          "module_title": "Regulatory checkpoint",
-          "one_sentence": "Explains how the pathway is switched up or down."
-        }
-      ],
+      "lecture_title": "Lecture 1: Experimental measurements require a readable signal",
       "modules": [
         {
-          "object_type": "LectureModule",
-          "module_id": "module_1_1",
-          "module_title": "Pathway purpose",
-          "module_overview": "This module establishes the biological problem solved by the pathway. The important point is not to memorise every intermediate first, but to understand the input, the useful output, and why the output matters.",
-          "knowledge_walkthrough": "A pathway should be read as a controlled conversion of **input molecules** into a useful **metabolic output**. The pathway becomes meaningful when it is linked to the condition in which it runs, such as feeding, fasting, stress, or high energy demand.",
-          "key_logic": "input molecule -> controlled conversion -> useful output -> physiological role",
-          "common_confusions": [
-            "Do not treat pathway names as isolated facts; connect each pathway to the condition that activates it."
-          ],
-          "must_master": [
-            "**Input** and **output** define the pathway's purpose.",
-            "Regulation decides whether the pathway is actually active.",
-            "Physiological context explains why the pathway matters."
-          ],
-          "source_anchors": ["fixture_lecture_1"],
-          "student_visible": true
-        },
-        {
-          "object_type": "LectureModule",
-          "module_id": "module_1_2",
-          "module_title": "Regulatory checkpoint",
-          "module_overview": "This module explains why one regulated step often controls the whole pathway. A checkpoint is important because changing its activity changes downstream flux.",
-          "knowledge_walkthrough": "A regulatory checkpoint usually sits near the committed or rate-limiting step. Signals such as **ATP**, **AMP**, **insulin**, or **glucagon** change enzyme activity so that pathway flux matches the cell's energy state.",
-          "key_logic": "signal -> checkpoint enzyme -> flux change -> metabolic outcome",
-          "common_confusions": [
-            "A pathway enzyme can be present but inactive if the regulatory signal is wrong."
-          ],
-          "must_master": [
-            "**Checkpoint enzymes** control flux.",
-            "**Hormonal signals** connect pathway activity to whole-body state.",
-            "**Energy charge** connects pathway activity to cellular demand."
-          ],
-          "source_anchors": ["fixture_lecture_1"],
-          "student_visible": true
+          "module_title": "Assay readouts link a biological process to a measurable signal",
+          "knowledge_functions": ["definition_boundary", "method_readout"],
+          "explanation": "An assay is useful only when the measured signal is coupled to the biological process being tested. The readout must change when the process changes, and the control condition must show the baseline signal so that a treatment effect can be separated from background variation.",
+          "blocks": [
+            {
+              "block_type": "limitation",
+              "content": "A high signal is not automatically a biological effect; it may reflect background, saturation, poor normalization, or a reagent-specific artefact."
+            }
+          ]
         }
-      ],
-      "lecture_recap": [
-        "A pathway should be understood by its input, output, control point, and physiological use.",
-        "Regulatory checkpoints explain why pathway activity changes between conditions.",
-        "Hormonal and energy-state signals connect molecular mechanisms to whole-body metabolism.",
-        "The most useful revision approach is to explain the pathway as a mechanism chain, not as a list."
+      ]
+    },
+    {
+      "lecture_title": "Lecture 2: Controls define the interpretation boundary",
+      "modules": [
+        {
+          "module_title": "Negative and positive controls test different parts of the claim",
+          "knowledge_functions": ["method_readout", "limitation_trap"],
+          "explanation": "A negative control estimates the signal expected without the tested process, while a positive control verifies that the assay can detect the process when it is present. Together they define whether a failed result is biologically meaningful or simply an assay failure.",
+          "blocks": [
+            {
+              "block_type": "comparison",
+              "content": "A negative control protects against false positives; a positive control protects against false negatives."
+            }
+          ]
+        }
       ]
     }
-  ],
-  "qa_status": "pass"
+  ]
 }

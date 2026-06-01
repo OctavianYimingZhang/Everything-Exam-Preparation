@@ -1,6 +1,6 @@
 # Knowledge Surface Protocol
 
-This protocol controls the last public-rendering layer for all student-facing outputs. It sits after evidence extraction, ontology construction, planning, and route-specific drafting.
+This protocol controls the last public-rendering layer for all student-facing outputs. It sits after evidence extraction, source structuring, planning, and route-specific drafting.
 
 The problem it prevents is not factual inaccuracy alone. It prevents the Skill from exposing planning scaffolds, source-route narration, AI process notes, rigid bucket labels, colon-slot fragments, or shorthand flow charts as if they were revision content.
 
@@ -21,8 +21,6 @@ A public sentence, heading, bullet, table row, figure caption, or note is allowe
 - connects concepts in a way that improves biological, clinical, methodological, or quantitative understanding.
 
 A public item is forbidden when its main function is to describe the Skill, the source route, the AI workflow, the exam-prediction workflow, the evidence audit, or how the student should use the document.
-
-This includes visible mentions of selected route, workflow plan, source role map, source scale budget, coverage floor status, QA gate, KnowledgeSurfaceContract, ExaminableKnowledgeUnit, CourseModule, SourceDistillationPass, generation process, or statements such as what the Skill included, excluded, checked, or generated. These objects are internal only.
 
 ## KnowledgeSurfaceContract
 
@@ -61,11 +59,11 @@ KnowledgeSurfaceContract:
   density_policy:
     mode: source_adaptive
   layout_policy:
-    body_alignment: justified
+    body_alignment: left
     image_alignment: centered
     title_alignment: left
     heading_alignment: left
-    line_spacing: 1.5
+    line_spacing: 1.05-1.15
     image_scaling: readability_preserving_auto_fit
   qa_status:
 ```
@@ -120,15 +118,6 @@ The notes say...
 According to page...
 PPT page...
 English explanations extracted from...
-Selected route...
-Workflow plan...
-Source scale budget...
-Coverage floor status...
-KnowledgeSurfaceContract...
-ExaminableKnowledgeUnit...
-CourseModule...
-QA gate...
-Generation process...
 ```
 
 Rewrite by deleting the source-route wrapper and keeping only the knowledge.
@@ -279,9 +268,8 @@ Allowed public structure:
 
 ```text
 Title
-Course Knowledge Map
-Lecture or Topic Title
-[★★★ | ★★ | ★] Topic-specific knowledge heading
+Lecture Title
+Topic-specific module heading
 Connected explanatory prose
 Optional equation, worked example, method workflow, comparison, or limitation block when useful
 ```
@@ -300,18 +288,20 @@ Arrow chains used as the main explanation
 Coverage note
 Evidence used
 AI process note
+Course Knowledge Map
+Predicted Essay Theme
+Section A Strategy
 ```
 
-A `Course Knowledge Map` is allowed only when it is a knowledge map: topic boundaries, concept dependencies, and major knowledge blocks. It must not contain instructions about how the AI generated the notes, why evidence was selected, or what was intentionally omitted.
+`Course Knowledge Map` and equivalent course-map top matter are internal-only for ordinary notes and walkthroughs.
 
 ## DOCX Layout Surface
 
 For `exam_prep_notes_docx` and `knowledge_walkthrough_docx`:
 
-- body text is justified;
-- titles, lecture headings and all subheadings are left aligned;
+- body text, titles, lecture headings and all subheadings are left aligned;
 - images are centered;
-- default line spacing is 1.5;
+- default line spacing is compact, 1.05-1.15;
 - body text uses black Arial in a readable size;
 - route images are scaled automatically to the available content area, preserving aspect ratio and avoiding upscaling that reduces readability;
 - large blank areas inside Word pages should be reduced by fitting images to page context and by avoiding unnecessary page breaks;
@@ -372,19 +362,6 @@ Rules:
 - The conclusion is mandatory unless the user explicitly asks for a fragment rather than a complete essay.
 - The conclusion must synthesise the answer and should not introduce new evidence.
 
-## Final Iterative File Contract
-
-When a user revises the requested output over several messages, the latest compatible instructions control the final file. A DOCX must not be released merely because the content is correct if it still violates a later file-level instruction.
-
-Apply these gates when the user has requested them or supplied a reference that implies them:
-
-- safe compression: expression efficiency removes repetition and improves logic, but does not delete protected mechanisms, formulas, worked examples, controls, limitations, figure/table logic or source-backed detail;
-- target range: explicit word or character ranges are enforced on the public DOCX unless they would remove protected source content;
-- image preservation: when revising a DOCX and the user says images should not change, preserve image objects, order, size, crop and placement as far as the format allows;
-- academic-English support: bilingual or Chinese-facing outputs can require English annotations for academic terms, English formulas, and English pre-colon labels;
-- punctuation: when the user asks to remove full stops, remove Chinese full stops and sentence-final English periods while preserving decimals, formula notation, filenames and necessary scientific abbreviations;
-- render verification: render the final DOCX to PDF or page images when tooling is available and inspect for missing images, unreadable tables, row splits, large blank areas, colour drift and other visible defects.
-
 ## Highlight Surface Rules For Essays
 
 Highlighting is a source-bound rendering rule, not a style choice.
@@ -412,10 +389,8 @@ Before publishing any public DOCX, run this sequence:
 2. Non-knowledge scan: reject source-route narration, AI process, audit trace, study advice, and exam-meta leakage.
 3. Explanatory-form scan: reject colon-slot fragmentation and shorthand arrow chains when they replace explanation.
 4. Label-decision scan: delete or merge rigid template labels unless the label is semantically necessary.
-5. Source-scale scan: reject ordinary notes/walkthroughs that fall below the derived unit or visible-word floor from informative pages, information mass, source units, raw pages/slides when no profile exists, or protected knowledge count.
-6. Reference-density scan: when a reference-quality DOCX is supplied, reject broad-course analysis/walkthrough files whose visible knowledge prose is below the reference without a defensible source-scale reason.
-7. Route-style scan: notes use black Arial, left-aligned headings, justified body text, centered images, 1.5 spacing, and readability-preserving image fit.
-8. Essay-specific scan: adaptive budget, conclusion, source-class highlights, citation colour, and word-count efficiency.
+5. Route-style scan: notes use black Arial, left-aligned headings, left-aligned body text, centered images, compact 1.05-1.15 spacing, and readability-preserving image fit.
+6. Essay-specific scan: adaptive budget, conclusion, source-class highlights, citation colour, and word-count efficiency.
 ```
 
 If any scan fails, rewrite the public surface rather than adding a disclaimer.

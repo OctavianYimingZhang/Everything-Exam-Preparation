@@ -1,42 +1,15 @@
 {
-  "object_type": "RunManifest",
-  "run_id": "RUN001",
-  "created_at": "2026-05-24T00:00:00Z",
-  "request_scope": "fixture_control_plane",
-  "source_hashes": {
-    "SRC001": "hash001"
-  },
-  "actions": [
-    {
-      "action_id": "ACT001",
-      "action_type": "BuildFragmentIndex",
-      "status": "pass",
-      "inputs": ["SRC001"],
-      "outputs": ["PART001"]
-    },
-    {
-      "action_id": "ACT002",
-      "action_type": "ApproveStudentOutput",
-      "status": "pass",
-      "inputs": ["ART001"],
-      "outputs": ["outputs/Lecture_Knowledge_Walkthrough.docx"]
-    }
+  "run_id": "fixture-run",
+  "task_type": "exam_prep_notes",
+  "sources": [
+    {"id": "lecture_1", "role": "lecture", "path": "fake_lecture.txt"},
+    {"id": "paper_1", "role": "past_paper", "path": "fake_paper.txt"}
   ],
-  "object_store": {
-    "objects_dir": "internal_qa/ontology_objects",
-    "links": "internal_qa/ontology_links/links.jsonl"
-  },
-  "artifacts": [
-    {
-      "artifact_id": "ART001",
-      "path": "outputs/Lecture_Knowledge_Walkthrough.docx",
-      "student_visible": true,
-      "qa_status": "pass"
-    }
+  "outputs": [
+    {"id": "notes_1", "type": "revision_notes", "path": "final_notes.md"}
   ],
-  "qa_summary": {
-    "blocking": 0,
-    "warning": 0,
-    "info": 1
+  "lineage": {
+    "source_index": "source_scan.json",
+    "events": "lineage_events.jsonl"
   }
 }

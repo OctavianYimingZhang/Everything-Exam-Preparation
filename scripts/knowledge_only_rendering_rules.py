@@ -11,6 +11,8 @@ FORBIDDEN_ADVISORY_PHRASES = [
     "all unit sections are separated",
     "answer logic",
     "exam strategy",
+    "examinable knowledge units",
+    "extraction limitation",
     "generic exam advice",
     "how to answer",
     "how to use this document",
@@ -26,22 +28,27 @@ FORBIDDEN_ADVISORY_PHRASES = [
     "question-type dependent",
     "recommended approach",
     "recommended output route",
-    "selected route",
+    "section a strategy",
+    "section b strategy",
     "source coverage",
     "source limits",
+    "source role summary",
     "source rules",
-    "source role map",
-    "source scale budget",
+    "source scope",
+    "study order",
     "this pack uses only",
     "the notes are organised",
     "this document is organised",
     "use this module",
-    "workflow plan",
 ]
 
 FORBIDDEN_ADVISORY_HEADINGS = [
     "Answer Logic",
+    "Conceptual Course Map",
+    "Course Knowledge Map",
     "Exam Strategy",
+    "Examinable Knowledge Units",
+    "Extraction Limitation",
     "How To Answer This Exam",
     "How To Use This Document",
     "Included Unit Files",
@@ -49,13 +56,14 @@ FORBIDDEN_ADVISORY_HEADINGS = [
     "Integrated Reasoning",
     "Must Master",
     "Recommended Approach",
-    "Selected Route",
+    "Section A Strategy",
+    "Section B Strategy",
     "Source Coverage",
     "Source Limits",
+    "Source Role Summary",
     "Source Rules",
-    "Source Role Map",
-    "Source Scale Budget",
-    "Workflow Plan",
+    "Source Scope",
+    "Study Order",
     "What This Lecture Is About",
     "What This Module Explains",
 ]
@@ -76,14 +84,6 @@ FORBIDDEN_NON_KNOWLEDGE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "public_source_workflow_scaffold",
         re.compile(r"\b(?:Source\s+Rules|Included\s+Unit\s+Files|Source\s+Coverage|Source\s+Limits|Course\s+folders\s+listed\s+in\s+this\s+thread|local\s+extracted\s+materials|extracted\s+characters|PDF/page\s+sources|slide\s+sources|legacy\s+PPT\s+strings)\b", re.I),
-    ),
-    (
-        "public_workflow_or_schema_scaffold",
-        re.compile(r"\b(?:Selected\s+Route|Workflow\s+Plan|SourceRoleMap|Source\s+Role\s+Map|NonKnowledgeNoiseFilter|SourceDistillationPass|SourceScaleBudget|Source\s+Scale\s+Budget|Coverage\s+Floor(?:\s+Status)?|KnowledgeSurfaceContract|ExaminableKnowledgeUnit|CourseModule|QA\s+Gate|Generation\s+Process)\b", re.I),
-    ),
-    (
-        "public_workflow_or_schema_scaffold",
-        re.compile(r"\b(?:route\s+selected|selected\s+route|workflow\s+used|generation\s+workflow|internal\s+workflow|coverage\s+floor\s+(?:passes|fails|status)|public\s+surface\s+gate)\b", re.I),
     ),
     (
         "public_source_workflow_scaffold",
@@ -274,3 +274,5 @@ def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
         hits.append("ocr_fragment_dump")
 
     return sorted(set(hits))
+    "conceptual course map",
+    "course knowledge map",

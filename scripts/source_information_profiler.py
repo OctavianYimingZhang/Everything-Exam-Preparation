@@ -23,7 +23,10 @@ except Exception:  # pragma: no cover
 
 WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_'/.-]*")
 EQUATION_RE = re.compile(r"(?:=|->|<->|[A-Za-z]\d|pH|pKa|logP|EC50|IC50|K[dm]|Vmax|Km)")
-PLAN_RE = re.compile(r"\b(?:lecture\s+plan|outline|overview|today'?s\s+lecture|learning\s+outcomes?|objectives?|reading|assessment|timetable|housekeeping)\b", re.I)
+PLAN_RE = re.compile(
+    r"\b(?:lecture\s+plan|outline|overview|today'?s\s+lecture|learning\s+outcomes?|objectives?|reading|assessment|timetable|housekeeping)\b",
+    re.I,
+)
 COVER_RE = re.compile(r"\b(?:lecture|course|module|unit|welcome|introduction)\b", re.I)
 SCIENCE_SIGNAL_RE = re.compile(
     r"\b(?:gene|protein|enzyme|receptor|pathway|assay|cell|drug|dose|metabolism|sequence|rna|dna|pcr|clinical|plant|hormone|mutation|trial|disease)\b",
@@ -75,13 +78,11 @@ def classify_page(index: int, text: str, note_text: str, metrics: dict[str, Any]
     signal = 0.4 if science_signal else 0.0
     score = round(max(0.25, base + notes + structure + visuals + equations + signal), 2)
     if score < 0.75:
-        band = "light_information"
+        band = "light_context"
     elif score < 1.75:
-        band = "standard_information"
-    elif score < 2.75:
-        band = "dense_information"
+        band = "knowledge_standard"
     else:
-        band = "very_dense_information"
+        band = "knowledge_dense"
     return band, True, score, "teachable_source_content"
 
 
@@ -152,19 +153,16 @@ def profile_pdf(path: Path) -> dict[str, Any]:
 
 
 def profile_path(path: Path) -> list[dict[str, Any]]:
-    files: list[Path]
-    if path.is_dir():
-        files = sorted(item for item in path.rglob("*") if item.is_file())
-    else:
-        files = [path]
+    files = sorted(item for item in path.rglob("*") if item.is_file()) if path.is_dir() else [path]
     profiles: list[dict[str, Any]] = []
     for file_path in files:
-        if file_path.suffix.lower() == ".pdf":
+        suffix = file_path.suffix.lower()
+        if suffix == ".pdf":
             try:
                 profiles.append(profile_pdf(file_path))
             except Exception as exc:
                 profiles.append({"source_path": str(file_path), "source_type": "pdf", "pages": [], "error": str(exc)})
-        elif file_path.suffix.lower() == ".pptx" or zipfile.is_zipfile(file_path):
+        elif suffix in {".pptx", ".pptm"} or zipfile.is_zipfile(file_path):
             try:
                 profiles.append(profile_pptx(file_path))
             except Exception as exc:

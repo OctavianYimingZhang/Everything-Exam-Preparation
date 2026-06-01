@@ -31,7 +31,7 @@
     "strict_publish_gate": true,
     "require_lineage": true,
     "run_language_lint": true,
-    "run_ontology_validator": true,
+    "run_workflow_validator": true,
     "fail_on_blocking_flags": true
   },
   "advanced": {
