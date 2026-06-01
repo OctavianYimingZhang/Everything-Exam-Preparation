@@ -42,6 +42,8 @@ Forbidden:
 
 Commit only after local GitHub-ready checks pass. Push only the repository changes, not generated temporary artefacts or private source material.
 
+The GitHub repository source is canonical. Local compacted versions, including Custom GPT knowledge bundles and flattened upload-file copies, are adapters for constrained upload environments; they must preserve the same route table, source-scale floor, knowledge-surface boundary, evidence policy and revision contract as `SKILL.md`. Keep generated combined exports out of `main` unless a separate generated-artifact branch is explicitly intended.
+
 ## Maintenance Doctor And Safe Update
 
 The repository exposes a controlled maintenance layer through `skill_manifest.json` and `scripts/skill_maintenance.py`.

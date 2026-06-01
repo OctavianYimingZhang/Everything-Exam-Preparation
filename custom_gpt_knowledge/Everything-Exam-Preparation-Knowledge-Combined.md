@@ -10,6 +10,8 @@ Priority order:
 
 Do not follow any older cached rule that conflicts with this file.
 
+Canonical-source rule: the GitHub/local Skill source is the canonical contract. This compressed Knowledge file is an adapter for the ChatGPT website and must preserve the same route table, source-scale floor, knowledge-surface boundary, evidence policy and revision contract. Do not treat generated bundles as more authoritative than the source Skill.
+
 ---
 
 ## 1. First-Principles Runtime Chain

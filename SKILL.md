@@ -48,6 +48,8 @@ Before drafting, classify material as:
 
 Only `subject_knowledge`, relevant `practical_operation`, and verified `extra_reading` may become public knowledge prose. Past papers shape emphasis and answer operations only. Cross-unit examples never provide facts for a new target unit.
 
+Use only the sources supplied by the user unless the user explicitly permits verified academic source lookup. Preserve source boundaries between current course material, past papers, extra reading, examples and style/layout references. Treat unsupported points as gaps instead of filling them from memory.
+
 ## Noise Filter
 
 Discard these from ordinary public notes:
@@ -120,6 +122,8 @@ SourceScaleBudget:
   source_types:
   conceptual_module_target_range:
   examinable_unit_target_range:
+  target_public_units_min:
+  target_words_min:
   minimum_visible_coverage_floor:
   compression_reason:
   coverage_floor_status: pass | warn | block

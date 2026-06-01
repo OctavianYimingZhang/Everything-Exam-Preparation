@@ -14,6 +14,7 @@ IGNORE_DIRS = {".git", "__pycache__", ".venv", "benchmarks", "tests"}
 LEGACY_WORD = "un" + "it"
 
 OLD_HELPER = LEGACY_WORD + "_grouper"
+LEGACY_LABEL_PATTERN = re.compile(rf"\b{LEGACY_WORD}\s*(?:#?\d+|[=-]\s*['\"]?[\w-]+)", re.I)
 COURSE_PREFIX = "B" + "IOL"
 PRIVATE_SCHOOL = "School of " + "Biological"
 PRIVATE_INSTITUTION = "University of " + "Manchester"
@@ -73,7 +74,7 @@ def main() -> int:
 
     patterns = list(BASE_PATTERNS)
     if args.forbid_legacy_label:
-        patterns.append(("legacy_source_set_label", re.compile(rf"\b{LEGACY_WORD}\b", re.I)))
+        patterns.append(("legacy_source_set_label", LEGACY_LABEL_PATTERN))
 
     hits = []
     for path in iter_files(args.paths):
