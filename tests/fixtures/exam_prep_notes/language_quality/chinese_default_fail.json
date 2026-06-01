@@ -1,0 +1,9 @@
+{
+  "fixture_type": "negative",
+  "expected_failure": "default_english_public_text_contains_cjk",
+  "output_language_profile": {
+    "output_language": "English",
+    "allow_bilingual": false
+  },
+  "public_text": "默认英文输出不应包含中文正文。"
+}

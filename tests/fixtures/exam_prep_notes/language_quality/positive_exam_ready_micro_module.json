@@ -1,0 +1,20 @@
+{
+  "fixture_type": "positive",
+  "module_title": "Initial slope gives initial reaction rate",
+  "knowledge_functions": [
+    "method_readout",
+    "graph_data_interpretation",
+    "limitation_trap"
+  ],
+  "explanation": "The initial rate is the early linear change in signal per unit time. It is used because later curve sections can reflect substrate depletion or product effects, so the first straight portion gives the least distorted estimate of velocity.",
+  "blocks": [
+    {
+      "block_type": "graph_data",
+      "content": "Read the gradient from the first linear section of the graph."
+    },
+    {
+      "block_type": "limitation",
+      "content": "Later curvature should not be used for initial velocity because reaction conditions have already drifted."
+    }
+  ]
+}

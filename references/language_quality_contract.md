@@ -8,6 +8,8 @@ The contract is subject-independent. Biological, chemical, quantitative, clinica
 
 For `exam_prep_notes_docx`, write notes as exam-ready academic synthesis, not as tutor narration or slide commentary.
 
+This standard applies to every student-facing output. Example Essays, ordinary notes, knowledge walkthroughs, question-type reports and practical/data add-ons all need exam-ready direct prose. The format changes by route, but the visible language must state the knowledge itself rather than describe the route by which the model found it.
+
 Use internal planning functions such as these to decide content, but do not force them into public headings:
 
 - `Core Exam Claim`;
@@ -28,6 +30,10 @@ Avoid:
 - `This slide explains...`;
 - `The notes are trying to say...`;
 - `You should understand...`;
+- `The course frames...`;
+- `The lecture material uses...`;
+- `The source material identifies...`;
+- `The source states...`;
 - source-route narration such as page, slide, or upload-order commentary inside the answer body.
 
 The public paragraph shape is:
@@ -37,6 +43,8 @@ examinable claim or problem -> mechanism/process -> source-backed example when u
 ```
 
 Do not preserve the original notes' order when that order is weaker than the exam logic, but do preserve the source-first baseline coverage of protected definitions, contrast pairs, criteria lists, named examples, diagrams, tables, equations, calculations, and workflow items before applying exam overlay.
+
+For ordinary notes, use micro-module teaching prose. Each module should answer the useful student questions: what is it, how does it work, how do I read or use it, what calculation or decision follows, and what mistake does this prevent. A module that only names what exists is not exam-ready.
 
 ## Core Paragraph Shape
 

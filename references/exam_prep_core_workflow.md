@@ -23,12 +23,15 @@ Question-type reports are add-ons. They are never allowed to replace the knowled
 4. Read the source set for meaning.
 5. Reconstruct lecture/session order and concept modules.
 6. Build enough public lecture modules for the source scale.
-7. Explain each module in connected prose.
-8. Keep question-type overlays separate unless explicitly requested.
-9. Run surface, density, noise and layout QA.
+7. Explain each module in exam-ready direct prose.
+8. Run module teaching depth and readability layout gates.
+9. Keep question-type overlays separate unless explicitly requested.
+10. Run surface, density, noise and layout QA.
 ```
 
 The model must not be forced to write from slide fragments. The model should use source order to understand prerequisites and teaching sequence, then organise the output by exam-useful conceptual logic.
+
+The public notes should become lecture-first micro-module teaching notes. They must explain what each knowledge point means, how it works, how it is read or used, and what boundary, limitation, calculation or decision follows. They must not preserve coverage by narrating what the course, lecture or source material says.
 
 ## Source Role Classification
 
@@ -133,6 +136,8 @@ PublicLectureNotesPlan:
 
 The public document starts with the title and then lecture/session headings. `Course Knowledge Map` is internal-only. Do not list uploaded file titles or source inventories in the public document.
 
+Use micro-module headings beneath each lecture. A module heading should name the exact mechanism, readout, calculation, distinction, example function or limitation. If a broad lecture theme contains several separable operations, split it before drafting.
+
 ## Examinable Knowledge Unit
 
 Each public unit must be one coherent explanation:
@@ -147,7 +152,7 @@ ExaminableKnowledgeUnit:
   common_confusion_or_boundary:
 ```
 
-The `explanation` must be a connected paragraph or a short sequence of explanatory paragraphs. It must answer the useful questions: what is this, why does it work, how does the mechanism/calculation/experiment proceed, and what follows from it.
+The `explanation` must be a connected paragraph or a short sequence of explanatory paragraphs. It must answer the useful questions: what is this, why does it work, how does the mechanism/calculation/experiment proceed, and what follows from it. It must use exam-ready direct prose rather than source narration. Public text such as `The course frames`, `The source material identifies`, `The lecture material uses` or `The source states` is a release failure.
 
 Do not write a unit as:
 

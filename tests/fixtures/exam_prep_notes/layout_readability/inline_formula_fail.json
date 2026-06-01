@@ -1,0 +1,5 @@
+{
+  "fixture_type": "negative",
+  "expected_failure": "formula_or_equation_buried_in_long_prose",
+  "public_text": "The calculation uses A = epsilon c l in a long explanatory paragraph that should instead separate the equation, units, substitution and interpretation into a calculation block."
+}

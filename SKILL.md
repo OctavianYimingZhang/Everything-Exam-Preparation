@@ -28,12 +28,15 @@ source pack
 -> reconstruct lecture/session order and conceptual modules
 -> calculate source-adaptive coverage budget
 -> build `PublicLectureNotesPlan`
--> write lecture-first connected explanations
+-> write lecture-first micro-module teaching notes
+-> run exam-ready direct prose, module teaching depth and readability layout gates
 -> keep exam overlays internal unless separately requested
 -> run public-surface, density and layout QA
 ```
 
 The output should explain what each concept is, why it matters, how the mechanism, method or calculation works, and what result, limitation or interpretation follows.
+
+All student-facing prose must reach exam-ready level. Public notes should not sound like a source-derived teaching summary. They must state the knowledge directly so the student can revise, recall and adapt it in an exam answer. Do not write `The course frames...`, `The source material identifies...`, `The lecture material uses...`, `The source states...`, or equivalent source narration. Rewrite those forms as direct claims about the concept, method, readout, calculation, distinction, consequence or limitation.
 
 ## Source Roles
 
@@ -111,6 +114,8 @@ PublicLectureNotesPlan:
 
 Preserve official lecture/session order when it explains prerequisites. Do not dump slide order or file names. Inside each lecture, group material into concept-specific modules. Each public module must have at least two knowledge functions so it teaches definition or boundary plus mechanism, method, readout, calculation, example or limitation.
 
+Use micro-module grouping. A lecture heading may stay broad, but module headings should name the exact examinable operation, distinction or mechanism. Prefer `Initial slope gives initial reaction rate` over `Enzyme kinetics`, and `Dimension-aware substitution prevents concentration errors` over `Calculation`. If a module still contains several separable operations, split it.
+
 ## Source-Adaptive Coverage Budget
 
 Never use the same small output size for every course. The amount of public knowledge must scale with the amount of examinable source material.
@@ -184,6 +189,18 @@ PublicLectureModule:
 
 The visible module is a topic-specific heading followed by connected explanatory prose. A valid module explains what the point is, why it matters, how the mechanism, method, readout or calculation works, and what interpretation, limitation or boundary follows. Bullets are allowed only after an explanatory lead sentence and only for naturally parallel items.
 
+Module teaching depth is a release gate. A public module is not enough if it only announces that a topic exists. It must include at least one direct identity or boundary claim and at least one teaching operation:
+
+- definition or boundary: what the concept is and what it excludes;
+- mechanism or process: how the change happens and why the order matters;
+- method or readout: what is measured, controlled and interpreted;
+- graph or data interpretation: axes, pattern, inference and boundary;
+- calculation: equation, units, substitution logic and interpretation;
+- named example: what the example demonstrates, not only that it exists;
+- limitation or trap: what false reading, overclaim or common error it prevents.
+
+Readability layout is also a release gate. Use short explanatory paragraphs, micro-headings, separated equations, worked examples, comparison blocks and list blocks when they reduce cognitive load. Do not compress criteria lists, formulas, graph-reading rules or workflows into one dense paragraph. Keep visuals near the relevant module only when a source-backed diagram, graph, table or workflow materially improves understanding.
+
 Do not write notes as:
 
 ```text
@@ -248,6 +265,11 @@ Fail and rewrite if the public output contains:
 
 - admin, logistics, staff, contact or attendance material;
 - Course Knowledge Map, Source Role Summary, Source Scope, Extraction Limitation, Examinable Knowledge Units, Predicted Essay Theme, Study Order, Section A Strategy, Section B Strategy, How To Answer, A strong answer should, or Use This Module;
+- source narration such as `The course frames`, `The lecture states`, `The source material identifies`, `The source states`, or `The lecture material uses`;
+- inventory-only prose that lists concepts without explaining what each one means, does, measures, proves or limits;
+- broad lecture-theme modules where smaller micro-module headings would make the knowledge usable;
+- examples that do not state what they demonstrate;
+- formulas, graph rules, criteria lists or workflows buried inside long prose;
 - file-title maps or source inventories;
 - raw slide bullets or broken OCR fragments;
 - copied extraction text instead of explanation;
@@ -268,6 +290,9 @@ python3 scripts/validate_workflow_planning_contract.py
 python3 scripts/validate_interaction_contract.py
 python3 scripts/validate_student_output_contract.py
 python3 scripts/public_lecture_notes_renderer.py --self-test
+python3 scripts/notes_exam_ready_language_linter.py --self-test
+python3 scripts/module_teaching_depth_linter.py --self-test
+python3 scripts/notes_readability_layout_linter.py --self-test
 python3 scripts/source_information_profiler.py --self-test
 python3 scripts/zero_mention_lint.py --self-test
 python3 scripts/reference_density_linter.py --self-test
