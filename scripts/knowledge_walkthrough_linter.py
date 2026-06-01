@@ -24,11 +24,11 @@ from knowledge_only_rendering_rules import (
     repeated_template_label_hits,
 )
 
-STYLE_LIMITS = {"margin_cm": 2.0, "margin_tolerance_cm": 0.08, "line_spacing_min": 1.45, "line_spacing_max": 1.55, "body_font_min_pt": 9.5, "body_font_max_pt": 11.5}
+STYLE_LIMITS = {"margin_cm": 2.0, "margin_tolerance_cm": 0.08, "line_spacing_min": 1.05, "line_spacing_max": 1.15, "body_font_min_pt": 9.5, "body_font_max_pt": 11.5}
 BLUE_RGB = {"0000FF", "0563C1", "2F5496", "1F4E79", "4472C4", "5B9BD5"}
-FORBIDDEN_TEXT = {"source anchor", "confidence", "evidence score", "recurrence count", "examiner operation", "discriminator axis", "essay plan", "full example essay", "practice question", "answer key", "past paper year", "prediction score", "according to slide", "english explanations extracted", "ppt page", "slide mentions", "slides say", "the final slide", "the first slide", "the next slide", "the second slide", "this slide"}
-OLD_VISIBLE_SCAFFOLD_HEADINGS = {"How To Answer This Exam", "What This Lecture Is About", "What This Module Explains", "Knowledge Walkthrough", "Key Logic", "Knowledge Points", "Must Master", "Lecture Recap"}
-SEMANTIC_HEADINGS = {"Knowledge map", "Key distinctions", "Core knowledge points", "Synthesis", "Course Knowledge Map"}
+FORBIDDEN_TEXT = {"source anchor", "confidence", "evidence score", "recurrence count", "examiner operation", "discriminator axis", "essay plan", "full example essay", "practice question", "answer key", "past paper year", "prediction score", "according to slide", "english explanations extracted", "ppt page", "slide mentions", "slides say", "the final slide", "the first slide", "the next slide", "the second slide", "this slide", "source role summary", "source scope", "extraction limitation", "predicted essay theme", "section a strategy", "section b strategy", "study order", "course knowledge map"}
+OLD_VISIBLE_SCAFFOLD_HEADINGS = {"A strong answer should", "Conceptual Course Map", "Course Knowledge Map", "Examinable Knowledge Units", "How To Answer", "How To Answer This Exam", "What This Lecture Is About", "What This Module Explains", "Knowledge Walkthrough", "Key Logic", "Knowledge Points", "Must Master", "Lecture Recap", "Predicted Essay Theme", "Section A Strategy", "Section B Strategy", "Source Role Summary", "Source Scope", "Study Order", "Use This Module"}
+SEMANTIC_HEADINGS = {"Key distinctions", "Core knowledge points", "Synthesis"}
 
 
 def collect_docx(path: Path) -> list[Path]:
@@ -128,12 +128,12 @@ def lint_docx(path: Path) -> dict[str, Any]:
             if paragraph.alignment != WD_ALIGN_PARAGRAPH.LEFT:
                 failures.append({"type": "heading_not_left", "paragraph": visible_index, "text": text_value[:80]})
             if line_spacing is None or not (STYLE_LIMITS["line_spacing_min"] <= float(line_spacing) <= STYLE_LIMITS["line_spacing_max"]):
-                failures.append({"type": "heading_line_spacing_not_1_5", "paragraph": visible_index, "line_spacing": line_spacing})
+                failures.append({"type": "heading_line_spacing_not_compact", "paragraph": visible_index, "line_spacing": line_spacing})
         else:
-            if paragraph.alignment != WD_ALIGN_PARAGRAPH.JUSTIFY:
-                failures.append({"type": "body_not_justified", "paragraph": visible_index, "text": text_value[:80]})
+            if paragraph.alignment not in {None, WD_ALIGN_PARAGRAPH.LEFT}:
+                failures.append({"type": "body_not_left", "paragraph": visible_index, "text": text_value[:80]})
             if line_spacing is None or not (STYLE_LIMITS["line_spacing_min"] <= float(line_spacing) <= STYLE_LIMITS["line_spacing_max"]):
-                failures.append({"type": "body_line_spacing_not_1_5", "paragraph": visible_index, "line_spacing": line_spacing})
+                failures.append({"type": "body_line_spacing_not_compact", "paragraph": visible_index, "line_spacing": line_spacing})
         style_colour = colour_string(paragraph.style.font.color if paragraph.style and paragraph.style.font else None)
         if style_colour and style_colour != "000000":
             failures.append({"type": "style_font_colour_not_black", "paragraph": visible_index, "colour": style_colour})

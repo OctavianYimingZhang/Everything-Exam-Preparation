@@ -1,204 +1,73 @@
 {
-  "object_type": "ExamPrepNotesPlan",
-  "notes_plan_id": "notes_plan_fixture_001",
-  "target_group_key": "generic_current",
-  "course_sections": [
-    {
-      "section_id": "section_001",
-      "section_title": "Generic Mechanism",
-      "section_function": "Explains how a source-backed mechanism produces a measurable output.",
-      "source_anchors": ["fake_lecture.txt:1"]
-    }
-  ],
-  "lecture_mapping": [
-    {
-      "lecture_session_id": "lecture_001",
-      "section_id": "section_001",
-      "source_order": 1,
-      "title": "Generic Lecture",
-      "source_anchors": ["fake_lecture.txt:1"]
-    }
-  ],
-  "knowledge_cards": [
-    {
-      "card_id": "card_001",
-      "kp_id": "kp_001",
-      "section_id": "section_001",
-      "lecture_session_id": "lecture_001",
-      "module_id": "module_001",
-      "module_title": "Generic mechanism as a source-backed causal module",
-      "source_baseline_card_id": "baseline_card_001",
-      "priority": "★★★",
-      "exam_specificity": "mechanism",
-      "core_exam_claim": "A source-backed mechanism links input, process, output, and limitation.",
-      "key_definitions": ["A mechanism is a source-backed causal explanation from input to output."],
-      "exam_ready_knowledge_synthesis": "The examinable point is the causal link between mechanism and output, with the limitation stated explicitly.",
-      "criteria_components_steps": ["Identify input.", "Explain process.", "State output.", "State limitation."],
-      "mechanism_or_process_logic": "Input changes the mechanism; the mechanism changes the readout; the limitation defines scope.",
-      "canonical_example": "A source-backed example demonstrates the same causal chain without adding unsupported detail.",
-      "exam_use": "Use this module to answer a short-answer or case prompt asking why the output changes.",
-      "common_error_or_trap": "Do not state the output without the causal process.",
-      "must_master": ["Define the mechanism.", "Link input to output.", "State the limitation."],
-      "protected_source_items_covered": ["official definition", "mechanism chain", "summary point"],
-      "source_anchors": ["fake_lecture.txt:1"],
-      "coverage_status": "tested",
-      "student_visible": true
-    }
-  ],
-  "public_output_points": [
-    {
-      "point_id": "public_point_001",
-      "lecture_session_id": "lecture_001",
-      "source_card_ids": ["card_001"],
-      "point_title": "Generic mechanism as a source-backed causal module",
-      "priority": "★★★",
-      "point_kind": "mechanism",
-      "main_text": "A source-backed mechanism links input, process, output, and limitation. The examinable knowledge is the causal link between mechanism and output, with the limitation stated explicitly.",
-      "blocks": [
-        {
-          "block_type": "definitions",
-          "label": "Definitions",
-          "content": ["A mechanism is a source-backed causal explanation from input to output."],
-          "covered_atomic_units": ["aku_definition"]
-        },
-        {
-          "block_type": "criteria",
-          "label": "Criteria",
-          "content": ["Identify input.", "Explain process.", "State output.", "State limitation."],
-          "covered_atomic_units": ["aku_steps"]
-        },
-        {
-          "block_type": "mechanism",
-          "label": "Mechanism",
-          "content": "Input changes the mechanism; the mechanism changes the readout; the limitation defines scope.",
-          "covered_atomic_units": ["aku_mechanism"]
-        },
-        {
-          "block_type": "example",
-          "label": "Example",
-          "content": "A source-backed example demonstrates the same causal chain without adding unsupported detail.",
-          "covered_atomic_units": ["aku_example"]
-        }
-      ],
-      "covered_atomic_units": ["aku_definition", "aku_steps", "aku_mechanism", "aku_example"]
-    }
-  ],
+  "object_type": "PublicLectureNotesPlan",
+  "notes_plan_id": "valid_exam_prep_notes_plan",
+  "title": "Lecture Knowledge Walkthrough",
+  "target_group_key": "sample_course",
+  "source_scale_budget": {
+    "source_units_count": 2,
+    "readable_source_blocks": 8,
+    "protected_knowledge_units_total": 4,
+    "excluded_non_knowledge_units_total": 1,
+    "target_public_units_min": 2,
+    "target_words_min": 90,
+    "compression_mode": "explain_not_dump",
+    "coverage_floor_status": "pass"
+  },
   "output_language_profile": {
-    "requested_language": null,
-    "source_languages": ["English"],
-    "output_language_policy": ["default_english_unless_requested"],
-    "public_label_policy": ["default_english_labels"],
-    "explicit_language_request": false,
-    "user_requested_mixed_language": false
+    "output_language": "English",
+    "allow_bilingual": false,
+    "preserve_technical_terms": true
   },
   "route_docx_style_profile": {
     "route": "exam_prep_notes_docx",
     "margin_cm": 2.0,
-    "line_spacing": 1.08,
+    "line_spacing": 1.1,
     "body_alignment": "left",
+    "title_alignment": "left",
+    "heading_alignment": "left",
+    "image_alignment": "center",
     "body_font_pt": 10.5,
-    "heading_font_pt": 12,
-    "lecture_heading_font_pt": 14,
+    "title_font_pt": 14.0,
+    "lecture_heading_font_pt": 13.0,
+    "module_heading_font_pt": 11.5,
     "text_color": "black",
-    "lecture_page_breaks": true
+    "lecture_page_breaks": false,
+    "theme_colours_allowed": false,
+    "blue_heading_styles_allowed": false
   },
-  "render_decisions": [
+  "public_lecture_sections": [
     {
-      "decision_id": "render_decision_001",
-      "source_field": "exam_specificity",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "Exam specificity controls planning and priority, not ordinary note headings."
+      "lecture_title": "Lecture 1: Membranes as selective chemical boundaries",
+      "modules": [
+        {
+          "module_title": "Bilayer chemistry explains selective permeability",
+          "knowledge_functions": ["definition_boundary", "mechanism_process"],
+          "explanation": "A phospholipid bilayer is a chemical boundary because hydrophilic head groups face water while hydrophobic tails form an internal non-polar core. Small non-polar molecules cross more easily than ions because charged solutes must shed hydration shells and enter an energetically unfavourable core.",
+          "blocks": [
+            {
+              "block_type": "limitation",
+              "content": "Permeability is not absolute: transport proteins change the effective boundary for specific ions or polar solutes."
+            }
+          ]
+        }
+      ]
     },
     {
-      "decision_id": "render_decision_002",
-      "source_field": "core_exam_claim",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "The claim is merged into compact public prose."
-    },
-    {
-      "decision_id": "render_decision_003",
-      "source_field": "exam_use",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "Generic exam advice is not rendered in ordinary notes."
-    },
-    {
-      "decision_id": "render_decision_004",
-      "source_field": "common_error_or_trap",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "Trap wording belongs in question-type add-ons unless requested."
-    },
-    {
-      "decision_id": "render_decision_005",
-      "source_field": "must_master",
-      "decision": "hide_internal_field",
-      "public_point_id": "public_point_001",
-      "reason": "Checklist content is integrated into public blocks instead of exposed as an internal heading."
+      "lecture_title": "Lecture 2: Transport proteins convert gradients into flux",
+      "modules": [
+        {
+          "module_title": "Electrochemical gradients combine concentration and voltage",
+          "knowledge_functions": ["mechanism_process", "calculation_unit_worked_example"],
+          "explanation": "An electrochemical gradient has a concentration component and an electrical component. A cation may move down its concentration gradient but against the membrane voltage, so the direction of net movement depends on the combined free-energy difference rather than concentration alone.",
+          "blocks": [
+            {
+              "block_type": "calculation",
+              "label": "Worked example",
+              "content": "For an ion, compare the chemical term with the voltage term before predicting net flux direction."
+            }
+          ]
+        }
+      ]
     }
-  ],
-  "point_coverage_bindings": [
-    {
-      "binding_id": "point_binding_001",
-      "point_id": "public_point_001",
-      "covered_atomic_units": ["aku_definition", "aku_steps", "aku_mechanism", "aku_example"],
-      "protected_items_preserved": true,
-      "missing_protected_items": [],
-      "qa_status": "pass"
-    }
-  ],
-  "official_definition_records": [
-    {
-      "term": "generic mechanism",
-      "definition_text": "A source-backed causal explanation from input to output.",
-      "verification_status": "official",
-      "source_anchors": ["fake_lecture.txt:1"]
-    }
-  ],
-  "atomic_knowledge_ledger_binding": {
-    "ledger_id": "atomic_ledger_fixture_001",
-    "knowledge_units_total": 3,
-    "student_visible_units_bound": 3,
-    "administrative_units_excluded": 0,
-    "missing_units": []
-  },
-  "source_baseline_binding": {
-    "baseline_plan_id": "baseline_plan_fixture_001",
-    "coverage_floor_status": "pass",
-    "protected_source_items_total": 3,
-    "limitations": []
-  },
-  "exam_emphasis_binding": {
-    "formal_papers_used": true,
-    "compatible_question_types": ["mcq", "short_answer"],
-    "limitations": ["Past papers control emphasis only, not factual truth or exact future wording."]
-  },
-  "exam_overlay_binding": {
-    "overlay_id": "overlay_fixture_001",
-    "overlay_status": "pass",
-    "protected_items_preserved": true,
-    "limitations": []
-  },
-  "knowledge_only_student_view_binding": {
-    "view_id": "knowledge_only_view_fixture_001",
-    "course_knowledge_map_used": true,
-    "administrative_exam_text_removed": true,
-    "forbidden_public_phrases": []
-  },
-  "question_type_addons": [],
-  "optional_visual_aids": [],
-  "content_coverage_checks": [
-    {
-      "check_id": "coverage_001",
-      "status": "pass",
-      "scope": "student_visible_knowledge_cards",
-      "message": "Every visible card has source support, star priority, exam specificity, protected coverage, and coverage status."
-    }
-  ],
-  "student_visible_structure": ["Course Knowledge Map", "Lecture", "PublicOutputPoint", "Definitions", "Criteria", "Mechanism", "Example"],
-  "forbidden_student_fields": ["source_anchor", "confidence", "examiner_operation", "exam_specificity", "core_exam_claim", "exam_use", "common_error_or_trap", "must_master"],
-  "qa_flags": [],
-  "qa_status": "pass"
+  ]
 }

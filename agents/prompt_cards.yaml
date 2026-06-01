@@ -17,7 +17,7 @@ prompt_cards:
       - "Accept readable ordered course notes, but use only official or verified sources for factual claims."
       - "Build an atomic knowledge ledger and baseline coverage floor before using past papers."
       - "Use past papers for overlay emphasis only when supplied; do not invent exam frequency."
-      - "Keep the public DOCX knowledge-only: use Course Knowledge Map, not exam-format audit text."
+      - "Keep the public DOCX lecture-first and knowledge-only; do not render Course Knowledge Map, source summaries, strategy, or prediction text."
       - "Append question-type add-ons only after the base notes."
       - "Generated visual aids are optional revision schematics, not evidence."
     hard_stops:
@@ -41,7 +41,7 @@ prompt_cards:
     output_contract:
       - "Preserve lecture order."
       - "Split each lecture into conceptual modules, not slide/page summaries."
-      - "Use module overview, knowledge walkthrough, key logic, common confusions, must-master points, and lecture recap."
+      - "Use the shared PublicLectureNotesPlan with public_lecture_sections and module-level knowledge_functions."
       - "Do not show source anchors, confidence, recurrence, examiner operations, essay plans, practice questions, or answer keys."
     hard_stops:
       - "No lecture slides or official notes."

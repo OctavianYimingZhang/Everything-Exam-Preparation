@@ -95,6 +95,7 @@ def main() -> None:
     run('workflow planning contract', [sys.executable, 'scripts/validate_workflow_planning_contract.py'])
     run('interaction contract', [sys.executable, 'scripts/validate_interaction_contract.py'])
     run('student output contract', [sys.executable, 'scripts/validate_student_output_contract.py'])
+    run('public lecture notes renderer', [sys.executable, 'scripts/public_lecture_notes_renderer.py', '--self-test'])
     run('source information profiler', [sys.executable, 'scripts/source_information_profiler.py', '--self-test'])
     run('source scale budget linter', [sys.executable, 'scripts/source_scale_budget_linter.py', '--self-test'])
     run('reference density linter', [sys.executable, 'scripts/reference_density_linter.py', '--self-test'])

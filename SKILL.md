@@ -25,11 +25,11 @@ Use `references/exam_prep_core_workflow.md` as the source of truth for ordinary 
 source pack
 -> classify source roles
 -> remove non-knowledge noise
--> reconstruct conceptual course modules
+-> reconstruct lecture/session order and conceptual modules
 -> calculate source-adaptive coverage budget
--> select examinable knowledge units
--> write connected explanations
--> add optional question-type overlay
+-> build `PublicLectureNotesPlan`
+-> write lecture-first connected explanations
+-> keep exam overlays internal unless separately requested
 -> run public-surface, density and layout QA
 ```
 
@@ -61,7 +61,7 @@ Discard these from ordinary public notes:
 - slide agendas, contents pages, generic learning outcomes and generic advice unless rewritten into a specific knowledge claim;
 - raw slide bullets, file-title lists, broken OCR fragments, font names, page artifacts and extraction debris.
 
-A `Course Knowledge Map` must be conceptual. It should organise the course into major knowledge modules, not uploaded file names.
+Default public notes must not show a `Course Knowledge Map`, source role summary, extraction limitation, strategy section, prediction section, or file inventory. Those objects are internal planning aids only.
 
 ## Route Table
 
@@ -76,28 +76,46 @@ A `Course Knowledge Map` must be conceptual. It should organise the course into 
 | source inventory / lint / release check / information profile only | `audit_lint_only` or `github_ready_qa` | QA result only |
 | past-paper pattern or exam format only | `exam_analysis_brief` | chat-only brief unless a report is requested |
 
-Essay and problem-essay prediction uses the label `Predicted essay theme` for a source-qualified theme, scope and practice angle. It must not present a predicted theme as official future question wording.
+Prediction, study strategy, Section A/Section B strategy and answer-advice language are never part of ordinary notes or walkthroughs. If the user asks for prediction or exam format analysis, produce it as a separate chat/report add-on after the knowledge document.
 
 ## Course Reconstruction
 
-For broad source packs, build conceptual modules:
+For ordinary notes and walkthroughs, render one shared public plan:
 
 ```yaml
-CourseModule:
-  module_title:
-  module_function:
-  source_lectures:
-  core_questions:
-  examinable_units:
+PublicLectureNotesPlan:
+  title:
+  target_group_key:
+  source_scale_budget:
+  output_language_profile:
+    output_language: English
+    allow_bilingual: false
+  route_docx_style_profile:
+    route: exam_prep_notes_docx | knowledge_walkthrough_docx
+    margin_cm: 2.0
+    line_spacing: 1.05-1.15
+    body_alignment: left
+  public_lecture_sections:
+    - lecture_title:
+      lecture_scope:
+      modules:
+        - module_title:
+          knowledge_functions:
+            - definition_boundary | mechanism_process | method_readout | graph_data_interpretation | calculation_unit_worked_example | named_example | limitation_trap
+          explanation:
+          blocks:
+            - block_type:
+              label:
+              content:
 ```
 
-Preserve source order when it explains prerequisites. Do not produce one public module per file if that only repeats file names.
+Preserve official lecture/session order when it explains prerequisites. Do not dump slide order or file names. Inside each lecture, group material into concept-specific modules. Each public module must have at least two knowledge functions so it teaches definition or boundary plus mechanism, method, readout, calculation, example or limitation.
 
 ## Source-Adaptive Coverage Budget
 
 Never use the same small output size for every course. The amount of public knowledge must scale with the amount of examinable source material.
 
-The reference-quality target is the supplied Experimental Biology style of output: topic-specific headings, dense connected explanations, formulas or worked examples when useful, black Arial text, 2.0 cm margins, 1.5 spacing, left-aligned headings and justified body prose. Use that file only as a style, density and layout exemplar; it is not factual evidence and it is not a length cap.
+The reference-quality target is the supplied Experimental Biology style of output: topic-specific headings, dense connected explanations, formulas or worked examples when useful, black Arial text, 2.0 cm margins, compact 1.05-1.15 spacing and left-aligned body/headings. Use that file only as a style, density and layout exemplar; it is not factual evidence and it is not a length cap.
 
 When the user says `analyse this course`, `分析这门课`, or asks for course-level prep analysis without explicitly requesting an audit-only file, produce the core knowledge walkthrough. Do not satisfy that request with a short metrics report, source profile summary, or sample-only file. If an audit/profile file is also useful, it is an add-on and must not replace the knowledge document.
 
@@ -152,21 +170,19 @@ Rules:
 - If the first draft feels like a route summary, file inventory, checklist, or brief overview, it is not acceptable. Regenerate from the source-distillation pass until the public document teaches the examinable mechanisms, calculations, methods, examples, boundaries and interpretations in connected prose.
 - If the public output falls below the source-scale floor, block the run and regenerate from source distillation instead of releasing a short file.
 
-## Examinable Knowledge Units
+## Public Lecture Modules
 
-Write public content as coherent units:
+Write public content as coherent lecture-first modules:
 
 ```yaml
-ExaminableKnowledgeUnit:
-  title:
-  priority: high | medium | low
-  source_support:
+PublicLectureModule:
+  module_title:
+  knowledge_functions:
   explanation:
-  optional_equation_or_example:
-  common_confusion_or_boundary:
+  blocks:
 ```
 
-The visible unit is a topic-specific heading followed by connected explanatory prose. Bullets are allowed only after an explanatory lead sentence and only for naturally parallel items.
+The visible module is a topic-specific heading followed by connected explanatory prose. A valid module explains what the point is, why it matters, how the mechanism, method, readout or calculation works, and what interpretation, limitation or boundary follows. Bullets are allowed only after an explanatory lead sentence and only for naturally parallel items.
 
 Do not write notes as:
 
@@ -182,10 +198,9 @@ Interpretation: ...
 
 For ordinary notes and walkthroughs:
 
-- body text is justified;
-- titles, lecture headings and subheadings are left aligned;
+- body text, titles, lecture headings and subheadings are left aligned;
 - images are centered;
-- default text line spacing is 1.5;
+- default text line spacing is compact, 1.05-1.15;
 - text is black Arial in a readable size;
 - theme colours, blue heading styles and non-black visible text are forbidden unless the user explicitly asks for colour;
 - images are scaled to the content area while preserving aspect ratio and readability;
@@ -193,7 +208,7 @@ For ordinary notes and walkthroughs:
 
 Public notes must not contain source-route narration, AI-process text, source maps, QA flags, evidence scores, confidence bands, internal manifests, helper JSON or raw extraction text.
 
-Public notes must also not contain visible workflow explanations such as selected route, workflow plan, source role map, source scale budget, coverage floor status, KnowledgeSurfaceContract, ExaminableKnowledgeUnit, CourseModule, QA gate, generation process, or statements about what the Skill did. Keep those objects internal and render only the resulting knowledge.
+Public notes must also not contain visible workflow explanations such as selected route, workflow plan, source role map, source scale budget, coverage floor status, KnowledgeSurfaceContract, ExaminableKnowledgeUnit, CourseModule, QA gate, generation process, or statements about what the Skill did. Keep those objects internal and render only the resulting lecture-first knowledge.
 
 ## Final Output Revision Contract
 
@@ -232,7 +247,8 @@ For revised notes and walkthrough DOCX files:
 Fail and rewrite if the public output contains:
 
 - admin, logistics, staff, contact or attendance material;
-- file-title course maps instead of conceptual course maps;
+- Course Knowledge Map, Source Role Summary, Source Scope, Extraction Limitation, Examinable Knowledge Units, Predicted Essay Theme, Study Order, Section A Strategy, Section B Strategy, How To Answer, A strong answer should, or Use This Module;
+- file-title maps or source inventories;
 - raw slide bullets or broken OCR fragments;
 - copied extraction text instead of explanation;
 - dense lists of names without mechanisms;
@@ -242,7 +258,7 @@ Fail and rewrite if the public output contains:
 - unsupported claims, fake citations or over-strong scientific claims;
 - unbound protected source units;
 - public AI-process text, source anchors, QA JSON, manifests or lineage files;
-- non-black visible text, theme-colour headings, non-Arial text, wrong alignment or non-1.5 line spacing.
+- non-black visible text, theme-colour headings, non-Arial text, wrong alignment, justified ordinary-note body text, or non-compact line spacing.
 
 Targeted checks:
 
@@ -251,6 +267,7 @@ python3 scripts/no_identity_trigger_linter.py --forbid-legacy-label
 python3 scripts/validate_workflow_planning_contract.py
 python3 scripts/validate_interaction_contract.py
 python3 scripts/validate_student_output_contract.py
+python3 scripts/public_lecture_notes_renderer.py --self-test
 python3 scripts/source_information_profiler.py --self-test
 python3 scripts/zero_mention_lint.py --self-test
 python3 scripts/reference_density_linter.py --self-test

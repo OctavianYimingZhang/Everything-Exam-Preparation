@@ -436,26 +436,21 @@ MODULE_DEFS = {
         "qa_checks": ["protected items still visible", "no over-compression", "old template fields absent"],
     },
     "exam_prep_notes_plan": {
-        "action_type": "BuildExamPrepNotesPlan",
+        "action_type": "BuildPublicLectureNotesPlan",
         "minimum_inputs": [
             "KnowledgeOnlyStudentView",
-            "PublicOutputPoint",
-            "PointCoverageBinding",
             "OutputLanguageProfile",
             "RouteDocxStyleProfile",
             "SourceBaselineNotesPlan",
-            "ExamOverlayPass",
-            "CourseSection",
             "LectureSession",
             "LectureConceptModule",
             "KnowledgePoint",
-            "ExamEmphasisProfile",
         ],
-        "expected_outputs": ["ExamPrepNotesPlan"],
+        "expected_outputs": ["PublicLectureNotesPlan"],
         "qa_checks": [
-            "public output points present",
+            "public_lecture_sections present",
+            "each public module has at least two knowledge_functions",
             "internal card fields hidden from ordinary notes",
-            "protected atomic coverage bound to public points",
             "route style and output language profiles attached",
         ],
     },
@@ -465,8 +460,8 @@ MODULE_DEFS = {
         "expected_outputs": ["KnowledgeOnlyStudentView", "QAFlag"],
         "qa_checks": [
             "assessment and audit text filtered",
-            "course knowledge map only",
-            "exam use restricted to module-level application",
+            "course maps and source summaries remain internal-only",
+            "exam use restricted to add-ons",
             "protected knowledge units still visible",
         ],
     },
@@ -493,11 +488,13 @@ MODULE_DEFS = {
         ],
     },
     "public_output_point_build": {
-        "action_type": "BuildPublicOutputPoints",
+        "action_type": "BuildPublicLectureModules",
         "minimum_inputs": ["KnowledgeOnlyStudentView", "SourceBaselineNotesPlan", "ExamOverlayPass", "OutputLanguageProfile"],
-        "expected_outputs": ["PublicOutputPoint", "PublicPointBlock", "RenderDecision"],
+        "expected_outputs": ["PublicLectureSection", "PublicLectureModule", "PublicPointBlock", "RenderDecision"],
         "qa_checks": [
             "internal scaffold fields not exposed",
+            "lecture-first public order preserved",
+            "module-depth knowledge_functions present",
             "only knowledge-bearing blocks rendered",
             "ordinary notes omit Exam Use, Common Error / Trap, and Must Master headings",
         ],
@@ -514,7 +511,7 @@ MODULE_DEFS = {
     },
     "knowledge_only_rendering_gate": {
         "action_type": "RunKnowledgeOnlyRenderingGate",
-        "minimum_inputs": ["KnowledgeOnlyStudentView", "PublicOutputPoint", "PublicPointBlock", "KnowledgeWalkthroughPlan"],
+        "minimum_inputs": ["KnowledgeOnlyStudentView", "PublicLectureSection", "PublicLectureModule", "KnowledgeWalkthroughPlan"],
         "expected_outputs": ["QAFlag"],
         "qa_checks": [
             "only source-backed knowledge points rendered",
@@ -526,7 +523,7 @@ MODULE_DEFS = {
     },
     "public_output_point_linter": {
         "action_type": "LintPublicOutputPoints",
-        "minimum_inputs": ["PublicOutputPoint", "PointCoverageBinding", "RenderDecision"],
+        "minimum_inputs": ["PublicLectureSection", "PublicLectureModule", "RenderDecision"],
         "expected_outputs": ["QAFlag"],
         "qa_checks": [
             "forbidden internal headings absent",
@@ -536,7 +533,7 @@ MODULE_DEFS = {
     },
     "output_language_request_linter": {
         "action_type": "LintOutputLanguageRequestPolicy",
-        "minimum_inputs": ["OutputLanguageProfile", "PublicOutputPoint", "PrepArtifact"],
+        "minimum_inputs": ["OutputLanguageProfile", "PublicLectureSection", "PrepArtifact"],
         "expected_outputs": ["QAFlag"],
         "qa_checks": [
             "non-English or mixed-language output requires explicit user request",
@@ -546,13 +543,13 @@ MODULE_DEFS = {
     },
     "question_type_addon_generation": {
         "action_type": "BuildQuestionTypeAddOns",
-        "minimum_inputs": ["ExamPrepNotesPlan"],
+        "minimum_inputs": ["PublicLectureNotesPlan"],
         "expected_outputs": ["QuestionTypeAddOn"],
         "qa_checks": ["add-ons after base notes", "question-type separation", "forbidden field filter"],
     },
     "visual_aid_planning": {
         "action_type": "PlanVisualAid",
-        "minimum_inputs": ["ExamPrepNotesPlan"],
+        "minimum_inputs": ["PublicLectureNotesPlan"],
         "expected_outputs": ["VisualAidSpec"],
         "qa_checks": ["optional final layer", "source-backed labels", "copyright boundary"],
     },
@@ -564,7 +561,7 @@ MODULE_DEFS = {
     },
     "exam_prep_notes_docx_generation": {
         "action_type": "GenerateExamPrepNotesDocx",
-        "minimum_inputs": ["ExamPrepNotesPlan", "PublicOutputPoint", "RouteDocxStyleProfile", "OutputLanguageProfile"],
+        "minimum_inputs": ["PublicLectureNotesPlan", "RouteDocxStyleProfile", "OutputLanguageProfile"],
         "expected_outputs": ["PrepArtifact"],
         "qa_checks": [
             "compact exam prep DOCX format",
@@ -584,7 +581,7 @@ MODULE_DEFS = {
         "action_type": "LintExamPrepNotes",
         "minimum_inputs": ["PrepArtifact"],
         "expected_outputs": ["QAFlag"],
-        "qa_checks": ["star priority labels", "protected modules present", "old template fields absent"],
+        "qa_checks": ["lecture-first sections present", "module-depth functions present", "old template fields absent"],
     },
     "examiner_operations": {
         "action_type": "InferQuestionArchetype",

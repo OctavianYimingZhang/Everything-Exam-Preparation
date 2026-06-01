@@ -94,41 +94,40 @@ Visible structure:
 
 ```yaml
 ExamPrepNotesStudentContract:
-  course_knowledge_map: string
-  lecture_mapping: list[string]
-  exam_ready_knowledge_notes: list[PublicOutputPoint]
-  question_type_addons: list[QuestionTypeAddOn]
-  optional_visual_aids: list[GeneratedVisualAidCaption]
+  public_lecture_sections: list[PublicLectureSection]
 ```
 
-The visible top matter is `Course Knowledge Map`, not `Course-Level Exam Map`. It may state how the knowledge is organised, list knowledge sections, and map lectures/topics to those sections. Generic exam advice stays internal unless the user asks for a question-type add-on.
+The visible top matter is only the document title. `Course Knowledge Map`, `Source Role Summary`, extraction limitations, prediction sections and generic exam advice stay internal unless the user explicitly requests a separate audit or exam-analysis report.
 
 Compact Public Notes Rule:
 
 - Internally, decompose sources into atomic knowledge items and protect every source-backed definition, criterion, mechanism, method, example, equation, graph, table, and workflow.
 - Publicly, render compact lecture-level exam notes. Do not expose the internal card scaffold.
-- Each lecture starts on a new page.
+- The public route is lecture-first: each official lecture/session becomes a visible lecture section, with concept-specific modules inside it.
 - Group protected atomic items into readable public points using concise paragraphs, bullets, equations, examples, comparisons, and mechanism chains.
 - Coverage must be complete; formatting must be compact.
 - Compact lecture notes and compatibility walkthroughs use Arial, 2.0 cm margins, compact 1.05-1.15 line spacing, left-aligned body text, black text, and lecture page breaks. Essay-style 2.5 cm margins, 1.5 spacing, and justified body text are reserved for Example Essay outputs.
 - A hard knowledge-only rendering gate applies before public DOCX writing. Ordinary notes and compatibility walkthroughs must not render generic advice sections such as `How To Answer`, `How To Use`, `Integrated reasoning`, `Integrated practical reasoning`, `Answer Logic`, `Exam Strategy`, `Recommended Approach`, `A strong answer should`, `Use this module`, or question-type reliability commentary. Keep only the underlying source-backed knowledge, rewritten as knowledge points, definitions, method workflows, calculations, graph/data rules, comparisons, examples, or limitations.
 - A public-point consistency gate applies before DOCX writing. Every visible internal KnowledgeCard must map to at least one public point, every public point must reference real source cards, and public point, block, and coverage-binding atomic-unit sets must agree.
 
-Visible public point:
+Visible public module:
 
 ```yaml
-PublicOutputPoint:
-  point_id: string
-  lecture_session_id: string
-  point_title: string
-  priority: ★★★ | ★★ | ★
-  point_kind: definition | mechanism | method_workflow | criteria_list | comparison | calculation | graph_or_data_interpretation | canonical_example | compact_background
-  main_text: string
+PublicLectureSection:
+  lecture_title: string
+  lecture_scope: string
+  modules: list[PublicLectureModule]
+
+PublicLectureModule:
+  module_title: string
+  knowledge_functions: list[
+    definition_boundary | mechanism_process | method_readout | graph_data_interpretation | calculation_unit_worked_example | named_example | limitation_trap
+  ]
+  explanation: string
   blocks: list[PublicPointBlock]
-  covered_atomic_units: list[string]
 
 PublicPointBlock:
-  block_type: definitions | key_points | criteria | steps | mechanism | equation | calculation_logic | graph_logic | comparison | example | limitation
+  block_type: definition | mechanism | method | graph_data | calculation | example | limitation | comparison | table | explanation
   label: string | null
   content: string | list[string]
 ```

@@ -59,6 +59,9 @@ def infer_source_units(plan: dict[str, Any]) -> int:
             if value:
                 return value
     seen: set[str] = set()
+    public_lectures = plan.get("public_lecture_sections")
+    if isinstance(public_lectures, list) and public_lectures:
+        return len(public_lectures)
     for module in plan.get("course_modules", []) or []:
         if not isinstance(module, dict):
             continue

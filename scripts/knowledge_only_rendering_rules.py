@@ -11,6 +11,8 @@ FORBIDDEN_ADVISORY_PHRASES = [
     "all unit sections are separated",
     "answer logic",
     "exam strategy",
+    "examinable knowledge units",
+    "extraction limitation",
     "generic exam advice",
     "how to answer",
     "how to use this document",
@@ -26,9 +28,14 @@ FORBIDDEN_ADVISORY_PHRASES = [
     "question-type dependent",
     "recommended approach",
     "recommended output route",
+    "section a strategy",
+    "section b strategy",
     "source coverage",
     "source limits",
+    "source role summary",
     "source rules",
+    "source scope",
+    "study order",
     "this pack uses only",
     "the notes are organised",
     "this document is organised",
@@ -37,7 +44,11 @@ FORBIDDEN_ADVISORY_PHRASES = [
 
 FORBIDDEN_ADVISORY_HEADINGS = [
     "Answer Logic",
+    "Conceptual Course Map",
+    "Course Knowledge Map",
     "Exam Strategy",
+    "Examinable Knowledge Units",
+    "Extraction Limitation",
     "How To Answer This Exam",
     "How To Use This Document",
     "Included Unit Files",
@@ -45,9 +56,14 @@ FORBIDDEN_ADVISORY_HEADINGS = [
     "Integrated Reasoning",
     "Must Master",
     "Recommended Approach",
+    "Section A Strategy",
+    "Section B Strategy",
     "Source Coverage",
     "Source Limits",
+    "Source Role Summary",
     "Source Rules",
+    "Source Scope",
+    "Study Order",
     "What This Lecture Is About",
     "What This Module Explains",
 ]
@@ -258,3 +274,5 @@ def repeated_template_label_hits(text: str, threshold: int = 4) -> list[str]:
         hits.append("ocr_fragment_dump")
 
     return sorted(set(hits))
+    "conceptual course map",
+    "course knowledge map",

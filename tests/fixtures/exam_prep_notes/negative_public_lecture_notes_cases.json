@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "name": "audit_preamble_leak",
+      "expected_failure": "forbidden_public_phrase",
+      "public_text": "Source Role Summary\nSource Scope\nExtraction Limitation"
+    },
+    {
+      "name": "course_map_top_matter",
+      "expected_failure": "forbidden_public_heading",
+      "public_text": "Course Knowledge Map"
+    },
+    {
+      "name": "prediction_strategy_leak",
+      "expected_failure": "forbidden_public_phrase",
+      "public_text": "Predicted Essay Theme\nSection A Strategy\nA strong answer should use this module."
+    },
+    {
+      "name": "flat_non_lecture_plan",
+      "expected_failure": "requires_public_lecture_sections",
+      "public_text": "Examinable Knowledge Units"
+    },
+    {
+      "name": "default_chinese_leak",
+      "expected_failure": "default_english_public_text_contains_cjk",
+      "public_text": "默认中文备考分析"
+    },
+    {
+      "name": "essay_style_format",
+      "expected_failure": "style_profile_line_spacing_not_compact",
+      "public_text": "2.5 cm margins and 1.5 spacing belong to essay output only."
+    }
+  ]
+}

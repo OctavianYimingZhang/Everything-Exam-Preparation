@@ -1,110 +1,72 @@
 {
-  "object_type": "KnowledgeWalkthroughPlan",
-  "walkthrough_id": "kw_fixture_001",
+  "object_type": "PublicLectureNotesPlan",
+  "walkthrough_id": "valid_knowledge_walkthrough_plan",
   "title": "Lecture Knowledge Walkthrough",
-  "target_group_key": "generic_current",
-  "lecture_order": ["lecture_1"],
+  "target_group_key": "sample_course",
+  "source_scale_budget": {
+    "source_units_count": 2,
+    "readable_source_blocks": 8,
+    "protected_knowledge_units_total": 4,
+    "excluded_non_knowledge_units_total": 1,
+    "target_public_units_min": 2,
+    "target_words_min": 90,
+    "compression_mode": "explain_not_dump",
+    "coverage_floor_status": "pass"
+  },
+  "output_language_profile": {
+    "output_language": "English",
+    "allow_bilingual": false,
+    "preserve_technical_terms": true
+  },
   "route_docx_style_profile": {
-    "style_profile_id": "kw_style_fixture_001",
     "route": "knowledge_walkthrough_docx",
     "margin_cm": 2.0,
-    "line_spacing": 1.08,
+    "line_spacing": 1.1,
     "body_alignment": "left",
-    "title_alignment": "center",
+    "title_alignment": "left",
     "heading_alignment": "left",
+    "image_alignment": "center",
     "body_font_pt": 10.5,
-    "heading_font_pt": 12.0,
-    "lecture_heading_font_pt": 14.0,
+    "title_font_pt": 14.0,
+    "lecture_heading_font_pt": 13.0,
+    "module_heading_font_pt": 11.5,
     "text_color": "black",
-    "lecture_page_breaks": true,
-    "essay_style_spacing_forbidden": true
+    "lecture_page_breaks": false,
+    "theme_colours_allowed": false,
+    "blue_heading_styles_allowed": false
   },
-  "student_visible_structure": [
-    "lecture_title",
-    "lecture_overview",
-    "module_map",
-    "module_title",
-    "module_overview",
-    "knowledge_walkthrough",
-    "key_logic",
-    "key_distinctions",
-    "knowledge_points",
-    "lecture_recap"
-  ],
-  "forbidden_student_fields": [
-    "source_anchor",
-    "confidence",
-    "evidence_score",
-    "recurrence_count",
-    "examiner_operation",
-    "discriminator_axis",
-    "essay_plan",
-    "practice_question",
-    "answer_key"
-  ],
-  "lectures": [
+  "public_lecture_sections": [
     {
-      "lecture_id": "lecture_1",
-      "lecture_title": "Generic Metabolic Integration",
-      "lecture_overview": "This lecture explains how a pathway is controlled by substrate supply, energy state, and tissue context. The main idea is that cells do not run pathways as isolated lists of enzymes; they coordinate intake, storage, mobilisation, and disposal according to physiological demand.",
-      "core_logic": "substrate supply -> regulatory checkpoint -> pathway flux -> tissue-level consequence",
-      "module_map": [
-        {
-          "module_id": "module_1_1",
-          "module_title": "Pathway purpose",
-          "one_sentence": "Explains why the pathway exists and what problem it solves."
-        },
-        {
-          "module_id": "module_1_2",
-          "module_title": "Regulatory checkpoint",
-          "one_sentence": "Explains how the pathway is switched up or down."
-        }
-      ],
+      "lecture_title": "Lecture 1: Experimental measurements require a readable signal",
       "modules": [
         {
-          "object_type": "LectureModule",
-          "module_id": "module_1_1",
-          "module_title": "Pathway purpose",
-          "module_overview": "This module establishes the biological problem solved by the pathway. The important point is not to memorise every intermediate first, but to understand the input, the useful output, and why the output matters.",
-          "knowledge_walkthrough": "A pathway should be read as a controlled conversion of **input molecules** into a useful **metabolic output**. The pathway becomes meaningful when it is linked to the condition in which it runs, such as feeding, fasting, stress, or high energy demand.",
-          "key_logic": "input molecule -> controlled conversion -> useful output -> physiological role",
-          "common_confusions": [
-            "Do not treat pathway names as isolated facts; connect each pathway to the condition that activates it."
-          ],
-          "must_master": [
-            "**Input** and **output** define the pathway's purpose.",
-            "Regulation decides whether the pathway is actually active.",
-            "Physiological context explains why the pathway matters."
-          ],
-          "source_anchors": ["fixture_lecture_1"],
-          "student_visible": true
-        },
-        {
-          "object_type": "LectureModule",
-          "module_id": "module_1_2",
-          "module_title": "Regulatory checkpoint",
-          "module_overview": "This module explains why one regulated step often controls the whole pathway. A checkpoint is important because changing its activity changes downstream flux.",
-          "knowledge_walkthrough": "A regulatory checkpoint usually sits near the committed or rate-limiting step. Signals such as **ATP**, **AMP**, **insulin**, or **glucagon** change enzyme activity so that pathway flux matches the cell's energy state.",
-          "key_logic": "signal -> checkpoint enzyme -> flux change -> metabolic outcome",
-          "common_confusions": [
-            "A pathway enzyme can be present but inactive if the regulatory signal is wrong."
-          ],
-          "must_master": [
-            "**Checkpoint enzymes** control flux.",
-            "**Hormonal signals** connect pathway activity to whole-body state.",
-            "**Energy charge** connects pathway activity to cellular demand."
-          ],
-          "source_anchors": ["fixture_lecture_1"],
-          "student_visible": true
+          "module_title": "Assay readouts link a biological process to a measurable signal",
+          "knowledge_functions": ["definition_boundary", "method_readout"],
+          "explanation": "An assay is useful only when the measured signal is coupled to the biological process being tested. The readout must change when the process changes, and the control condition must show the baseline signal so that a treatment effect can be separated from background variation.",
+          "blocks": [
+            {
+              "block_type": "limitation",
+              "content": "A high signal is not automatically a biological effect; it may reflect background, saturation, poor normalization, or a reagent-specific artefact."
+            }
+          ]
         }
-      ],
-      "lecture_recap": [
-        "A pathway should be understood by its input, output, control point, and physiological use.",
-        "Regulatory checkpoints explain why pathway activity changes between conditions.",
-        "Hormonal and energy-state signals connect molecular mechanisms to whole-body metabolism.",
-        "The most useful revision approach is to explain the pathway as a mechanism chain, not as a list."
+      ]
+    },
+    {
+      "lecture_title": "Lecture 2: Controls define the interpretation boundary",
+      "modules": [
+        {
+          "module_title": "Negative and positive controls test different parts of the claim",
+          "knowledge_functions": ["method_readout", "limitation_trap"],
+          "explanation": "A negative control estimates the signal expected without the tested process, while a positive control verifies that the assay can detect the process when it is present. Together they define whether a failed result is biologically meaningful or simply an assay failure.",
+          "blocks": [
+            {
+              "block_type": "comparison",
+              "content": "A negative control protects against false positives; a positive control protects against false negatives."
+            }
+          ]
+        }
       ]
     }
-  ],
-  "qa_status": "pass"
+  ]
 }

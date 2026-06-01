@@ -20,16 +20,27 @@ except Exception as exc:  # pragma: no cover
 
 BLUE_RGB = {"0000FF", "0563C1", "2F5496", "1F4E79", "4472C4", "5B9BD5"}
 EXPECTED_MARGIN_CM = 2.0
-MIN_LINE_SPACING = 1.45
-MAX_LINE_SPACING = 1.55
+MIN_LINE_SPACING = 1.05
+MAX_LINE_SPACING = 1.15
 FORBIDDEN_INTERNAL_HEADINGS = {
+    "A strong answer should",
+    "Conceptual Course Map",
+    "Course Knowledge Map",
     "Exam Specificity",
     "Core Exam Claim",
     "Exam Use",
     "Common Error / Trap",
     "Must Master",
     "Course-Level Exam Map",
+    "Examinable Knowledge Units",
     "How To Answer This Exam",
+    "Predicted Essay Theme",
+    "Section A Strategy",
+    "Section B Strategy",
+    "Source Role Summary",
+    "Source Scope",
+    "Study Order",
+    "Use This Module",
 }
 
 
@@ -112,8 +123,8 @@ def lint_docx(path: Path) -> list[dict[str, Any]]:
             if paragraph.alignment not in {None, WD_ALIGN_PARAGRAPH.LEFT}:
                 failures.append({"type": "heading_not_left_aligned", "path": str(path), "paragraph": index})
         else:
-            if paragraph.alignment != WD_ALIGN_PARAGRAPH.JUSTIFY:
-                failures.append({"type": "body_not_justified", "path": str(path), "paragraph": index, "alignment": str(paragraph.alignment)})
+            if paragraph.alignment not in {None, WD_ALIGN_PARAGRAPH.LEFT}:
+                failures.append({"type": "body_not_left_aligned", "path": str(path), "paragraph": index, "alignment": str(paragraph.alignment)})
         if spacing is not None and not (MIN_LINE_SPACING <= spacing <= MAX_LINE_SPACING) and not has_image:
             failures.append({"type": "bad_line_spacing", "path": str(path), "paragraph": index, "line_spacing": round(spacing, 3)})
 

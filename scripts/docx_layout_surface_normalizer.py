@@ -2,10 +2,9 @@
 """Normalise public notes DOCX layout after rendering-plan generation.
 
 This post-processor enforces the notes/walkthrough layout surface:
-- body text justified;
-- titles, lecture headings and subheadings left aligned;
+- body text, titles, lecture headings and subheadings left aligned;
 - images centered;
-- default text line spacing 1.5;
+- default text line spacing compact 1.05-1.15;
 - all visible text black Arial, including inherited Word heading styles;
 - images scaled to the available content area while preserving aspect ratio.
 """
@@ -99,7 +98,7 @@ def normalise_docx(
     output_path: Path,
     *,
     margin_cm: float = 2.0,
-    line_spacing: float = 1.5,
+    line_spacing: float = 1.1,
     body_font_pt: float = 10.5,
     max_image_width_cm: float = 15.0,
     max_image_height_cm: float = 8.0,
@@ -133,7 +132,7 @@ def normalise_docx(
             paragraph.paragraph_format.line_spacing = line_spacing
             heading_paragraphs += 1
         else:
-            paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
             paragraph.paragraph_format.line_spacing = line_spacing
             body_paragraphs += 1
         for run in paragraph.runs:
@@ -159,7 +158,7 @@ def main() -> int:
     parser.add_argument("input", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--margin-cm", type=float, default=2.0)
-    parser.add_argument("--line-spacing", type=float, default=1.5)
+    parser.add_argument("--line-spacing", type=float, default=1.1)
     parser.add_argument("--body-font-pt", type=float, default=10.5)
     parser.add_argument("--max-image-width-cm", type=float, default=15.0)
     parser.add_argument("--max-image-height-cm", type=float, default=8.0)

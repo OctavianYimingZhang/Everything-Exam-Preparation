@@ -20,6 +20,7 @@ REQUIRED_FILES = [
     "references/knowledge_surface_protocol.md",
     "schemas/student_output_contract.schema.json",
     "schemas/knowledge_walkthrough_plan.schema.json",
+    "schemas/exam_prep_notes_plan.schema.json",
     "schemas/knowledge_surface_contract.schema.json",
     "schemas/atomic_knowledge_ledger.schema.json",
     "scripts/generate_exam_prep_notes_docx.py",
@@ -110,10 +111,11 @@ def validate(root: Path) -> dict[str, Any]:
         "ExaminableKnowledgeUnit",
         "subject_knowledge",
         "non_knowledge_noise",
-        "CourseModule",
-        "Course Knowledge Map",
+        "PublicLectureNotesPlan",
+        "public_lecture_sections",
+        "knowledge_functions",
         "raw slide bullets",
-        "file-title course maps",
+        "lecture-first",
         "connected explanation",
         "theme colours",
         "blue heading styles",
@@ -138,21 +140,27 @@ def validate(root: Path) -> dict[str, Any]:
     contract = load_json(root / "schemas/student_output_contract.schema.json")
     surface_schema = load_json(root / "schemas/knowledge_surface_contract.schema.json")
     walkthrough_schema = load_json(root / "schemas/knowledge_walkthrough_plan.schema.json")
+    notes_schema = load_json(root / "schemas/exam_prep_notes_plan.schema.json")
+    for schema_name, schema in [("exam_prep_notes", notes_schema), ("knowledge_walkthrough", walkthrough_schema)]:
+        if "public_lecture_sections" not in schema.get("required", []):
+            failures.append({"type": f"{schema_name}_schema_missing_public_lecture_sections"})
+        if "output_language_profile" not in schema.get("required", []):
+            failures.append({"type": f"{schema_name}_schema_missing_output_language_profile"})
     if "route_docx_style_profile" not in walkthrough_schema.get("required", []):
         failures.append({"type": "knowledge_walkthrough_schema_missing_route_style_profile"})
-    style_profile = resolve_schema_ref(walkthrough_schema, walkthrough_schema.get("properties", {}).get("route_docx_style_profile", {}))
+    style_profile = walkthrough_schema.get("$defs", {}).get("RouteDocxStyleProfile", {})
     style_props = style_profile.get("properties", {})
     if style_props.get("route", {}).get("const") != "knowledge_walkthrough_docx":
         failures.append({"type": "knowledge_walkthrough_schema_bad_style_route"})
-    if style_props.get("body_alignment", {}).get("const") != "justified":
-        failures.append({"type": "knowledge_walkthrough_schema_body_not_justified"})
+    if style_props.get("body_alignment", {}).get("const") != "left":
+        failures.append({"type": "knowledge_walkthrough_schema_body_not_left"})
     if style_props.get("heading_alignment", {}).get("const") != "left":
         failures.append({"type": "knowledge_walkthrough_schema_heading_not_left"})
     if style_props.get("image_alignment", {}).get("const") != "center":
         failures.append({"type": "knowledge_walkthrough_schema_image_not_center"})
     line_spacing = style_props.get("line_spacing", {})
-    if line_spacing.get("minimum") != 1.45 or line_spacing.get("maximum") != 1.55:
-        failures.append({"type": "knowledge_walkthrough_schema_line_spacing_not_1_5"})
+    if line_spacing.get("minimum") != 1.05 or line_spacing.get("maximum") != 1.15:
+        failures.append({"type": "knowledge_walkthrough_schema_line_spacing_not_compact"})
 
     if surface_schema.get("title") != "KnowledgeSurfaceContract":
         failures.append({"type": "knowledge_surface_schema_bad_title"})

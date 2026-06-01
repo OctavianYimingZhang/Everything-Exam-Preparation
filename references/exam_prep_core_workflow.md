@@ -21,10 +21,10 @@ Question-type reports are add-ons. They are never allowed to replace the knowled
 2. Remove non-knowledge noise.
 3. Estimate source scale and coverage budget.
 4. Read the source set for meaning.
-5. Reconstruct the course into modules.
-6. Build enough examinable knowledge units for the source scale.
-7. Explain each unit in connected prose.
-8. Add question-type overlays only after the knowledge is clear.
+5. Reconstruct lecture/session order and concept modules.
+6. Build enough public lecture modules for the source scale.
+7. Explain each module in connected prose.
+8. Keep question-type overlays separate unless explicitly requested.
 9. Run surface, density, noise and layout QA.
 ```
 
@@ -116,20 +116,22 @@ Indicative internal floors, to be adapted by evidence density:
 
 These are not student-visible promises. They prevent accidental over-compression.
 
-## Course Reconstruction
+## Lecture-First Reconstruction
 
-Before writing, reconstruct a compact course map:
+Before writing, reconstruct the public lecture plan:
 
 ```yaml
-CourseModule:
-  module_title:
-  module_function:
-  source_lectures:
-  core_questions:
-  examinable_units:
+PublicLectureNotesPlan:
+  public_lecture_sections:
+    - lecture_title:
+      modules:
+        - module_title:
+          knowledge_functions:
+          explanation:
+          blocks:
 ```
 
-A course map should normally contain conceptual modules, not one line per uploaded slide deck. It should say what the course teaches, not list every file title. For broad courses, use as many conceptual modules as needed to preserve the main knowledge areas; do not force every course into 4-10 modules if that hides content.
+The public document starts with the title and then lecture/session headings. `Course Knowledge Map` is internal-only. Do not list uploaded file titles or source inventories in the public document.
 
 ## Examinable Knowledge Unit
 
@@ -199,10 +201,11 @@ Default DOCX structure:
 
 ```text
 Title
-Course Knowledge Map
-Module 1: topic-specific module heading
+Lecture 1: source/session-specific heading
+  topic-specific module heading
   connected notes
-Module 2: topic-specific module heading
+Lecture 2: source/session-specific heading
+  topic-specific module heading
   connected notes
 ...
 ```
@@ -234,7 +237,7 @@ Fail and rewrite if any of these are true:
 - the output is much shorter than the source scale budget without a defensible compression reason;
 - more than a small minority of visible lines are copied slide bullets;
 - the output contains course admin or staff/contact/logistics text;
-- the course map is mostly a list of file titles;
+- the output contains Course Knowledge Map, source role summary, extraction limitation, strategy or prediction sections;
 - a section is mostly names without explanations;
 - labels and bullets replace connected explanation;
 - the model preserved broken OCR instead of reconstructing meaning;

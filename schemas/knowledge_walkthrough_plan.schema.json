@@ -1,145 +1,75 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/everything-exam-preparation/knowledge_walkthrough_plan.schema.json",
-  "title": "KnowledgeWalkthroughPlan",
+  "title": "PublicLectureNotesPlan",
   "type": "object",
-  "required": ["walkthrough_id", "title", "target_group_key", "source_scale_budget", "route_docx_style_profile"],
+  "required": [
+    "object_type",
+    "title",
+    "target_group_key",
+    "source_scale_budget",
+    "output_language_profile",
+    "route_docx_style_profile",
+    "public_lecture_sections"
+  ],
   "properties": {
-    "object_type": { "const": "KnowledgeWalkthroughPlan" },
+    "object_type": { "const": "PublicLectureNotesPlan" },
     "walkthrough_id": { "type": "string" },
-    "title": { "type": "string" },
-    "target_group_key": { "type": "string" },
-    "course_knowledge_map": { "type": "string" },
-    "source_scale_budget": { "$ref": "#/$defs/SourceScaleBudget" },
-    "course_modules": {
+    "title": { "type": "string", "minLength": 1 },
+    "target_group_key": { "type": "string", "minLength": 1 },
+    "source_scale_budget": { "$ref": "exam_prep_notes_plan.schema.json#/$defs/SourceScaleBudget" },
+    "output_language_profile": { "$ref": "exam_prep_notes_plan.schema.json#/$defs/OutputLanguageProfile" },
+    "public_lecture_sections": {
       "type": "array",
-      "items": { "$ref": "#/$defs/CourseModule" }
+      "minItems": 1,
+      "items": { "$ref": "exam_prep_notes_plan.schema.json#/$defs/PublicLectureSection" }
     },
-    "route_docx_style_profile": { "$ref": "#/$defs/RouteDocxStyleProfile" },
-    "legacy_lectures": {
-      "description": "Backwards-compatible input only. New plans should use course_modules.",
-      "type": "array"
-    },
-    "qa_status": { "type": "string" }
+    "route_docx_style_profile": { "$ref": "#/$defs/RouteDocxStyleProfile" }
+  },
+  "not": {
+    "anyOf": [
+      { "required": ["course_knowledge_map"] },
+      { "required": ["course_modules"] },
+      { "required": ["legacy_lectures"] },
+      { "required": ["knowledge_cards"] },
+      { "required": ["question_type_addons"] }
+    ]
   },
   "$defs": {
-    "SourceScaleBudget": {
-      "type": "object",
-      "required": [
-        "source_units_count",
-        "readable_source_blocks",
-        "protected_knowledge_units_total",
-        "excluded_non_knowledge_units_total",
-        "target_public_units_min",
-        "target_words_min",
-        "compression_mode",
-        "coverage_floor_status"
-      ],
-      "properties": {
-        "source_units_count": { "type": "integer", "minimum": 0 },
-        "readable_source_blocks": { "type": "integer", "minimum": 0 },
-        "source_pages_or_slides_estimate": { "type": "integer", "minimum": 0 },
-        "source_information_profile_status": { "enum": ["measured", "estimated", "missing", "not_applicable"] },
-        "informative_page_count": { "type": "integer", "minimum": 0 },
-        "non_informative_page_count": { "type": "integer", "minimum": 0 },
-        "information_mass_units": { "type": "number", "minimum": 0 },
-        "average_information_score": { "type": "number", "minimum": 0 },
-        "page_information_profile": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["source_id", "page_index", "category", "informative", "information_score"],
-            "properties": {
-              "source_id": { "type": "string" },
-              "page_index": { "type": "integer", "minimum": 1 },
-              "category": { "type": "string" },
-              "informative": { "type": "boolean" },
-              "information_score": { "type": "number", "minimum": 0 },
-              "exclusion_reason": { "type": ["string", "null"] }
-            },
-            "additionalProperties": true
-          }
-        },
-        "source_types": { "type": "array", "items": { "type": "string" } },
-        "protected_knowledge_units_total": { "type": "integer", "minimum": 0 },
-        "excluded_non_knowledge_units_total": { "type": "integer", "minimum": 0 },
-        "target_public_units_min": { "type": "integer", "minimum": 0 },
-        "target_words_min": { "type": "integer", "minimum": 0 },
-        "target_words_max": { "type": "integer", "minimum": 0 },
-        "compression_mode": { "enum": ["explain_not_dump", "concise", "standard", "expanded", "multi_volume_required"] },
-        "compression_reason": { "type": "string" },
-        "coverage_floor_status": { "enum": ["pass", "warn", "block"] }
-      },
-      "additionalProperties": false
-    },
-    "CourseModule": {
-      "type": "object",
-      "required": ["module_title", "module_function", "examinable_units"],
-      "properties": {
-        "object_type": { "const": "CourseModule" },
-        "module_id": { "type": "string" },
-        "module_title": { "type": "string" },
-        "module_function": { "type": "string" },
-        "source_lectures": { "type": "array", "items": { "type": "string" } },
-        "core_questions": { "type": "array", "items": { "type": "string" } },
-        "examinable_units": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "#/$defs/ExaminableKnowledgeUnit" }
-        }
-      },
-      "additionalProperties": true
-    },
-    "ExaminableKnowledgeUnit": {
-      "type": "object",
-      "required": ["title", "explanation"],
-      "properties": {
-        "object_type": { "const": "ExaminableKnowledgeUnit" },
-        "unit_id": { "type": "string" },
-        "title": { "type": "string" },
-        "priority": { "enum": ["high", "medium", "low", "★★★", "★★", "★"] },
-        "source_support": { "type": "array", "items": { "type": "string" } },
-        "explanation": { "type": "string", "minLength": 120 },
-        "optional_equation_or_example": { "type": "string" },
-        "common_confusion_or_boundary": { "type": "string" },
-        "image_refs": { "type": "array", "items": { "type": "string" } }
-      },
-      "additionalProperties": true
-    },
     "RouteDocxStyleProfile": {
       "type": "object",
       "required": [
-        "style_profile_id",
         "route",
         "margin_cm",
         "line_spacing",
         "body_alignment",
+        "title_alignment",
         "heading_alignment",
         "image_alignment",
         "body_font_pt",
-        "heading_font_pt",
-        "text_color"
+        "text_color",
+        "theme_colours_allowed",
+        "blue_heading_styles_allowed"
       ],
       "properties": {
-        "style_profile_id": { "type": "string" },
         "route": { "const": "knowledge_walkthrough_docx" },
-        "margin_cm": { "type": "number", "minimum": 1.8, "maximum": 2.2 },
-        "line_spacing": { "type": "number", "minimum": 1.45, "maximum": 1.55 },
-        "body_alignment": { "const": "justified" },
+        "margin_cm": { "type": "number", "minimum": 1.92, "maximum": 2.08 },
+        "line_spacing": { "type": "number", "minimum": 1.05, "maximum": 1.15 },
+        "body_alignment": { "const": "left" },
         "title_alignment": { "const": "left" },
         "heading_alignment": { "const": "left" },
         "image_alignment": { "const": "center" },
         "body_font_pt": { "type": "number", "minimum": 9.5, "maximum": 11.5 },
         "title_font_pt": { "type": "number", "minimum": 13.0, "maximum": 16.0 },
-        "heading_font_pt": { "type": "number", "minimum": 11.0, "maximum": 13.0 },
-        "lecture_heading_font_pt": { "type": "number", "minimum": 13.0, "maximum": 15.0 },
+        "lecture_heading_font_pt": { "type": "number", "minimum": 12.0, "maximum": 15.0 },
+        "module_heading_font_pt": { "type": "number", "minimum": 10.5, "maximum": 13.0 },
         "text_color": { "const": "black" },
-        "module_page_breaks": { "type": "boolean", "default": false },
+        "lecture_page_breaks": { "type": "boolean", "default": false },
         "theme_colours_allowed": { "const": false },
         "blue_heading_styles_allowed": { "const": false }
       },
       "additionalProperties": false
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

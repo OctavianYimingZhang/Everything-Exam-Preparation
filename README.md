@@ -39,6 +39,7 @@ python3 scripts/no_identity_trigger_linter.py --forbid-legacy-label
 python3 scripts/validate_workflow_planning_contract.py
 python3 scripts/validate_interaction_contract.py
 python3 scripts/validate_student_output_contract.py
+python3 scripts/public_lecture_notes_renderer.py --self-test
 python3 scripts/source_information_profiler.py --self-test
 python3 scripts/github_ready_check.py --ci
 ```

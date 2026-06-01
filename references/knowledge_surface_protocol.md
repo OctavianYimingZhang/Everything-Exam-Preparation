@@ -59,11 +59,11 @@ KnowledgeSurfaceContract:
   density_policy:
     mode: source_adaptive
   layout_policy:
-    body_alignment: justified
+    body_alignment: left
     image_alignment: centered
     title_alignment: left
     heading_alignment: left
-    line_spacing: 1.5
+    line_spacing: 1.05-1.15
     image_scaling: readability_preserving_auto_fit
   qa_status:
 ```
@@ -268,9 +268,8 @@ Allowed public structure:
 
 ```text
 Title
-Course Knowledge Map
-Lecture or Topic Title
-[★★★ | ★★ | ★] Topic-specific knowledge heading
+Lecture Title
+Topic-specific module heading
 Connected explanatory prose
 Optional equation, worked example, method workflow, comparison, or limitation block when useful
 ```
@@ -289,18 +288,20 @@ Arrow chains used as the main explanation
 Coverage note
 Evidence used
 AI process note
+Course Knowledge Map
+Predicted Essay Theme
+Section A Strategy
 ```
 
-A `Course Knowledge Map` is allowed only when it is a knowledge map: topic boundaries, concept dependencies, and major knowledge blocks. It must not contain instructions about how the AI generated the notes, why evidence was selected, or what was intentionally omitted.
+`Course Knowledge Map` and equivalent course-map top matter are internal-only for ordinary notes and walkthroughs.
 
 ## DOCX Layout Surface
 
 For `exam_prep_notes_docx` and `knowledge_walkthrough_docx`:
 
-- body text is justified;
-- titles, lecture headings and all subheadings are left aligned;
+- body text, titles, lecture headings and all subheadings are left aligned;
 - images are centered;
-- default line spacing is 1.5;
+- default line spacing is compact, 1.05-1.15;
 - body text uses black Arial in a readable size;
 - route images are scaled automatically to the available content area, preserving aspect ratio and avoiding upscaling that reduces readability;
 - large blank areas inside Word pages should be reduced by fitting images to page context and by avoiding unnecessary page breaks;
@@ -388,7 +389,7 @@ Before publishing any public DOCX, run this sequence:
 2. Non-knowledge scan: reject source-route narration, AI process, audit trace, study advice, and exam-meta leakage.
 3. Explanatory-form scan: reject colon-slot fragmentation and shorthand arrow chains when they replace explanation.
 4. Label-decision scan: delete or merge rigid template labels unless the label is semantically necessary.
-5. Route-style scan: notes use black Arial, left-aligned headings, justified body text, centered images, 1.5 spacing, and readability-preserving image fit.
+5. Route-style scan: notes use black Arial, left-aligned headings, left-aligned body text, centered images, compact 1.05-1.15 spacing, and readability-preserving image fit.
 6. Essay-specific scan: adaptive budget, conclusion, source-class highlights, citation colour, and word-count efficiency.
 ```
 
