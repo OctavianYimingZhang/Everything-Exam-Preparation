@@ -25,6 +25,9 @@ from knowledge_only_rendering_rules import (
     forbidden_non_knowledge_hits,
     repeated_template_label_hits,
 )
+from module_teaching_depth_linter import lint_plan as lint_module_teaching_depth
+from notes_exam_ready_language_linter import lint_plan as lint_exam_ready_language
+from notes_readability_layout_linter import lint_plan as lint_notes_readability_layout
 from source_scale_budget_rules import floor_for_source_scale
 
 PUBLIC_STYLE_DEFAULTS = {
@@ -468,6 +471,20 @@ def validate_public_lecture_notes_plan(plan: dict[str, Any], route: str) -> list
             errors.append(f"forbidden_internal_key_in_public_surface:{key}")
         if isinstance(value, str):
             _validate_heading_text(value, errors, f"public_text:{key}")
+    for gate_name, result in [
+        ("exam_ready_language", lint_exam_ready_language(plan)),
+        ("module_teaching_depth", lint_module_teaching_depth(plan)),
+        ("notes_readability_layout", lint_notes_readability_layout(plan)),
+    ]:
+        for failure in result.get("failures", []):
+            if isinstance(failure, dict):
+                failure_type = str(failure.get("type") or "unknown")
+                where = str(failure.get("where") or "")
+                module_title = str(failure.get("module_title") or "")
+                suffix = ":".join(part for part in [where, module_title] if part)
+                errors.append(f"{gate_name}:{failure_type}" + (f":{suffix}" if suffix else ""))
+            else:
+                errors.append(f"{gate_name}:{failure}")
     return sorted(set(errors))
 
 
@@ -606,7 +623,7 @@ def sample_plan(route: str = "exam_prep_notes_docx") -> dict[str, Any]:
                     {
                         "module_title": "Fluidity controls how membrane proteins can move and interact",
                         "knowledge_functions": ["mechanism_process", "limitation_trap"],
-                        "explanation": "Membrane fluidity describes lateral movement within the bilayer and depends on lipid packing. Unsaturated tails reduce packing, while cholesterol buffers extremes by limiting movement at high temperature and preventing tight packing at low temperature.",
+                        "explanation": "Membrane fluidity describes lateral movement within the bilayer and depends on lipid packing. Unsaturated tails reduce packing, while cholesterol buffers extremes by limiting movement at high temperature and preventing tight packing at low temperature. This matters because protein collision, signalling complex assembly and vesicle deformation all require movement without losing the membrane boundary.",
                         "blocks": [{"block_type": "limitation", "content": "Fluidity does not mean the membrane is disorganised; it means movement is constrained enough to preserve a boundary while allowing protein interactions."}],
                     },
                     {
@@ -618,8 +635,8 @@ def sample_plan(route: str = "exam_prep_notes_docx") -> dict[str, Any]:
                     {
                         "module_title": "Compartment membranes let cells separate incompatible chemistry",
                         "knowledge_functions": ["mechanism_process", "named_example"],
-                        "explanation": "Internal membranes allow different reactions to occur in different chemical environments. This matters because enzymes, ion concentrations and redox conditions can be tuned locally rather than averaged across the whole cytoplasm.",
-                        "blocks": [{"block_type": "example", "content": "An acidic lumen and a neutral cytosol can support different reaction sets because the membrane restricts uncontrolled mixing."}],
+                        "explanation": "Internal membranes allow different reactions to occur in different chemical environments. This matters because enzymes, ion concentrations and redox conditions can be tuned locally rather than averaged across the whole cytoplasm. An organelle boundary therefore turns one cell into several controlled reaction spaces instead of one mixed solution.",
+                        "blocks": [{"block_type": "example", "content": "An acidic lumen and a neutral cytosol illustrate compartment logic because the membrane restricts uncontrolled mixing while allowing selected transport."}],
                     },
                 ],
             },
@@ -634,7 +651,7 @@ def sample_plan(route: str = "exam_prep_notes_docx") -> dict[str, Any]:
                             {
                                 "block_type": "calculation",
                                 "label": "Worked example",
-                                "content": "For an ion, compare the chemical term with the voltage term before predicting net flux direction.",
+                                "content": "For an ion, compare the chemical term with the voltage term because the larger favourable term determines whether net flux is inward or outward.",
                             }
                         ],
                     },
@@ -653,7 +670,7 @@ def sample_plan(route: str = "exam_prep_notes_docx") -> dict[str, Any]:
                     {
                         "module_title": "Transport measurements need controls for leak and driving force",
                         "knowledge_functions": ["method_readout", "graph_data_interpretation"],
-                        "explanation": "A transport assay is interpretable only when the driving force and leak background are defined. Controls without transporter, without substrate or without energy source distinguish transporter-dependent flux from diffusion, vesicle damage or detection background.",
+                        "explanation": "A transport assay is interpretable only when the driving force and leak background are defined. Controls without transporter, without substrate or without energy source distinguish transporter-dependent flux from diffusion, vesicle damage or detection background. The readout is therefore a controlled comparison rather than a raw signal increase.",
                         "blocks": [{"block_type": "graph_data", "content": "A saturating curve supports carrier-limited transport, while a linear leak-like signal suggests uncontrolled diffusion or assay background."}],
                     },
                 ],

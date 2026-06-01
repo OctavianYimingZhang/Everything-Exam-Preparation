@@ -1,0 +1,5 @@
+{
+  "fixture_type": "negative",
+  "expected_failure": "paragraph_too_dense",
+  "description": "A module explanation over the readability threshold should be split into smaller paragraphs or blocks."
+}

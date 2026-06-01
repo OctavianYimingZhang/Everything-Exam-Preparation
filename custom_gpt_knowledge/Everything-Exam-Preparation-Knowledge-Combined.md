@@ -135,7 +135,11 @@ This single file combines the flattened Custom GPT knowledge files. Each section
 
 ---
 
+---
+
 ## Source File: `README.md`
+
+---
 
 # Everything Exam Preparation
 
@@ -187,10 +191,11 @@ python3 scripts/github_ready_check.py --ci
 
 See [`LICENSE`](LICENSE).
 
-
 ---
 
 ## Source File: `SKILL.md`
+
+---
 
 ---
 name: everything-exam-preparation
@@ -222,12 +227,15 @@ source pack
 -> reconstruct lecture/session order and conceptual modules
 -> calculate source-adaptive coverage budget
 -> build `PublicLectureNotesPlan`
--> write lecture-first connected explanations
+-> write lecture-first micro-module teaching notes
+-> run exam-ready direct prose, module teaching depth and readability layout gates
 -> keep exam overlays internal unless separately requested
 -> run public-surface, density and layout QA
 ```
 
 The output should explain what each concept is, why it matters, how the mechanism, method or calculation works, and what result, limitation or interpretation follows.
+
+All student-facing prose must reach exam-ready level. Public notes should not sound like a source-derived teaching summary. They must state the knowledge directly so the student can revise, recall and adapt it in an exam answer. Do not write `The course frames...`, `The source material identifies...`, `The lecture material uses...`, `The source states...`, or equivalent source narration. Rewrite those forms as direct claims about the concept, method, readout, calculation, distinction, consequence or limitation.
 
 ## Source Roles
 
@@ -305,6 +313,8 @@ PublicLectureNotesPlan:
 
 Preserve official lecture/session order when it explains prerequisites. Do not dump slide order or file names. Inside each lecture, group material into concept-specific modules. Each public module must have at least two knowledge functions so it teaches definition or boundary plus mechanism, method, readout, calculation, example or limitation.
 
+Use micro-module grouping. A lecture heading may stay broad, but module headings should name the exact examinable operation, distinction or mechanism. Prefer `Initial slope gives initial reaction rate` over `Enzyme kinetics`, and `Dimension-aware substitution prevents concentration errors` over `Calculation`. If a module still contains several separable operations, split it.
+
 ## Source-Adaptive Coverage Budget
 
 Never use the same small output size for every course. The amount of public knowledge must scale with the amount of examinable source material.
@@ -378,6 +388,18 @@ PublicLectureModule:
 
 The visible module is a topic-specific heading followed by connected explanatory prose. A valid module explains what the point is, why it matters, how the mechanism, method, readout or calculation works, and what interpretation, limitation or boundary follows. Bullets are allowed only after an explanatory lead sentence and only for naturally parallel items.
 
+Module teaching depth is a release gate. A public module is not enough if it only announces that a topic exists. It must include at least one direct identity or boundary claim and at least one teaching operation:
+
+- definition or boundary: what the concept is and what it excludes;
+- mechanism or process: how the change happens and why the order matters;
+- method or readout: what is measured, controlled and interpreted;
+- graph or data interpretation: axes, pattern, inference and boundary;
+- calculation: equation, units, substitution logic and interpretation;
+- named example: what the example demonstrates, not only that it exists;
+- limitation or trap: what false reading, overclaim or common error it prevents.
+
+Readability layout is also a release gate. Use short explanatory paragraphs, micro-headings, separated equations, worked examples, comparison blocks and list blocks when they reduce cognitive load. Do not compress criteria lists, formulas, graph-reading rules or workflows into one dense paragraph. Keep visuals near the relevant module only when a source-backed diagram, graph, table or workflow materially improves understanding.
+
 Do not write notes as:
 
 ```text
@@ -442,6 +464,11 @@ Fail and rewrite if the public output contains:
 
 - admin, logistics, staff, contact or attendance material;
 - Course Knowledge Map, Source Role Summary, Source Scope, Extraction Limitation, Examinable Knowledge Units, Predicted Essay Theme, Study Order, Section A Strategy, Section B Strategy, How To Answer, A strong answer should, or Use This Module;
+- source narration such as `The course frames`, `The lecture states`, `The source material identifies`, `The source states`, or `The lecture material uses`;
+- inventory-only prose that lists concepts without explaining what each one means, does, measures, proves or limits;
+- broad lecture-theme modules where smaller micro-module headings would make the knowledge usable;
+- examples that do not state what they demonstrate;
+- formulas, graph rules, criteria lists or workflows buried inside long prose;
 - file-title maps or source inventories;
 - raw slide bullets or broken OCR fragments;
 - copied extraction text instead of explanation;
@@ -462,6 +489,9 @@ python3 scripts/validate_workflow_planning_contract.py
 python3 scripts/validate_interaction_contract.py
 python3 scripts/validate_student_output_contract.py
 python3 scripts/public_lecture_notes_renderer.py --self-test
+python3 scripts/notes_exam_ready_language_linter.py --self-test
+python3 scripts/module_teaching_depth_linter.py --self-test
+python3 scripts/notes_readability_layout_linter.py --self-test
 python3 scripts/source_information_profiler.py --self-test
 python3 scripts/zero_mention_lint.py --self-test
 python3 scripts/reference_density_linter.py --self-test
@@ -470,10 +500,11 @@ python3 scripts/scientific_precision_linter.py --self-test
 python3 scripts/github_ready_check.py --ci
 ```
 
-
 ---
 
 ## Source File: `agents__openai.yaml`
+
+---
 
 interface:
   display_name: "Everything Exam Preparation"
@@ -483,10 +514,11 @@ interface:
 policy:
   allow_implicit_invocation: true
 
-
 ---
 
 ## Source File: `agents__presets.yaml`
+
+---
 
 presets:
   source_inventory_only:
@@ -546,10 +578,11 @@ presets:
     modules: ["repository_qa"]
     student_outputs: ["GitHub-ready QA result"]
 
-
 ---
 
 ## Source File: `agents__prompt_cards.yaml`
+
+---
 
 prompt_cards:
   - card_id: "source_inventory"
@@ -639,10 +672,11 @@ prompt_cards:
       - "Do not generate or publish new study artifacts."
     hard_stops: []
 
-
 ---
 
 ## Source File: `agents__setup_wizard.yaml`
+
+---
 
 wizard:
   sections:
@@ -690,10 +724,11 @@ wizard:
       label: "Outputs"
       fields: ["student_outputs", "internal_qa_outputs", "audit_package"]
 
-
 ---
 
 ## Source File: `benchmarks__cross_subject_regression_suite.json`
+
+---
 
 {
   "suite_name": "cross_subject_regression_suite",
@@ -966,10 +1001,11 @@ wizard:
   ]
 }
 
-
 ---
 
 ## Source File: `benchmarks__example_essay_language_linter_fixtures.json`
+
+---
 
 {
   "suite_name": "example_essay_language_linter_fixtures",
@@ -1130,10 +1166,11 @@ wizard:
   ]
 }
 
-
 ---
 
 ## Source File: `benchmarks__kp_essay_style_linter_fixtures.json`
+
+---
 
 {
   "suite_name": "kp_essay_style_linter_fixtures",
@@ -1190,10 +1227,11 @@ wizard:
   ]
 }
 
-
 ---
 
 ## Source File: `benchmarks__method_long_answer_suite.json`
+
+---
 
 {
   "suite_name": "method_long_answer_suite",
@@ -1383,10 +1421,11 @@ wizard:
   ]
 }
 
-
 ---
 
 ## Source File: `benchmarks__past_paper_prediction_suite.json`
+
+---
 
 {
   "suite_name": "past_paper_prediction_suite",
@@ -1589,10 +1628,11 @@ wizard:
   ]
 }
 
-
 ---
 
 ## Source File: `references__best_usage_guide.md`
+
+---
 
 # Best Usage Guide
 
@@ -1654,10 +1694,11 @@ python scripts/render_workflow_plan.py --plan internal_qa/workflow_plan.json --o
 
 Use these helpers to make the run auditable. Do not publish helper JSON, rendered previews, manifests, lineage files, or source maps into the student-facing output unless an audit package was requested.
 
-
 ---
 
 ## Source File: `references__cross_subject_regression_protocol.md`
+
+---
 
 # Cross-Subject Regression Protocol
 
@@ -1839,10 +1880,11 @@ The regression suite passes when benchmark examples improve only generic workflo
 - citation and extra-reading discipline;
 - no factual leakage from examples into new work.
 
-
 ---
 
 ## Source File: `references__essay_generation_protocol.md`
+
+---
 
 # Essay Generation Protocol
 
@@ -2742,10 +2784,11 @@ The workflow passes if every Example Essay:
 
 It fails if it lists facts without reconstructing the argument, uses benchmark/example content as fact, or writes a generic essay from general knowledge.
 
-
 ---
 
 ## Source File: `references__essay_synthesis_protocol.md`
+
+---
 
 # Essay Synthesis Protocol
 
@@ -2773,10 +2816,11 @@ KP synthesis and full Example Essay Mode are separate:
 
 If this file and `kp_essay_synthesis_protocol.md` appear to conflict for KP-level prose linting, follow `kp_essay_synthesis_protocol.md`. If this file and `essay_generation_protocol.md` appear to conflict for full Example Essays, follow `essay_generation_protocol.md`.
 
-
 ---
 
 ## Source File: `references__essay_tutor_workflow_protocol.md`
+
+---
 
 # Essay Tutor Workflow Protocol
 
@@ -3116,10 +3160,11 @@ The essay fails or must be revised when it contains:
 - a conclusion with new evidence;
 - word-limit violation without warning.
 
-
 ---
 
 ## Source File: `references__evidence_policy.md`
+
+---
 
 # Evidence Policy
 
@@ -3343,10 +3388,11 @@ Use these flags when applicable:
 - `figure_reuse_permission_missing`
 - `generated_figure_contains_unsupported_claim`
 
-
 ---
 
 ## Source File: `references__exam_prep_core_workflow.md`
+
+---
 
 # Exam Prep Core Workflow
 
@@ -3373,12 +3419,15 @@ Question-type reports are add-ons. They are never allowed to replace the knowled
 4. Read the source set for meaning.
 5. Reconstruct lecture/session order and concept modules.
 6. Build enough public lecture modules for the source scale.
-7. Explain each module in connected prose.
-8. Keep question-type overlays separate unless explicitly requested.
-9. Run surface, density, noise and layout QA.
+7. Explain each module in exam-ready direct prose.
+8. Run module teaching depth and readability layout gates.
+9. Keep question-type overlays separate unless explicitly requested.
+10. Run surface, density, noise and layout QA.
 ```
 
 The model must not be forced to write from slide fragments. The model should use source order to understand prerequisites and teaching sequence, then organise the output by exam-useful conceptual logic.
+
+The public notes should become lecture-first micro-module teaching notes. They must explain what each knowledge point means, how it works, how it is read or used, and what boundary, limitation, calculation or decision follows. They must not preserve coverage by narrating what the course, lecture or source material says.
 
 ## Source Role Classification
 
@@ -3483,6 +3532,8 @@ PublicLectureNotesPlan:
 
 The public document starts with the title and then lecture/session headings. `Course Knowledge Map` is internal-only. Do not list uploaded file titles or source inventories in the public document.
 
+Use micro-module headings beneath each lecture. A module heading should name the exact mechanism, readout, calculation, distinction, example function or limitation. If a broad lecture theme contains several separable operations, split it before drafting.
+
 ## Examinable Knowledge Unit
 
 Each public unit must be one coherent explanation:
@@ -3497,7 +3548,7 @@ ExaminableKnowledgeUnit:
   common_confusion_or_boundary:
 ```
 
-The `explanation` must be a connected paragraph or a short sequence of explanatory paragraphs. It must answer the useful questions: what is this, why does it work, how does the mechanism/calculation/experiment proceed, and what follows from it.
+The `explanation` must be a connected paragraph or a short sequence of explanatory paragraphs. It must answer the useful questions: what is this, why does it work, how does the mechanism/calculation/experiment proceed, and what follows from it. It must use exam-ready direct prose rather than source narration. Public text such as `The course frames`, `The source material identifies`, `The lecture material uses` or `The source states` is a release failure.
 
 Do not write a unit as:
 
@@ -3594,10 +3645,11 @@ Fail and rewrite if any of these are true:
 - figures create large blank areas without improving readability;
 - add-on exam analysis appears before the knowledge has been made clear.
 
-
 ---
 
 ## Source File: `references__exam_prep_notes_protocol.md`
+
+---
 
 # Exam Prep Notes Protocol
 
@@ -3619,6 +3671,8 @@ SourceRoleMap
 -> SourceScaleBudget
 -> PublicLectureNotesPlan
 -> PublicModuleDepthPass
+-> ExamReadyDirectProsePass
+-> ReadabilityLayoutPass
 -> KnowledgeSurfaceContract / NonKnowledgeGate
 -> RouteStyleRenderer
 ```
@@ -3664,6 +3718,8 @@ PublicLectureNotesPlan:
 
 `knowledge_functions` is a depth gate. Each module needs at least two relevant functions so the output teaches more than a shallow topic label.
 
+The public plan is a micro-module teaching plan. A lecture can remain broad, but module titles should identify the exact operation, distinction, readout, calculation or boundary being taught. Do not use generic module titles such as `Overview`, `Introduction`, `Key concepts` or `Background` as final public headings.
+
 ## Public Structure
 
 Default public structure:
@@ -3689,9 +3745,23 @@ concept -> why it matters -> mechanism/method/calculation/readout -> interpretat
 
 Use `ExaminableKnowledgeUnit` and `CourseModule` only as internal planning vocabulary if needed; do not expose those labels. `SurfaceLabelDecision`, `LabelDecision` and `semantic_sparse` label policy mean labels are visible only when they improve equations, worked examples, controls, comparisons or tables. Avoid `rigid_template_bucket` headings, `colon-slot fragmentation`, repeated `Definition:`/`Workflow:` labels and `shorthand arrow chains` as the main explanation.
 
+Module teaching depth must be checked before release:
+
+- a definition module must state the boundary or distinction, not just the term;
+- a mechanism module must explain the process and consequence;
+- a method module must state the readout, control or interpretation;
+- a graph/data module must state axes or pattern and the inference;
+- a calculation module must separate formula, units, substitution and result interpretation;
+- an example module must state what the example demonstrates;
+- a limitation module must state the trap, false inference or boundary.
+
 ## Language
 
 Default public output is English. Translate source-language mixtures into English unless the user explicitly requests Chinese or bilingual output. Technical terms may stay in English even in non-English outputs.
+
+Write exam-ready direct prose. Do not narrate the source route in the public document. Forbidden source narration includes `The course frames`, `The source material identifies`, `The lecture material uses`, `The source states`, `The lecture introduces`, `The material describes`, and equivalent wording. Rewrite these as direct claims about the knowledge itself.
+
+Use the transferable Example Essay language rules for notes: start with the claim or problem, keep mechanism and interpretation adjacent, avoid repeated negative framing, avoid A-B-A restatement, use examples as evidence, and attach every named detail to a function or consequence.
 
 ## Source Scale
 
@@ -3703,18 +3773,21 @@ If a broad source pack produces a short overview, regenerate from source distill
 
 Ordinary notes use black Arial, 2.0 cm margins, compact 1.05-1.15 spacing, left-aligned body text, left-aligned headings and centered images. Example Essay outputs keep the separate essay style controlled by `EssayAdaptiveBudget`: 2.5 cm margins, 1.5 spacing and justified body text.
 
+Readability layout means controlled segmentation, not empty spacing. Split dense explanations into short paragraphs or blocks when the content contains parallel criteria, workflow steps, graph rules, formulas, controls, limitations or worked examples. Keep formulas and worked calculations separated from long prose. Use source visuals only when readable and materially useful; generated visuals remain optional revision aids, not evidence.
+
 ## Add-ons
 
 MCQ, short-answer, long-answer, practical/data and essay add-ons come after the base notes. Predictions, strategy sections and answer-advice reports must remain separate from ordinary notes unless the user explicitly requests that separate report.
 
 ## QA Gate
 
-Block and regenerate if the public notes contain raw slide bullets, source_route_narration, ai_process_or_provenance, source maps, QA flags, source anchors, evidence scores, confidence bands, internal manifests, helper JSON, unsupported claims, non-black/theme-colour text, blue heading styles, justified ordinary-note body text, non-compact spacing, or any forbidden heading listed above.
-
+Block and regenerate if the public notes contain raw slide bullets, source_route_narration, source narration, ai_process_or_provenance, source maps, QA flags, source anchors, evidence scores, confidence bands, internal manifests, helper JSON, unsupported claims, inventory-only prose, missing module teaching depth, over-dense readability layout, non-black/theme-colour text, blue heading styles, justified ordinary-note body text, non-compact spacing, or any forbidden heading listed above.
 
 ---
 
 ## Source File: `references__example_analysis_protocol.md`
+
+---
 
 # Example Analysis Protocol
 
@@ -3885,10 +3958,11 @@ Do not:
 - merge official answers, student answers, and generated answers into one trust class;
 - treat a model answer as proof that the same question will recur.
 
-
 ---
 
 ## Source File: `references__example_essay_docx_output_protocol.md`
+
+---
 
 # Example Essay DOCX Output Protocol
 
@@ -4255,10 +4329,11 @@ Generated:
 
 The user should not need to manually reformat the Word documents.
 
-
 ---
 
 ## Source File: `references__excel_output_protocol.md`
+
+---
 
 # Legacy Excel Compatibility Protocol
 
@@ -4286,10 +4361,11 @@ Legacy audit labels may include:
 
 These labels are audit labels, not public route names. For current output generation, convert the same analysis into the matching DOCX add-on report.
 
-
 ---
 
 ## Source File: `references__gap_closure_loop_protocol.md`
+
+---
 
 # Gap Closure Loop Protocol
 
@@ -4347,10 +4423,11 @@ Chrome ChatGPT Pro/Extended review, if available, is an external review artefact
 
 If external review is unavailable, record that fact and continue with local evidence, local examples, and automated checks.
 
-
 ---
 
 ## Source File: `references__github_release_protocol.md`
+
+---
 
 # GitHub Release Protocol
 
@@ -4375,10 +4452,11 @@ Do not publish:
 
 The GitHub repository source is canonical. Local compacted versions are adapters for constrained upload environments; they must preserve the same route table, source-scale floor, knowledge-surface boundary, evidence policy and revision contract as `SKILL.md`, but generated combined exports remain local-only by default.
 
-
 ---
 
 ## Source File: `references__input_processing_protocol.md`
+
+---
 
 # Input Processing Protocol
 
@@ -4783,10 +4861,11 @@ Allowed:
 - mark a block low examinability, but still preserve its position;
 - place detailed evidence in diagnostics or an explicit audit package while keeping the student-facing output clean.
 
-
 ---
 
 ## Source File: `references__interactive_setup_protocol.md`
+
+---
 
 # Interactive Setup Protocol
 
@@ -4810,10 +4889,11 @@ Use setup mode when the request is broad, multi-file, or underspecified.
 - Treat unsupported content as a gap.
 - Confirm file output before creating files.
 
-
 ---
 
 ## Source File: `references__knowledge_surface_protocol.md`
+
+---
 
 # Knowledge Surface Protocol
 
@@ -5212,10 +5292,11 @@ Before publishing any public DOCX, run this sequence:
 
 If any scan fails, rewrite the public surface rather than adding a disclaimer.
 
-
 ---
 
 ## Source File: `references__knowledge_walkthrough_docx_protocol.md`
+
+---
 
 # Knowledge Walkthrough DOCX Protocol
 
@@ -5225,7 +5306,7 @@ If any scan fails, rewrite the public surface rather than adding a disclaimer.
 Lecture_Knowledge_Walkthrough.docx
 ```
 
-The route uses the same `PublicLectureNotesPlan`, validator and DOCX renderer as `exam_prep_notes_docx`. The only difference is that the style profile route is `knowledge_walkthrough_docx` and source/session order is treated as the primary ordering signal.
+The route uses the same `PublicLectureNotesPlan`, validator, exam-ready direct prose gate, module teaching depth gate, readability layout gate and DOCX renderer as `exam_prep_notes_docx`. The only difference is that the style profile route is `knowledge_walkthrough_docx` and source/session order is treated as the primary ordering signal.
 
 ## Contract
 
@@ -5265,18 +5346,21 @@ The public document starts with the title and then lecture headings. It does not
 
 Each module must explain at least two knowledge functions from definition/boundary, mechanism/process, method/readout, graph/data interpretation, calculation/unit/worked example, named example, and limitation/trap. The output should teach concept -> why it matters -> how it works -> interpretation -> boundary.
 
+A walkthrough module must still be a micro-module teaching note, not a record of what the source says. Use direct knowledge claims and block release for wording such as `The course frames`, `The lecture states`, `The source material identifies`, `The source states`, or equivalent source narration. If a source-order section contains several separable operations, split it into smaller module headings.
+
 ## Language And Style
 
 Default public output is English unless the user explicitly asks for Chinese or bilingual notes. Lecture walkthroughs use the ordinary notes style: black Arial, 2.0 cm margins, compact 1.05-1.15 line spacing, left-aligned body and headings, centered images, no theme colours and no blue heading styles.
 
 ## QA Gate
 
-Block and regenerate if the DOCX contains raw slide bullets, source_route_narration, ai_process_or_provenance, internal QA fields, evidence scores, confidence bands, strategy/prediction content, repeated rigid labels, colon-slot fragmentation, shorthand arrow chains, non-black text, non-Arial text, justified body text or non-compact spacing.
-
+Block and regenerate if the DOCX contains raw slide bullets, source_route_narration, source narration, ai_process_or_provenance, internal QA fields, evidence scores, confidence bands, strategy/prediction content, inventory-only prose, missing module teaching depth, over-dense readability layout, repeated rigid labels, colon-slot fragmentation, shorthand arrow chains, non-black text, non-Arial text, justified body text or non-compact spacing.
 
 ---
 
 ## Source File: `references__kp_essay_synthesis_protocol.md`
+
+---
 
 # KP Essay Synthesis Protocol
 
@@ -5515,10 +5599,11 @@ The workflow passes this protocol if:
 - coverage remains preserved through page ranges, slide images, KP grouping, and audit/diagnostic outputs;
 - full Example Essay generation remains opt-in only.
 
-
 ---
 
 ## Source File: `references__language_quality_contract.md`
+
+---
 
 # Language Quality Contract
 
@@ -5529,6 +5614,8 @@ The contract is subject-independent. Biological, chemical, quantitative, clinica
 ## Academic Exam-Ready Notes Prose Policy
 
 For `exam_prep_notes_docx`, write notes as exam-ready academic synthesis, not as tutor narration or slide commentary.
+
+This standard applies to every student-facing output. Example Essays, ordinary notes, knowledge walkthroughs, question-type reports and practical/data add-ons all need exam-ready direct prose. The format changes by route, but the visible language must state the knowledge itself rather than describe the route by which the model found it.
 
 Use internal planning functions such as these to decide content, but do not force them into public headings:
 
@@ -5550,6 +5637,10 @@ Avoid:
 - `This slide explains...`;
 - `The notes are trying to say...`;
 - `You should understand...`;
+- `The course frames...`;
+- `The lecture material uses...`;
+- `The source material identifies...`;
+- `The source states...`;
 - source-route narration such as page, slide, or upload-order commentary inside the answer body.
 
 The public paragraph shape is:
@@ -5559,6 +5650,8 @@ examinable claim or problem -> mechanism/process -> source-backed example when u
 ```
 
 Do not preserve the original notes' order when that order is weaker than the exam logic, but do preserve the source-first baseline coverage of protected definitions, contrast pairs, criteria lists, named examples, diagrams, tables, equations, calculations, and workflow items before applying exam overlay.
+
+For ordinary notes, use micro-module teaching prose. Each module should answer the useful student questions: what is it, how does it work, how do I read or use it, what calculation or decision follows, and what mistake does this prevent. A module that only names what exists is not exam-ready.
 
 ## Core Paragraph Shape
 
@@ -5735,10 +5828,11 @@ Language quality is acceptable only when:
 - Example Essay DOCX formatting and source-highlight rules pass;
 - no benchmark or course identity is used as a production trigger.
 
-
 ---
 
 ## Source File: `references__long_answer_example_protocol.md`
+
+---
 
 # Long-Answer Example Protocol
 
@@ -5962,10 +6056,11 @@ Add or use these flags when relevant:
 
 Fail safe by omitting uncertain mechanisms, citations, or lecturer preferences rather than inventing them.
 
-
 ---
 
 ## Source File: `references__modular_entrypoints_protocol.md`
+
+---
 
 # Modular Entry Points Protocol
 
@@ -6466,10 +6561,11 @@ Every run should state:
 
 Keep this report concise in the final user response.
 
-
 ---
 
 ## Source File: `references__operational_ontology_protocol.md`
+
+---
 
 # Operational Ontology Protocol
 
@@ -6822,10 +6918,11 @@ No QA pass -> no publish.
 
 Do not implement distributed compute, warehouses, or platform-specific services. The transferable idea is local metadata, pruning, validation, lineage, and reproducibility.
 
-
 ---
 
 ## Source File: `references__past_paper_prediction_protocol.md`
+
+---
 
 # Past Paper Prediction Protocol
 
@@ -7069,10 +7166,11 @@ Fail or rewrite prediction output when it contains:
 - essay stem presented as official instead of a practice variant;
 - generated `all possible questions` without bounded slot grammar.
 
-
 ---
 
 ## Source File: `references__practical_data_problem_protocol.md`
+
+---
 
 # Practical, Data, And Problem Protocol
 
@@ -7136,10 +7234,11 @@ Read the graph -> identify trend -> infer mechanism -> state limitation -> propo
 
 Do not output only a topic label for practical/data/problem exams.
 
-
 ---
 
 ## Source File: `references__protected_source_coverage_protocol.md`
+
+---
 
 # Protected Source Coverage Protocol
 
@@ -7320,10 +7419,11 @@ Before public output is approved:
 4. Run zero-mention lint.
 5. Run knowledge-surface lint so the coverage does not expose audit/provenance text.
 
-
 ---
 
 ## Source File: `references__question_type_protocol.md`
+
+---
 
 # Question Type Protocol
 
@@ -7807,10 +7907,11 @@ Example Essay
 Examiner-Fit Checklist
 ```
 
-
 ---
 
 ## Source File: `references__scientific_precision_protocol.md`
+
+---
 
 # Scientific Precision Protocol
 
@@ -7976,10 +8077,11 @@ Fail or rewrite when:
 
 Scientific precision is not a request to add more detail. It is a filter that keeps only the detail that improves the answer's mechanism, evidence or decision value.
 
-
 ---
 
 ## Source File: `references__scoring_and_pattern_protocol.md`
+
+---
 
 # Scoring And Pattern Protocol
 
@@ -8352,10 +8454,11 @@ Place mappings or predictions into QA/review when:
 - a citation is unverified;
 - prediction confidence is low.
 
-
 ---
 
 ## Source File: `references__student_facing_output_policy.md`
+
+---
 
 # Student-Facing Output Policy
 
@@ -8638,10 +8741,11 @@ Generated visual aids may be embedded or attached only as revision schematics. T
 
 Do not use a generated image as evidence, a citation, an official answer, or a replacement for written explanation. If the platform cannot generate images, omit the visual-aid section from the student-facing output.
 
-
 ---
 
 ## Source File: `references__subagent_protocol.md`
+
+---
 
 # Subagent Protocol
 
@@ -8710,10 +8814,11 @@ Before accepting subagent output:
 - check that subagent outputs distinguish fixture pass/fail from generic contribution pass/fail.
 - for essay roles, check that candidate sources are not treated as verified citations until metadata and claim relevance are confirmed.
 
-
 ---
 
 ## Source File: `references__user_interaction_protocol.md`
+
+---
 
 # User Interaction Protocol
 
@@ -8754,10 +8859,11 @@ Stop and ask for missing information when the required source, target exam, outp
 
 Answer directly. Include only the support detail needed for correctness. Do not expose internal QA notes unless the user asks for them.
 
-
 ---
 
 ## Source File: `references__visual_aid_generation_protocol.md`
+
+---
 
 # Visual Aid Generation Protocol
 
@@ -8871,10 +8977,11 @@ Tables must be argument-useful, not decorative. Use academic styling: no vertica
 
 For user-supplied data, use GraphPad Prism when available and appropriate for the final graph. If Prism is unavailable, use a reproducible local analysis workflow and state that Prism output was not generated. Report test choice, assumptions, effect size and confidence interval where appropriate, and a concise methods sentence.
 
-
 ---
 
 ## Source File: `references__visual_workbook_acceptance.md`
+
+---
 
 # Visual Output Regression Acceptance Criteria
 
@@ -8912,20 +9019,22 @@ Expected generic behaviour:
 8. Save student-facing DOCX output separately from diagnostics/QA files.
 9. The student-facing DOCX output must preserve source order where relevant, keep explanation and question-type preparation visibly connected, and exclude evidence/provenance columns or helper artifacts unless an audit package is explicitly requested.
 
-
 ---
 
 ## Source File: `requirements.txt`
+
+---
 
 openpyxl
 python-docx
 pypdf
 PyMuPDF
 
-
 ---
 
 ## Source File: `schemas__analysis_context.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -8986,10 +9095,11 @@ PyMuPDF
   "additionalProperties": false
 }
 
-
 ---
 
 ## Source File: `schemas__atomic_knowledge_ledger.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9086,10 +9196,11 @@ PyMuPDF
   "additionalProperties": false
 }
 
-
 ---
 
 ## Source File: `schemas__evidence_claim.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9109,10 +9220,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__exam_emphasis_profile.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9142,10 +9254,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__exam_prep_notes_plan.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9346,10 +9459,11 @@ PyMuPDF
   "additionalProperties": false
 }
 
-
 ---
 
 ## Source File: `schemas__example_essay_plan.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9449,10 +9563,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__example_review_ledger.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9536,10 +9651,11 @@ PyMuPDF
   }
 }
 
-
 ---
 
 ## Source File: `schemas__fragment_partition.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9572,10 +9688,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__gap_report.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9593,10 +9710,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__gate_result.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9617,10 +9735,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__input_readiness_report.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9652,10 +9771,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__knowledge_surface_contract.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9751,10 +9871,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__knowledge_walkthrough_plan.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9832,10 +9953,11 @@ PyMuPDF
   "additionalProperties": false
 }
 
-
 ---
 
 ## Source File: `schemas__language_delta.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9855,10 +9977,11 @@ PyMuPDF
   "additionalProperties": false
 }
 
-
 ---
 
 ## Source File: `schemas__lineage_event.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9882,10 +10005,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__ontology_link.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9904,10 +10028,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__output_view.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9927,10 +10052,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__prompt_card.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9949,10 +10075,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__qa_flag.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9971,10 +10098,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__question_type_addon.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -9992,10 +10120,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__run_manifest.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10031,10 +10160,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__run_status.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10054,10 +10184,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__skill_config.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10169,10 +10300,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__source_coverage_map.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10194,10 +10326,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__source_document.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10222,10 +10355,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__source_fragment.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10246,10 +10380,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__student_output_contract.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10408,10 +10543,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__unit_example_contribution.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10470,10 +10606,11 @@ PyMuPDF
   "additionalProperties": false
 }
 
-
 ---
 
 ## Source File: `schemas__user_constraint.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10494,10 +10631,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__user_exam_prep_request.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10520,10 +10658,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__visual_aid_spec.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10566,10 +10705,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__workflow_action.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10610,10 +10750,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `schemas__workflow_plan.schema.json`
+
+---
 
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -10712,10 +10853,11 @@ PyMuPDF
   "additionalProperties": true
 }
 
-
 ---
 
 ## Source File: `skill_manifest.json`
+
+---
 
 {
   "schema_version": 1,
@@ -10730,6 +10872,15 @@ PyMuPDF
     "python3 scripts/example_transfer_linter.py tests/fixtures/example_learning/valid_example_review_ledger.json",
     "python3 scripts/validate_interaction_contract.py",
     "python3 scripts/validate_student_output_contract.py",
+    "python3 scripts/notes_exam_ready_language_linter.py --self-test",
+    "python3 scripts/module_teaching_depth_linter.py --self-test",
+    "python3 scripts/notes_readability_layout_linter.py --self-test",
+    "python3 scripts/source_information_profiler.py --self-test",
+    "python3 scripts/source_scale_budget_linter.py --self-test",
+    "python3 scripts/reference_density_linter.py --self-test",
+    "python3 scripts/zero_mention_lint.py --self-test",
+    "python3 scripts/knowledge_surface_linter.py --self-test",
+    "python3 scripts/scientific_precision_linter.py --self-test",
     "python3 scripts/github_ready_check.py --ci"
   ],
   "post_update_commands": [

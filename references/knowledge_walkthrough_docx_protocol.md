@@ -6,7 +6,7 @@
 Lecture_Knowledge_Walkthrough.docx
 ```
 
-The route uses the same `PublicLectureNotesPlan`, validator and DOCX renderer as `exam_prep_notes_docx`. The only difference is that the style profile route is `knowledge_walkthrough_docx` and source/session order is treated as the primary ordering signal.
+The route uses the same `PublicLectureNotesPlan`, validator, exam-ready direct prose gate, module teaching depth gate, readability layout gate and DOCX renderer as `exam_prep_notes_docx`. The only difference is that the style profile route is `knowledge_walkthrough_docx` and source/session order is treated as the primary ordering signal.
 
 ## Contract
 
@@ -46,10 +46,12 @@ The public document starts with the title and then lecture headings. It does not
 
 Each module must explain at least two knowledge functions from definition/boundary, mechanism/process, method/readout, graph/data interpretation, calculation/unit/worked example, named example, and limitation/trap. The output should teach concept -> why it matters -> how it works -> interpretation -> boundary.
 
+A walkthrough module must still be a micro-module teaching note, not a record of what the source says. Use direct knowledge claims and block release for wording such as `The course frames`, `The lecture states`, `The source material identifies`, `The source states`, or equivalent source narration. If a source-order section contains several separable operations, split it into smaller module headings.
+
 ## Language And Style
 
 Default public output is English unless the user explicitly asks for Chinese or bilingual notes. Lecture walkthroughs use the ordinary notes style: black Arial, 2.0 cm margins, compact 1.05-1.15 line spacing, left-aligned body and headings, centered images, no theme colours and no blue heading styles.
 
 ## QA Gate
 
-Block and regenerate if the DOCX contains raw slide bullets, source_route_narration, ai_process_or_provenance, internal QA fields, evidence scores, confidence bands, strategy/prediction content, repeated rigid labels, colon-slot fragmentation, shorthand arrow chains, non-black text, non-Arial text, justified body text or non-compact spacing.
+Block and regenerate if the DOCX contains raw slide bullets, source_route_narration, source narration, ai_process_or_provenance, internal QA fields, evidence scores, confidence bands, strategy/prediction content, inventory-only prose, missing module teaching depth, over-dense readability layout, repeated rigid labels, colon-slot fragmentation, shorthand arrow chains, non-black text, non-Arial text, justified body text or non-compact spacing.
