@@ -59,15 +59,31 @@ The default public notes must not contain:
 
 The walkthrough must be scaled to the source set. A short post-lab or mock exam should not become the size of a whole-course notebook. A whole-course source pack must not be compressed to the size of a short practical unit.
 
+When the user asks to `analyse this course`, `分析这门课`, or asks for course-level prep analysis without explicitly requesting an audit-only profile, treat the request as a knowledge walkthrough request. A short source inventory, metrics report, or sample-only profile is not a substitute for the public knowledge document.
+
 Before drafting, create an internal budget:
 
 ```yaml
 SourceScaleBudget:
   source_units_count:
   source_pages_or_slides_estimate:
+  source_information_profile_status: measured | estimated | missing | not_applicable
+  informative_page_count:
+  non_informative_page_count:
+  information_mass_units:
+  average_information_score:
+  page_information_profile:
+    - source_id:
+      page_index:
+      category: knowledge_dense | knowledge_standard | light_context | cover | lecture_plan_or_admin | video_or_media_placeholder | blank
+      informative: true | false
+      information_score:
+      exclusion_reason:
   source_types:
   conceptual_module_target_range:
   examinable_unit_target_range:
+  target_public_units_min:
+  target_words_min:
   explanation_depth:
     - concise
     - standard
@@ -82,15 +98,21 @@ Budget rules:
 - Medium lecture packs need enough modules to cover all conceptual areas, not only the first few lectures.
 - Broad course packs need expanded coverage. A 10-20 lecture source pack normally requires many more examinable units than a short practical pack, even after compression.
 - Do not use Experimental Biology or any short practical unit as a size cap for larger courses.
-- Do not use page count alone. Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, or named experimental evidence.
+- Do not use page count alone. First profile each slide/page when practical. Covers, title-only separators, lecture plans, reading/admin pages, pure video placeholders and blanks can be excluded from `informative_page_count`, but the exclusion ledger must record why.
+- Increase coverage when the source contains distinct mechanisms, methods, calculations, disease examples, pathways, data operations, labelled diagrams/tables, speaker-note detail, graph logic, or named experimental evidence.
+- If `informative_page_count` and `information_mass_units` are available, they set the main floor. Raw page/slide count remains audit context unless no reliable information profile exists.
+- If `target_public_units_min` or `target_words_min` is below the derived floor, the budget is invalid. A polished short document is still a failed release if it falls below the source-scale floor.
+- If a high-quality reference DOCX is supplied, use it for density and layout calibration only. A larger or denser target course must exceed the reference's visible knowledge prose unless the information profile proves the target is smaller or sparse.
 - If source material is large but the output is short, record a `coverage_floor_failure` and regenerate from the distillation pass.
 
 Indicative internal floors, to be adapted by evidence density:
 
-- 1-3 source units: usually 8-20 examinable units.
-- 4-8 source units: usually 20-45 examinable units.
-- 9-15 source units: usually 40-80 examinable units.
-- 16+ source units or whole-course packs: usually 70+ examinable units or multiple deliverable volumes.
+- 1-10 pages/slides: at least 8 public units and about 420 visible words.
+- 11-80 pages/slides: at least 12-25 public units and 1k-3k visible words.
+- 81-200 pages/slides: at least 50 public units and about 5.8k visible words.
+- 201-500 pages/slides: at least 105 public units and about 14k visible words.
+- 501-800 pages/slides: at least 150 public units and about 20k visible words.
+- 801+ pages/slides: at least 180 public units and about 25k visible words, or multiple deliverable volumes.
 
 These are not student-visible promises. They prevent accidental over-compression.
 

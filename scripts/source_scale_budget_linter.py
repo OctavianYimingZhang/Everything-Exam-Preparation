@@ -3,14 +3,15 @@
 
 The check is deliberately conservative. It does not reward padding. It only blocks
 obvious failures where a broad source pack is collapsed into a small practical-style
-summary without enough examinable knowledge units or visible words.
+summary without enough examinable knowledge units or visible words. When page
+information profiling is available, the floor follows informative pages and
+information mass rather than raw slide count.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,13 @@ try:
     from docx import Document  # type: ignore
 except Exception:  # pragma: no cover
     Document = None  # type: ignore
+
+from source_scale_budget_rules import (
+    floor_for_source_scale,
+    infer_source_units,
+    required_floor_with_declared_budget,
+    source_scale_budget,
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -35,31 +43,6 @@ def docx_text(path: Path) -> str:
     return "\n".join(paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip())
 
 
-def infer_source_units(plan: dict[str, Any]) -> int:
-    budget = plan.get("source_scale_budget") or plan.get("SourceScaleBudget")
-    if isinstance(budget, dict):
-        for key in ["source_units_count", "readable_source_blocks", "protected_knowledge_units_total"]:
-            value = budget.get(key)
-            if isinstance(value, int) and value > 0:
-                return value
-    seen: set[str] = set()
-    for module in plan.get("course_modules", []) or []:
-        if not isinstance(module, dict):
-            continue
-        for source in module.get("source_lectures", []) or []:
-            if str(source).strip():
-                seen.add(str(source).strip())
-    if seen:
-        return len(seen)
-    lecture_order = plan.get("lecture_order")
-    if isinstance(lecture_order, list) and lecture_order:
-        return len(lecture_order)
-    lectures = plan.get("lectures") or plan.get("legacy_lectures")
-    if isinstance(lectures, list) and lectures:
-        return len(lectures)
-    return 0
-
-
 def count_public_units(plan: dict[str, Any]) -> int:
     count = 0
     for module in plan.get("course_modules", []) or []:
@@ -73,24 +56,57 @@ def count_public_units(plan: dict[str, Any]) -> int:
     return count
 
 
-def floor_for_source_units(source_units: int) -> tuple[int, int]:
-    if source_units <= 0:
-        return (0, 0)
-    if source_units <= 3:
-        return (8, 1000)
-    if source_units <= 8:
-        return (20, 2500)
-    if source_units <= 15:
-        return (40, 4500)
-    return (70, 8000)
+def declared_budget_floor(plan: dict[str, Any]) -> tuple[int | None, int | None, str | None]:
+    budget = source_scale_budget(plan)
+    if not budget:
+        return None, None, "missing_source_scale_budget"
+    floor = required_floor_with_declared_budget(plan)
+    return int(floor["minimum_public_units"]), int(floor["minimum_visible_words"]), None
 
 
 def lint_plan(plan: dict[str, Any], *, docx_path: Path | None = None) -> dict[str, Any]:
     source_units = infer_source_units(plan)
     public_units = count_public_units(plan)
-    min_units, min_words = floor_for_source_units(source_units)
+    declared_units, declared_words, budget_failure = declared_budget_floor(plan)
+    scale_floor = floor_for_source_scale(plan)
+    min_units = declared_units if declared_units is not None else int(scale_floor["minimum_public_units"])
+    min_words = declared_words if declared_words is not None else int(scale_floor["minimum_visible_words"])
     failures: list[dict[str, Any]] = []
-    if source_units and public_units < min_units:
+    if budget_failure:
+        failures.append({"type": budget_failure})
+    budget = source_scale_budget(plan)
+    if isinstance(budget, dict):
+        target_units = budget.get("target_public_units_min")
+        target_words = budget.get("target_words_min")
+        if isinstance(target_units, int) and target_units < int(scale_floor["minimum_public_units"]):
+            failures.append(
+                {
+                    "type": "target_public_units_min_below_source_scale_floor",
+                    "declared_target_public_units_min": target_units,
+                    "minimum_public_units": int(scale_floor["minimum_public_units"]),
+                }
+            )
+        if isinstance(target_words, int) and target_words < int(scale_floor["minimum_visible_words"]):
+            failures.append(
+                {
+                    "type": "target_words_min_below_source_scale_floor",
+                    "declared_target_words_min": target_words,
+                    "minimum_visible_words": int(scale_floor["minimum_visible_words"]),
+                }
+            )
+    if isinstance(budget, dict) and budget.get("coverage_floor_status") == "block":
+        failures.append({"type": "coverage_floor_status_blocks_release"})
+    has_source_scale = any(
+        int(scale_floor[key]) > 0
+        for key in [
+            "source_units",
+            "source_pages_or_slides_estimate",
+            "informative_page_count",
+            "information_mass_units",
+            "protected_knowledge_units_total",
+        ]
+    )
+    if has_source_scale and public_units < min_units:
         failures.append(
             {
                 "type": "coverage_floor_public_units_too_low",
@@ -102,7 +118,7 @@ def lint_plan(plan: dict[str, Any], *, docx_path: Path | None = None) -> dict[st
     visible_words = None
     if docx_path is not None:
         visible_words = count_words(docx_text(docx_path))
-        if source_units and visible_words < min_words:
+        if has_source_scale and visible_words < min_words:
             failures.append(
                 {
                     "type": "coverage_floor_visible_words_too_low",
@@ -114,6 +130,12 @@ def lint_plan(plan: dict[str, Any], *, docx_path: Path | None = None) -> dict[st
     return {
         "pass": not failures,
         "source_units": source_units,
+        "source_pages_or_slides_estimate": scale_floor["source_pages_or_slides_estimate"],
+        "informative_page_count": scale_floor["informative_page_count"],
+        "non_informative_page_count": scale_floor["non_informative_page_count"],
+        "information_mass_units": scale_floor["information_mass_units"],
+        "protected_knowledge_units_total": scale_floor["protected_knowledge_units_total"],
+        "scale_band": scale_floor["scale_band"],
         "public_units": public_units,
         "minimum_public_units": min_units,
         "visible_words": visible_words,
@@ -124,13 +146,23 @@ def lint_plan(plan: dict[str, Any], *, docx_path: Path | None = None) -> dict[st
 
 def self_test() -> dict[str, Any]:
     bad_plan = {
-        "source_scale_budget": {"source_units_count": 18},
+        "source_scale_budget": {
+            "source_units_count": 22,
+            "source_pages_or_slides_estimate": 867,
+            "informative_page_count": 760,
+            "non_informative_page_count": 107,
+            "information_mass_units": 930,
+            "target_public_units_min": 70,
+            "target_words_min": 8000,
+        },
         "course_modules": [
             {
-                "module_title": "Membrane excitability",
+                "module_title": "Broad course compressed too far",
                 "module_function": "Broad course compressed too far.",
-                "source_lectures": [f"Module {idx}" for idx in range(1, 19)],
-                "examinable_units": [{"title": f"Unit {idx}", "explanation": "Short."} for idx in range(1, 10)],
+                "source_lectures": [f"Lecture {idx}" for idx in range(1, 23)],
+                "examinable_units": [
+                    {"title": f"Unit {idx}", "explanation": "Short."} for idx in range(1, 81)
+                ],
             }
         ],
     }
@@ -148,14 +180,39 @@ def self_test() -> dict[str, Any]:
             }
         ],
     }
+    sparse_profile_plan = {
+        "source_scale_budget": {
+            "source_units_count": 4,
+            "source_pages_or_slides_estimate": 100,
+            "informative_page_count": 6,
+            "non_informative_page_count": 94,
+            "information_mass_units": 6.5,
+            "target_public_units_min": 8,
+            "target_words_min": 420,
+        },
+        "course_modules": [
+            {
+                "module_title": "Sparse deck after information profiling",
+                "module_function": "Most pages are covers, plans, video placeholders or admin.",
+                "source_lectures": ["Lecture 1", "Lecture 2", "Lecture 3", "Lecture 4"],
+                "examinable_units": [
+                    {"title": f"Unit {idx}", "explanation": "A connected explanation of one real information-bearing page."}
+                    for idx in range(1, 9)
+                ],
+            }
+        ],
+    }
     bad = lint_plan(bad_plan)
     good = lint_plan(good_plan)
+    sparse = lint_plan(sparse_profile_plan)
     failures: list[dict[str, Any]] = []
     if bad["pass"]:
         failures.append({"type": "bad_plan_not_rejected", "result": bad})
     if not good["pass"]:
         failures.append({"type": "good_plan_rejected", "result": good})
-    return {"pass": not failures, "bad_result": bad, "good_result": good, "failures": failures}
+    if not sparse["pass"]:
+        failures.append({"type": "sparse_profile_plan_rejected", "result": sparse})
+    return {"pass": not failures, "bad_result": bad, "good_result": good, "sparse_profile_result": sparse, "failures": failures}
 
 
 def main() -> int:

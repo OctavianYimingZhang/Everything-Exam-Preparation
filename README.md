@@ -29,6 +29,8 @@ Use [`SKILL.md`](SKILL.md). Reference files are loaded only when a task needs th
 
 Generated all-in-one knowledge bundles and local runtime stores are not part of the open-source Skill package. The repository keeps the source files instead of generated combined exports.
 
+Local compacted copies, such as Custom GPT knowledge bundles or flattened upload folders, must be regenerated or patched from the canonical source after repository checks pass. They are adapters for constrained upload environments and should not be committed to `main` unless the release explicitly targets a generated-artifact branch.
+
 ## Local checks
 
 ```bash
@@ -37,6 +39,7 @@ python3 scripts/no_identity_trigger_linter.py --forbid-legacy-label
 python3 scripts/validate_workflow_planning_contract.py
 python3 scripts/validate_interaction_contract.py
 python3 scripts/validate_student_output_contract.py
+python3 scripts/source_information_profiler.py --self-test
 python3 scripts/github_ready_check.py --ci
 ```
 
