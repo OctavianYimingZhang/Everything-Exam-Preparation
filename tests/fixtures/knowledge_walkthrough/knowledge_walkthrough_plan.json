@@ -1,6 +1,5 @@
 {
   "object_type": "PublicLectureNotesPlan",
-  "walkthrough_id": "valid_knowledge_walkthrough_plan",
   "title": "Lecture Knowledge Walkthrough",
   "target_group_key": "sample_course",
   "source_scale_budget": {
@@ -8,15 +7,14 @@
     "readable_source_blocks": 8,
     "protected_knowledge_units_total": 4,
     "excluded_non_knowledge_units_total": 1,
-    "target_public_units_min": 2,
-    "target_words_min": 90,
+    "target_public_units_min": 8,
+    "target_words_min": 420,
     "compression_mode": "explain_not_dump",
     "coverage_floor_status": "pass"
   },
   "output_language_profile": {
     "output_language": "English",
-    "allow_bilingual": false,
-    "preserve_technical_terms": true
+    "allow_bilingual": false
   },
   "route_docx_style_profile": {
     "route": "knowledge_walkthrough_docx",
@@ -37,36 +35,128 @@
   },
   "public_lecture_sections": [
     {
-      "lecture_title": "Lecture 1: Experimental measurements require a readable signal",
+      "lecture_title": "Lecture 1: Membranes as selective chemical boundaries",
       "modules": [
         {
-          "module_title": "Assay readouts link a biological process to a measurable signal",
-          "knowledge_functions": ["definition_boundary", "method_readout"],
-          "explanation": "An assay is useful only when the measured signal is coupled to the biological process being tested. The readout must change when the process changes, and the control condition must show the baseline signal so that a treatment effect can be separated from background variation.",
+          "module_title": "Bilayer chemistry explains selective permeability",
+          "knowledge_functions": [
+            "definition_boundary",
+            "mechanism_process"
+          ],
+          "explanation": "A phospholipid bilayer is a chemical boundary because hydrophilic head groups face water while hydrophobic tails form an internal non-polar core. Small non-polar molecules cross more easily than ions because charged solutes must shed hydration shells and enter an energetically unfavourable core.",
           "blocks": [
             {
               "block_type": "limitation",
-              "content": "A high signal is not automatically a biological effect; it may reflect background, saturation, poor normalization, or a reagent-specific artefact."
+              "content": "Permeability is not absolute: transport proteins change the effective boundary for specific ions or polar solutes."
+            }
+          ]
+        },
+        {
+          "module_title": "Fluidity controls how membrane proteins can move and interact",
+          "knowledge_functions": [
+            "mechanism_process",
+            "limitation_trap"
+          ],
+          "explanation": "Membrane fluidity describes lateral movement within the bilayer and depends on lipid packing. Unsaturated tails reduce packing, while cholesterol buffers extremes by limiting movement at high temperature and preventing tight packing at low temperature.",
+          "blocks": [
+            {
+              "block_type": "limitation",
+              "content": "Fluidity does not mean the membrane is disorganised; it means movement is constrained enough to preserve a boundary while allowing protein interactions."
+            }
+          ]
+        },
+        {
+          "module_title": "Selective permeability creates a need for transport proteins",
+          "knowledge_functions": [
+            "definition_boundary",
+            "named_example"
+          ],
+          "explanation": "Selective permeability means the bilayer allows some substances through faster than others. Oxygen and carbon dioxide diffuse readily, whereas ions and most polar metabolites need channels, carriers or pumps because the hydrophobic core creates an energetic barrier.",
+          "blocks": [
+            {
+              "block_type": "example",
+              "content": "Ion channels illustrate the boundary because they create a protein-lined route through a membrane that the ion cannot cross efficiently by dissolving in the lipid core."
+            }
+          ]
+        },
+        {
+          "module_title": "Compartment membranes let cells separate incompatible chemistry",
+          "knowledge_functions": [
+            "mechanism_process",
+            "named_example"
+          ],
+          "explanation": "Internal membranes allow different reactions to occur in different chemical environments. This matters because enzymes, ion concentrations and redox conditions can be tuned locally rather than averaged across the whole cytoplasm.",
+          "blocks": [
+            {
+              "block_type": "example",
+              "content": "An acidic lumen and a neutral cytosol can support different reaction sets because the membrane restricts uncontrolled mixing."
             }
           ]
         }
       ]
     },
     {
-      "lecture_title": "Lecture 2: Controls define the interpretation boundary",
+      "lecture_title": "Lecture 2: Transport proteins convert gradients into flux",
       "modules": [
         {
-          "module_title": "Negative and positive controls test different parts of the claim",
-          "knowledge_functions": ["method_readout", "limitation_trap"],
-          "explanation": "A negative control estimates the signal expected without the tested process, while a positive control verifies that the assay can detect the process when it is present. Together they define whether a failed result is biologically meaningful or simply an assay failure.",
+          "module_title": "Electrochemical gradients combine concentration and voltage",
+          "knowledge_functions": [
+            "mechanism_process",
+            "calculation_unit_worked_example"
+          ],
+          "explanation": "An electrochemical gradient has a concentration component and an electrical component. A cation may move down its concentration gradient but against the membrane voltage, so the direction of net movement depends on the combined free-energy difference rather than concentration alone.",
+          "blocks": [
+            {
+              "block_type": "calculation",
+              "label": "Worked example",
+              "content": "For an ion, compare the chemical term with the voltage term before predicting net flux direction."
+            }
+          ]
+        },
+        {
+          "module_title": "Channels and carriers differ in how they limit flux",
+          "knowledge_functions": [
+            "definition_boundary",
+            "method_readout"
+          ],
+          "explanation": "Channels form pores that allow rapid movement when open, while carriers bind solute and change conformation. The distinction matters experimentally because channels show high conductance and gating, whereas carriers show saturable transport as binding sites become occupied.",
           "blocks": [
             {
               "block_type": "comparison",
-              "content": "A negative control protects against false positives; a positive control protects against false negatives."
+              "content": "A channel is limited mainly by opening and ion passage; a carrier is limited by binding, conformational change and release."
+            }
+          ]
+        },
+        {
+          "module_title": "Active transport couples uphill movement to an energy source",
+          "knowledge_functions": [
+            "mechanism_process",
+            "limitation_trap"
+          ],
+          "explanation": "Active transport moves a solute against its electrochemical gradient by coupling transport to ATP hydrolysis, light, redox energy or another gradient. The coupled reaction makes the overall free-energy change favourable even when the solute step alone is unfavourable.",
+          "blocks": [
+            {
+              "block_type": "limitation",
+              "content": "Uphill movement cannot be inferred from concentration alone; the membrane voltage and coupled energy source must also be considered."
+            }
+          ]
+        },
+        {
+          "module_title": "Transport measurements need controls for leak and driving force",
+          "knowledge_functions": [
+            "method_readout",
+            "graph_data_interpretation"
+          ],
+          "explanation": "A transport assay is interpretable only when the driving force and leak background are defined. Controls without transporter, without substrate or without energy source distinguish transporter-dependent flux from diffusion, vesicle damage or detection background.",
+          "blocks": [
+            {
+              "block_type": "graph_data",
+              "content": "A saturating curve supports carrier-limited transport, while a linear leak-like signal suggests uncontrolled diffusion or assay background."
             }
           ]
         }
       ]
     }
-  ]
+  ],
+  "walkthrough_id": "valid_knowledge_walkthrough_plan"
 }

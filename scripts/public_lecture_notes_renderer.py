@@ -25,6 +25,7 @@ from knowledge_only_rendering_rules import (
     forbidden_non_knowledge_hits,
     repeated_template_label_hits,
 )
+from source_scale_budget_rules import floor_for_source_scale
 
 PUBLIC_STYLE_DEFAULTS = {
     "margin_cm": 2.0,
@@ -384,10 +385,21 @@ def _validate_source_scale(plan: dict[str, Any], errors: list[str]) -> None:
         return
     if budget.get("coverage_floor_status") == "block":
         errors.append("source_scale_budget_blocks_generation")
+    scale_floor = floor_for_source_scale(plan)
+    floor_units = int(scale_floor["minimum_public_units"])
+    floor_words = int(scale_floor["minimum_visible_words"])
     target_public_units_min = budget.get("target_public_units_min")
+    if isinstance(target_public_units_min, int) and target_public_units_min < floor_units:
+        errors.append(f"target_public_units_min_below_source_scale_floor:{target_public_units_min}<{floor_units}")
     if isinstance(target_public_units_min, int) and count_public_modules(plan) < target_public_units_min:
         errors.append(f"source_scale_public_modules_too_low:{count_public_modules(plan)}<{target_public_units_min}")
     target_words_min = budget.get("target_words_min")
+    if isinstance(target_words_min, int) and target_words_min < floor_words:
+        errors.append(f"target_words_min_below_source_scale_floor:{target_words_min}<{floor_words}")
+    if count_public_modules(plan) < floor_units:
+        errors.append(f"source_scale_public_modules_below_floor:{count_public_modules(plan)}<{floor_units}")
+    if visible_word_count(plan) < floor_words:
+        errors.append(f"source_scale_words_below_floor:{visible_word_count(plan)}<{floor_words}")
     if isinstance(target_words_min, int) and visible_word_count(plan) < target_words_min:
         errors.append(f"source_scale_words_too_low:{visible_word_count(plan)}<{target_words_min}")
 
@@ -553,8 +565,8 @@ def sample_plan(route: str = "exam_prep_notes_docx") -> dict[str, Any]:
             "readable_source_blocks": 8,
             "protected_knowledge_units_total": 4,
             "excluded_non_knowledge_units_total": 1,
-            "target_public_units_min": 2,
-            "target_words_min": 90,
+            "target_public_units_min": 8,
+            "target_words_min": 420,
             "compression_mode": "explain_not_dump",
             "coverage_floor_status": "pass",
         },
@@ -590,7 +602,25 @@ def sample_plan(route: str = "exam_prep_notes_docx") -> dict[str, Any]:
                                 "content": "Permeability is not absolute: transport proteins change the effective boundary for specific ions or polar solutes.",
                             }
                         ],
-                    }
+                    },
+                    {
+                        "module_title": "Fluidity controls how membrane proteins can move and interact",
+                        "knowledge_functions": ["mechanism_process", "limitation_trap"],
+                        "explanation": "Membrane fluidity describes lateral movement within the bilayer and depends on lipid packing. Unsaturated tails reduce packing, while cholesterol buffers extremes by limiting movement at high temperature and preventing tight packing at low temperature.",
+                        "blocks": [{"block_type": "limitation", "content": "Fluidity does not mean the membrane is disorganised; it means movement is constrained enough to preserve a boundary while allowing protein interactions."}],
+                    },
+                    {
+                        "module_title": "Selective permeability creates a need for transport proteins",
+                        "knowledge_functions": ["definition_boundary", "named_example"],
+                        "explanation": "Selective permeability means the bilayer allows some substances through faster than others. Oxygen and carbon dioxide diffuse readily, whereas ions and most polar metabolites need channels, carriers or pumps because the hydrophobic core creates an energetic barrier.",
+                        "blocks": [{"block_type": "example", "content": "Ion channels illustrate the boundary because they create a protein-lined route through a membrane that the ion cannot cross efficiently by dissolving in the lipid core."}],
+                    },
+                    {
+                        "module_title": "Compartment membranes let cells separate incompatible chemistry",
+                        "knowledge_functions": ["mechanism_process", "named_example"],
+                        "explanation": "Internal membranes allow different reactions to occur in different chemical environments. This matters because enzymes, ion concentrations and redox conditions can be tuned locally rather than averaged across the whole cytoplasm.",
+                        "blocks": [{"block_type": "example", "content": "An acidic lumen and a neutral cytosol can support different reaction sets because the membrane restricts uncontrolled mixing."}],
+                    },
                 ],
             },
             {
@@ -607,7 +637,25 @@ def sample_plan(route: str = "exam_prep_notes_docx") -> dict[str, Any]:
                                 "content": "For an ion, compare the chemical term with the voltage term before predicting net flux direction.",
                             }
                         ],
-                    }
+                    },
+                    {
+                        "module_title": "Channels and carriers differ in how they limit flux",
+                        "knowledge_functions": ["definition_boundary", "method_readout"],
+                        "explanation": "Channels form pores that allow rapid movement when open, while carriers bind solute and change conformation. The distinction matters experimentally because channels show high conductance and gating, whereas carriers show saturable transport as binding sites become occupied.",
+                        "blocks": [{"block_type": "comparison", "content": "A channel is limited mainly by opening and ion passage; a carrier is limited by binding, conformational change and release."}],
+                    },
+                    {
+                        "module_title": "Active transport couples uphill movement to an energy source",
+                        "knowledge_functions": ["mechanism_process", "limitation_trap"],
+                        "explanation": "Active transport moves a solute against its electrochemical gradient by coupling transport to ATP hydrolysis, light, redox energy or another gradient. The coupled reaction makes the overall free-energy change favourable even when the solute step alone is unfavourable.",
+                        "blocks": [{"block_type": "limitation", "content": "Uphill movement cannot be inferred from concentration alone; the membrane voltage and coupled energy source must also be considered."}],
+                    },
+                    {
+                        "module_title": "Transport measurements need controls for leak and driving force",
+                        "knowledge_functions": ["method_readout", "graph_data_interpretation"],
+                        "explanation": "A transport assay is interpretable only when the driving force and leak background are defined. Controls without transporter, without substrate or without energy source distinguish transporter-dependent flux from diffusion, vesicle damage or detection background.",
+                        "blocks": [{"block_type": "graph_data", "content": "A saturating curve supports carrier-limited transport, while a linear leak-like signal suggests uncontrolled diffusion or assay background."}],
+                    },
                 ],
             },
         ],
