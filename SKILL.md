@@ -1,302 +1,57 @@
 ---
 name: everything-exam-preparation
-description: Purpose-first, source-adaptive, Word-first exam preparation workflow for lecture slides, notes, practical materials, past papers, extra reading and recommended books.
+description: Source-bound, function-first exam preparation workflow for lecture material, practical material, past papers, and question-type add-ons.
 ---
 
 # Everything Exam Preparation
 
-This Skill turns supplied course materials into revision artifacts. It is not a slide archive converter and it is not a fixed-length summariser. It must not force the model to dump extraction fragments, file titles, administrative text, or internal planning fields. The model should read the source set for meaning, reconstruct the examinable knowledge, and explain it clearly at a length proportional to the source pack.
+This Skill turns supplied study and practice material into exam preparation outputs. Its purpose is narrow:
 
-## Core Output
+1. Analyse Lecture Slides, Lecture Notes, official notes, course notes, practical material, past papers, answer keys, exemplars, feedback, and verified extra reading.
+2. Build `Lecture_Knowledge_Walkthrough.docx` as the default Exam Preparation Notes artifact.
+3. Identify the exam mode from past papers or the user's prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
+4. Generate only the add-on content required by that exam mode after the core notes are coherent.
 
-The default public artifact is:
+The Skill is not a slide archive converter, fixed-length summariser, prediction engine, or example library. It must not copy benchmark/example content into production output. Use only the sources supplied by the user unless the user explicitly permits verified academic lookup. Preserve source boundaries between course material, past papers, practical material, extra reading, examples, and style references. Treat unsupported points as gaps instead of filling them from memory.
 
-```text
-Lecture_Knowledge_Walkthrough.docx
-```
+## Canonical Protocols
 
-Other reports are add-ons. They are generated only after the core knowledge walkthrough is clear.
+Load only the protocol needed for the requested function:
 
-## Default Workflow
+| Function | Canonical file |
+| --- | --- |
+| Course-source intake, roles, authority, extraction, evidence boundaries | `references/input_and_evidence_protocol.md` |
+| Default Exam Preparation Notes and lecture-first public DOCX | `references/exam_prep_core_workflow.md` |
+| Exam mode detection and MCQ/Short Answer/Long Answer/Practical/Data add-ons | `references/exam_mode_and_addons_protocol.md` |
+| Essay Exam Prep and Example Essay DOCX add-on | `references/essay_exam_prep_protocol.md` |
+| Student-facing prose quality for every route | `references/language_quality_contract.md` |
+| Setup, modular execution, subagents, regression, QA, release checks | `references/runtime_qa_release_protocol.md` |
 
-Use `references/exam_prep_core_workflow.md` as the source of truth for ordinary notes.
-
-```text
-source pack
--> classify source roles
--> remove non-knowledge noise
--> reconstruct lecture/session order and conceptual modules
--> calculate source-adaptive coverage budget
--> build `PublicLectureNotesPlan`
--> write lecture-first micro-module teaching notes
--> run exam-ready direct prose, module teaching depth and readability layout gates
--> keep exam overlays internal unless separately requested
--> run public-surface, density and layout QA
-```
-
-The output should explain what each concept is, why it matters, how the mechanism, method or calculation works, and what result, limitation or interpretation follows.
-
-All student-facing prose must reach exam-ready level. Public notes should not sound like a source-derived teaching summary. They must state the knowledge directly so the student can revise, recall and adapt it in an exam answer. Do not write `The course frames...`, `The source material identifies...`, `The lecture material uses...`, `The source states...`, or equivalent source narration. Rewrite those forms as direct claims about the concept, method, readout, calculation, distinction, consequence or limitation.
-
-## Source Roles
-
-Before drafting, classify material as:
-
-- `subject_knowledge`: definitions, mechanisms, structures, pathways, experiments, methods, calculations, graphs, data patterns, examples, diagnostic rules and limitations.
-- `practical_operation`: apparatus, reagents, protocol logic, controls, safety handling, calculations and interpretation rules.
-- `exam_pattern`: question form, command verbs, mark operations and repeated discriminators.
-- `extra_reading`: verified books, chapters, papers or academic sources that deepen source logic.
-- `style_or_layout_example`: reference output used only for structure, density and layout.
-- `non_knowledge_noise`: admin, logistics, contact details, attendance systems, URLs, decorative text, OCR debris, file titles and slide artifacts.
-
-Only `subject_knowledge`, relevant `practical_operation`, and verified `extra_reading` may become public knowledge prose. Past papers shape emphasis and answer operations only. Cross-unit examples never provide facts for a new target unit.
-
-Use only the sources supplied by the user unless the user explicitly permits verified academic source lookup. Preserve source boundaries between current course material, past papers, extra reading, examples and style/layout references. Treat unsupported points as gaps instead of filling them from memory.
-
-## Noise Filter
-
-Discard these from ordinary public notes:
-
-- lecturer names, emails, phone numbers, office locations, staff lists and coordinator details;
-- attendance systems, QR codes, live-session instructions, room or timetable instructions and platform instructions;
-- assessment logistics unless the user asks for a separate exam-analysis brief;
-- bookshop adverts, library availability, URL-only lines, image credits, copyright lines, acknowledgements and decorative quotations;
-- slide agendas, contents pages, generic learning outcomes and generic advice unless rewritten into a specific knowledge claim;
-- raw slide bullets, file-title lists, broken OCR fragments, font names, page artifacts and extraction debris.
-
-Default public notes must not show a `Course Knowledge Map`, source role summary, extraction limitation, strategy section, prediction section, or file inventory. Those objects are internal planning aids only.
+No other reference file is authoritative. If a rule appears to duplicate another rule, follow the canonical file for the function above.
 
 ## Route Table
 
-| User request | Route | Public output |
+| User request | Route | Output |
 | --- | --- | --- |
-| revise / make notes / go through lectures / general preparation / analyse this course | `exam_prep_notes_docx` | `Lecture_Knowledge_Walkthrough.docx` |
-| explicitly source-order walkthrough | `knowledge_walkthrough_docx` | `Lecture_Knowledge_Walkthrough.docx` |
-| MCQ / single-best-answer | `mcq_exam_prep` | core walkthrough plus MCQ add-on |
-| short answer | `short_answer_exam_prep` | core walkthrough plus short-answer add-on |
-| long answer / project / scenario / practical / data / calculation | `long_answer_project_scenario_prep` | core walkthrough plus long-answer/data add-on |
-| essay preparation / full essay-style answers | `essay_exam_prep` | core walkthrough plus essay add-on |
-| source inventory / lint / release check / information profile only | `audit_lint_only` or `github_ready_qa` | QA result only |
-| past-paper pattern or exam format only | `exam_analysis_brief` | chat-only brief unless a report is requested |
+| revise, make notes, go through lectures, general exam preparation | `exam_prep_notes_docx` | `Lecture_Knowledge_Walkthrough.docx` |
+| explicitly lecture/source-order walkthrough | `knowledge_walkthrough_docx` | `Lecture_Knowledge_Walkthrough.docx` |
+| identify exam format from past papers | `exam_format_diagnosis` | chat/report diagnosis |
+| MCQ or single-best-answer preparation | `mcq_exam_prep` | core notes plus MCQ add-on |
+| short-answer preparation | `short_answer_exam_prep` | core notes plus short-answer add-on |
+| long-answer, project, scenario, practical, data, graph, calculation, or problem preparation | `long_answer_project_scenario_prep` | core notes plus long-answer/practical/data add-on |
+| essay exam preparation, Example Essays, model essays, full essay-style answers | `essay_exam_prep` | core notes plus Essay Module Example Essays DOCX |
+| source inventory, lint, audit, release check | `source_inventory_only`, `audit_lint_only`, or `github_ready_qa` | QA or inventory result |
 
-Prediction, study strategy, Section A/Section B strategy and answer-advice language are never part of ordinary notes or walkthroughs. If the user asks for prediction or exam format analysis, produce it as a separate chat/report add-on after the knowledge document.
+Past papers shape exam mode, emphasis, and answer operations only. They do not replace the course-source baseline. Question-type add-ons come after the base notes unless the user explicitly requests diagnosis only.
 
-## Course Reconstruction
+## Public Output Rules
 
-For ordinary notes and walkthroughs, render one shared public plan:
+The default public artifact is `Lecture_Knowledge_Walkthrough.docx`. It must be lecture-first, knowledge-only, source-backed, and proportional to the source pack. Public notes must explain what each concept is, why it matters, how the mechanism, method, calculation, graph, assay, or comparison works, and what limitation or interpretation follows.
 
-```yaml
-PublicLectureNotesPlan:
-  title:
-  target_group_key:
-  source_scale_budget:
-  output_language_profile:
-    output_language: English
-    allow_bilingual: false
-  route_docx_style_profile:
-    route: exam_prep_notes_docx | knowledge_walkthrough_docx
-    margin_cm: 2.0
-    line_spacing: 1.05-1.15
-    body_alignment: left
-  public_lecture_sections:
-    - lecture_title:
-      lecture_scope:
-      modules:
-        - module_title:
-          knowledge_functions:
-            - definition_boundary | mechanism_process | method_readout | graph_data_interpretation | calculation_unit_worked_example | named_example | limitation_trap
-          explanation:
-          blocks:
-            - block_type:
-              label:
-              content:
-```
+Student-facing output must not expose source maps, confidence bands, evidence scores, internal manifests, QA flags, extraction notes, source-route narration, AI-process text, prediction traces, or rigid planning scaffolds. Use `references/language_quality_contract.md` as the only prose polish authority.
 
-Preserve official lecture/session order when it explains prerequisites. Do not dump slide order or file names. Inside each lecture, group material into concept-specific modules. Each public module must have at least two knowledge functions so it teaches definition or boundary plus mechanism, method, readout, calculation, example or limitation.
+## Execution Boundary
 
-Use micro-module grouping. A lecture heading may stay broad, but module headings should name the exact examinable operation, distinction or mechanism. Prefer `Initial slope gives initial reaction rate` over `Enzyme kinetics`, and `Dimension-aware substitution prevents concentration errors` over `Calculation`. If a module still contains several separable operations, split it.
+Run the minimum route that satisfies the user request. If required source material is missing, report the missing source class and block only conclusions that depend on it. Examples are user-supplied style or layout evidence only; they never supply factual course claims or direct predictions for a new target. Internal checks live in script self-tests, not committed example corpora.
 
-## Source-Adaptive Coverage Budget
-
-Never use the same small output size for every course. The amount of public knowledge must scale with the amount of examinable source material.
-
-The reference-quality target is the supplied Experimental Biology style of output: topic-specific headings, dense connected explanations, formulas or worked examples when useful, black Arial text, 2.0 cm margins, compact 1.05-1.15 spacing and left-aligned body/headings. Use that file only as a style, density and layout exemplar; it is not factual evidence and it is not a length cap.
-
-When the user says `analyse this course`, `分析这门课`, or asks for course-level prep analysis without explicitly requesting an audit-only file, produce the core knowledge walkthrough. Do not satisfy that request with a short metrics report, source profile summary, or sample-only file. If an audit/profile file is also useful, it is an add-on and must not replace the knowledge document.
-
-Before drafting, create:
-
-```yaml
-SourceScaleBudget:
-  source_units_count:
-  source_pages_or_slides_estimate:
-  source_information_profile_status: measured | estimated | missing | not_applicable
-  informative_page_count:
-  non_informative_page_count:
-  information_mass_units:
-  average_information_score:
-  page_information_profile:
-    - source_id:
-      page_index:
-      category: knowledge_dense | knowledge_standard | light_context | cover | lecture_plan_or_admin | video_or_media_placeholder | blank
-      informative: true | false
-      information_score:
-      exclusion_reason:
-  source_types:
-  conceptual_module_target_range:
-  examinable_unit_target_range:
-  target_public_units_min:
-  target_words_min:
-  minimum_visible_coverage_floor:
-  compression_reason:
-  coverage_floor_status: pass | warn | block
-```
-
-Rules:
-
-- A broad course pack must not be compressed to the size of a short practical or mock paper.
-- Before budgeting, inspect every slide/page for information. Exclude covers, title-only pages, lecture plans, reading/admin pages, pure video/media placeholders and blank pages from `informative_page_count`, but record them in `page_information_profile` with an exclusion reason.
-- Quantify each informative slide/page. Use higher scores for dense mechanism text, definitions, equations, diagrams, tables, graph logic, calculations, method workflows, named examples, speaker-note detail and source-backed explanations. Use low scores for light context.
-- When `source_information_profile_status` is `measured` or `estimated`, derive the public size from `informative_page_count` and `information_mass_units`. Raw slide/page count is then audit context, not the main length driver.
-- Keep a small number of conceptual modules when useful, but include enough examinable units inside each module to cover the source scale.
-- A pack with many lectures, figures, practicals, calculations or mechanisms requires expanded coverage.
-- Do not use Experimental Biology or any other short unit as a size cap for larger courses.
-- `source_pages_or_slides_estimate` is a hard sizing input, not a comment. When the source has hundreds of slides/pages, the public DOCX must become a whole-course notebook or multiple volumes, not a 5k-word overview.
-- Use these minimum internal floors unless the source is demonstrably sparse or unreadable and the exclusion ledger proves it:
-  - 1-10 pages/slides: at least 8 public units and about 420 visible words.
-  - 11-80 pages/slides: at least 12-25 public units and 1k-3k visible words.
-  - 81-200 pages/slides: at least 50 public units and about 5.8k visible words, matching the Experimental Biology density scale.
-  - 201-500 pages/slides: at least 105 public units and about 14k visible words.
-  - 501-800 pages/slides: at least 150 public units and about 20k visible words.
-  - 801+ pages/slides: at least 180 public units and about 25k visible words, or split into multiple deliverable volumes.
-- `information_mass_units` can raise the floor above the coarse page bands when many pages are dense. Use `scripts/source_information_profiler.py` and `scripts/source_scale_budget_linter.py` as the local reference implementation.
-- If a reference-quality DOCX such as Experimental Biology is supplied, run reference-density calibration. A course-analysis or walkthrough DOCX for a larger source pack must exceed the reference in visible knowledge prose unless the information profile proves the source pack is smaller or sparse. A 500-1000 word course-analysis file for a broad source pack is a failure even if it contains correct metrics.
-- If `target_public_units_min` or `target_words_min` is below the derived source-scale floor, the budget is invalid even if the draft is polished.
-- If the first draft feels like a route summary, file inventory, checklist, or brief overview, it is not acceptable. Regenerate from the source-distillation pass until the public document teaches the examinable mechanisms, calculations, methods, examples, boundaries and interpretations in connected prose.
-- If the public output falls below the source-scale floor, block the run and regenerate from source distillation instead of releasing a short file.
-
-## Public Lecture Modules
-
-Write public content as coherent lecture-first modules:
-
-```yaml
-PublicLectureModule:
-  module_title:
-  knowledge_functions:
-  explanation:
-  blocks:
-```
-
-The visible module is a topic-specific heading followed by connected explanatory prose. A valid module explains what the point is, why it matters, how the mechanism, method, readout or calculation works, and what interpretation, limitation or boundary follows. Bullets are allowed only after an explanatory lead sentence and only for naturally parallel items.
-
-Module teaching depth is a release gate. A public module is not enough if it only announces that a topic exists. It must include at least one direct identity or boundary claim and at least one teaching operation:
-
-- definition or boundary: what the concept is and what it excludes;
-- mechanism or process: how the change happens and why the order matters;
-- method or readout: what is measured, controlled and interpreted;
-- graph or data interpretation: axes, pattern, inference and boundary;
-- calculation: equation, units, substitution logic and interpretation;
-- named example: what the example demonstrates, not only that it exists;
-- limitation or trap: what false reading, overclaim or common error it prevents.
-
-Readability layout is also a release gate. Use short explanatory paragraphs, micro-headings, separated equations, worked examples, comparison blocks and list blocks when they reduce cognitive load. Do not compress criteria lists, formulas, graph-reading rules or workflows into one dense paragraph. Keep visuals near the relevant module only when a source-backed diagram, graph, table or workflow materially improves understanding.
-
-Do not write notes as:
-
-```text
-Definition: ...
-Components: ...
-Workflow: ...
-Logic: ...
-Interpretation: ...
-```
-
-## Public DOCX Surface
-
-For ordinary notes and walkthroughs:
-
-- body text, titles, lecture headings and subheadings are left aligned;
-- images are centered;
-- default text line spacing is compact, 1.05-1.15;
-- text is black Arial in a readable size;
-- theme colours, blue heading styles and non-black visible text are forbidden unless the user explicitly asks for colour;
-- images are scaled to the content area while preserving aspect ratio and readability;
-- large blank areas should be reduced by fitting images to context and avoiding unnecessary page breaks.
-
-Public notes must not contain source-route narration, AI-process text, source maps, QA flags, evidence scores, confidence bands, internal manifests, helper JSON or raw extraction text.
-
-Public notes must also not contain visible workflow explanations such as selected route, workflow plan, source role map, source scale budget, coverage floor status, KnowledgeSurfaceContract, ExaminableKnowledgeUnit, CourseModule, QA gate, generation process, or statements about what the Skill did. Keep those objects internal and render only the resulting lecture-first knowledge.
-
-## Final Output Revision Contract
-
-When the user gives iterative edits to an output file, the latest compatible edit set is a hard release contract. Do not release a DOCX that satisfies the first request but violates later file-level requirements.
-
-For revised notes and walkthrough DOCX files:
-
-- do not overcompress: if the user gives a target length or character range, keep the final public text inside that range unless source protection makes it unsafe;
-- improve expression efficiency by removing repetition, merging duplicate explanations, tightening causal order and keeping formulas, worked examples, method logic, controls, interpretation rules and limitations;
-- delete intro-only sections that introduce a topic without explaining examinable logic, unless they can be rewritten into a specific knowledge unit;
-- if the user asks for bilingual or Chinese-facing notes with academic English support, put academic terms in English at first meaningful use and use English for formula labels, calculation labels, table labels and text before colon-style labels;
-- formulas, variables, units and worked calculation labels should be in English unless the user explicitly requests another language;
-- if revising from an existing DOCX and the user says not to change images, preserve image objects, order, sizing and placement as far as the document format allows;
-- if the user asks to remove sentence-ending full stops, remove Chinese full stops and sentence-final periods from body text while preserving decimal points, formula notation, file names and necessary scientific abbreviations;
-- render the final DOCX to PDF or page images when tooling is available and inspect for missing images, row splits, unreadable tables, large blank areas, colour drift and visible formatting defects before release.
-
-## Required References
-
-- `references/exam_prep_core_workflow.md`
-- `references/knowledge_surface_protocol.md`
-- `references/protected_source_coverage_protocol.md`
-- `references/scientific_precision_protocol.md`
-- `references/student_facing_output_policy.md`
-- `references/exam_prep_notes_protocol.md`
-- `references/knowledge_walkthrough_docx_protocol.md`
-- `references/question_type_protocol.md`
-- `references/practical_data_problem_protocol.md`
-- `references/essay_generation_protocol.md`
-- `references/example_essay_docx_output_protocol.md`
-- `references/input_processing_protocol.md`
-- `references/evidence_policy.md`
-- `references/github_release_protocol.md`
-
-## QA Gate
-
-Fail and rewrite if the public output contains:
-
-- admin, logistics, staff, contact or attendance material;
-- Course Knowledge Map, Source Role Summary, Source Scope, Extraction Limitation, Examinable Knowledge Units, Predicted Essay Theme, Study Order, Section A Strategy, Section B Strategy, How To Answer, A strong answer should, or Use This Module;
-- source narration such as `The course frames`, `The lecture states`, `The source material identifies`, `The source states`, or `The lecture material uses`;
-- inventory-only prose that lists concepts without explaining what each one means, does, measures, proves or limits;
-- broad lecture-theme modules where smaller micro-module headings would make the knowledge usable;
-- examples that do not state what they demonstrate;
-- formulas, graph rules, criteria lists or workflows buried inside long prose;
-- file-title maps or source inventories;
-- raw slide bullets or broken OCR fragments;
-- copied extraction text instead of explanation;
-- dense lists of names without mechanisms;
-- repeated `Definition`, `Components`, `Workflow`, `Logic`, `Graph logic` or equivalent labels;
-- shorthand arrow chains used as the main explanation;
-- a broad source pack compressed below the source-adaptive coverage floor;
-- unsupported claims, fake citations or over-strong scientific claims;
-- unbound protected source units;
-- public AI-process text, source anchors, QA JSON, manifests or lineage files;
-- non-black visible text, theme-colour headings, non-Arial text, wrong alignment, justified ordinary-note body text, or non-compact line spacing.
-
-Targeted checks:
-
-```bash
-python3 scripts/no_identity_trigger_linter.py --forbid-legacy-label
-python3 scripts/validate_workflow_planning_contract.py
-python3 scripts/validate_interaction_contract.py
-python3 scripts/validate_student_output_contract.py
-python3 scripts/public_lecture_notes_renderer.py --self-test
-python3 scripts/notes_exam_ready_language_linter.py --self-test
-python3 scripts/module_teaching_depth_linter.py --self-test
-python3 scripts/notes_readability_layout_linter.py --self-test
-python3 scripts/source_information_profiler.py --self-test
-python3 scripts/zero_mention_lint.py --self-test
-python3 scripts/reference_density_linter.py --self-test
-python3 scripts/knowledge_surface_linter.py --self-test
-python3 scripts/scientific_precision_linter.py --self-test
-python3 scripts/github_ready_check.py --ci
-```
+Prediction anchor: Predicted essay theme means a theme-level preparation scope, not exact future wording.

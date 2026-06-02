@@ -350,13 +350,50 @@ def process_file(path: Path, target_group_key: str) -> tuple[list[dict[str, Any]
     return records, qa_flags
 
 
+
+def self_test() -> dict[str, Any]:
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="past_paper_questions_selftest_") as tmp:
+        paper = Path(tmp) / "sample_paper_2025.txt"
+        paper.write_text(
+            "Negative marking: +1 for correct, -1/3 for wrong.\n"
+            "Section A\n"
+            "Question 1. Choose one answer.\nA. Enzyme inhibition\nB. Membrane potential\n[1]\n"
+            "Question 2. Explain how competitive inhibition changes Km. [5]\n",
+            encoding="utf-8",
+        )
+        questions, flags = process_file(paper, "inline_self_test")
+    archetypes = build_archetypes(questions, "current_regime")
+    qtypes = {item.get("question_type") for item in questions}
+    failures = []
+    if flags:
+        failures.append({"type": "unexpected_flags", "flags": flags})
+    if len(questions) != 2:
+        failures.append({"type": "wrong_question_count", "questions": len(questions)})
+    if "mcq_single_best" not in qtypes or "short_answer_explain" not in qtypes:
+        failures.append({"type": "question_types_not_detected", "question_types": sorted(qtypes)})
+    if not questions or not questions[0].get("negative_marking", {}).get("present"):
+        failures.append({"type": "negative_marking_not_detected"})
+    if not archetypes:
+        failures.append({"type": "archetypes_not_built"})
+    return {"pass": not failures, "question_types": sorted(qtypes), "failures": failures}
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Extract question-level past-paper records.")
-    parser.add_argument("inputs", nargs="+", type=Path)
-    parser.add_argument("--target-group-key", required=True)
+    parser.add_argument("inputs", nargs="*", type=Path)
+    parser.add_argument("--target-group-key")
+    parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--current-regime-key", default="current_regime")
-    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
+
+    if args.self_test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["pass"] else 1
+    if not args.inputs or not args.target_group_key or not args.output_dir:
+        print(json.dumps({"status": "fail", "error": "missing_inputs_target_group_output_dir_or_self_test"}, indent=2))
+        return 1
 
     questions: list[dict[str, Any]] = []
     qa_flags: list[dict[str, str]] = []

@@ -317,8 +317,6 @@ def infer_analysis_context(
     path_text = str(path).lower()
     if status in {"failed", "unsupported"} or role in {"unknown", "unsupported_binary"}:
         return "unsupported_or_unreadable"
-    if "benchmarks" in path_text or "fixture" in path_text or "fixtures" in path_text:
-        return "benchmark_fixture"
     if role == "output_protocol":
         return "layout_exemplar"
     if role in {"exemplar_answer", "exemplar_image"}:
@@ -580,7 +578,6 @@ def scan(
     target_label: str | None = None,
     target_code: str | None = None,
     example_mode: bool = False,
-    benchmark_fixture_config: Path | None = None,
 ) -> dict[str, Any]:
     text_dir = output_dir / "source_text"
     text_dir.mkdir(parents=True, exist_ok=True)
@@ -681,7 +678,6 @@ def scan(
         "target_label": target_label,
         "target_code": target_code,
         "example_mode": example_mode,
-        "benchmark_fixture_config": str(benchmark_fixture_config) if benchmark_fixture_config else None,
         "file_count": len(rows),
         "files": [asdict(row) for row in rows],
     }
@@ -690,16 +686,45 @@ def scan(
     return manifest
 
 
+
+def self_test() -> dict[str, Any]:
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="extract_sources_selftest_") as tmp:
+        root = Path(tmp)
+        lecture = root / "lecture_notes.txt"
+        paper = root / "past paper 2025.txt"
+        lecture.write_text("Lecture notes on enzyme kinetics, Km, Vmax and competitive inhibition.", encoding="utf-8")
+        paper.write_text("Past paper 2025\nQuestion 1. Explain competitive inhibition. [5]", encoding="utf-8")
+        manifest = scan([lecture, paper], root / "out", target_hint=None, target_label="BIOC00001", target_code=None, example_mode=False)
+    roles = {item.get("role") for item in manifest.get("files", [])}
+    failures = []
+    if manifest.get("file_count") != 2:
+        failures.append({"type": "wrong_file_count", "manifest": manifest})
+    if "lecture_note" not in roles:
+        failures.append({"type": "lecture_role_not_detected", "roles": sorted(roles)})
+    if "formal_past_paper" not in roles:
+        failures.append({"type": "past_paper_role_not_detected", "roles": sorted(roles)})
+    if any(item.get("analysis_context") == "benchmark_fixture" for item in manifest.get("files", [])):
+        failures.append({"type": "benchmark_fixture_context_still_emitted"})
+    return {"pass": not failures, "roles": sorted(roles), "failures": failures}
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("paths", nargs="+", help="Files or directories to scan")
-    parser.add_argument("--output", required=True, help="Output directory for manifest and source_text")
+    parser.add_argument("paths", nargs="*", help="Files or directories to scan")
+    parser.add_argument("--output", help="Output directory for manifest and source_text")
     parser.add_argument("--target-hint", default=None, help="Optional target group hint")
     parser.add_argument("--target", default=None, help="Target course/module/source-set label")
     parser.add_argument("--target-code", default=None, help="Target course/module code")
     parser.add_argument("--example-mode", action="store_true", help="Classify non-target sources as transferable examples")
-    parser.add_argument("--benchmark-fixture-config", type=Path, default=None, help="Optional benchmark fixture config path")
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args(argv)
+    if args.self_test:
+        result = self_test()
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["pass"] else 1
+    if not args.paths or not args.output:
+        print(json.dumps({"status": "fail", "error": "missing_paths_output_or_self_test"}, ensure_ascii=False, indent=2))
+        return 1
     manifest = scan(
         [Path(path).expanduser() for path in args.paths],
         Path(args.output).expanduser(),
@@ -707,7 +732,6 @@ def main(argv: list[str] | None = None) -> int:
         target_label=args.target,
         target_code=args.target_code,
         example_mode=args.example_mode,
-        benchmark_fixture_config=args.benchmark_fixture_config,
     )
     counts: dict[str, int] = {}
     for row in manifest["files"]:

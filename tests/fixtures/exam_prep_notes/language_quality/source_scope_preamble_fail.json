@@ -1,5 +1,0 @@
-{
-  "fixture_type": "negative",
-  "expected_failure": "visible_source_or_extraction_preamble",
-  "public_text": "Source scope and extraction limitation: this pack uses only supplied lecture files. The notes are organised by lecture and source-backed knowledge points."
-}

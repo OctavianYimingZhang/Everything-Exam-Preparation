@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 DEFAULT_PATHS = ["SKILL.md", "README.md", "agents", "references", "scripts", "schemas"]
-IGNORE_DIRS = {".git", "__pycache__", ".venv", "benchmarks", "tests"}
+IGNORE_DIRS = {".git", "__pycache__", ".venv"}
 LEGACY_WORD = "un" + "it"
 
 OLD_HELPER = LEGACY_WORD + "_grouper"

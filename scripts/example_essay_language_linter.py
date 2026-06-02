@@ -585,6 +585,43 @@ def fixture_report(path: Path, min_words: int, max_words: int) -> dict[str, Any]
     }
 
 
+
+def self_test() -> dict[str, Any]:
+    good_records = [
+        ParagraphRecord(
+            source="inline_self_test",
+            essay_id="EE_INLINE",
+            paragraph_id="P1",
+            index=1,
+            function="argument",
+            text=(
+                "Competitive inhibition changes enzyme behaviour because inhibitor and substrate compete for the same active site, "
+                "so the substrate concentration needed to reach a given rate rises while the maximal catalytic capacity remains available. "
+                "This distinction matters because it separates binding-site competition from enzyme loss, and it lets the answer infer mechanism from a shifted Km without claiming a changed Vmax."
+            ),
+            has_lecture_anchor=True,
+        )
+    ]
+    bad_records = [
+        ParagraphRecord(
+            source="inline_self_test",
+            essay_id="EE_INLINE",
+            paragraph_id="P1",
+            index=1,
+            function="argument",
+            text="This essay will discuss the topic. Slides 1 to 3 show background. The answer should be written as a summary.",
+            has_lecture_anchor=False,
+        )
+    ]
+    good = lint_records(good_records, 20, 220)
+    bad = lint_records(bad_records, 20, 220)
+    failures = []
+    if not good.get("pass"):
+        failures.append({"type": "good_inline_case_rejected", "result": good})
+    if bad.get("pass"):
+        failures.append({"type": "bad_inline_case_accepted", "result": bad})
+    return {"pass": not failures, "good": good, "bad": bad, "failures": failures}
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Lint complete Example Essay language quality.")
     parser.add_argument("--plan", action="append", type=Path, default=[])
@@ -594,7 +631,13 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--min-words", type=int, default=35)
     parser.add_argument("--max-words", type=int, default=280)
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
+
+    if args.self_test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["pass"] else 1
 
     reports = []
     overall_pass = True

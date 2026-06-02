@@ -90,14 +90,47 @@ def build_report(config: dict[str, Any], source_scan: dict[str, Any] | None = No
     }
 
 
+
+def self_test() -> dict[str, Any]:
+    lecture_scan = {"files": [{"role": "lecture_slide", "status": "ok", "visual_inspection_required": True, "name": "inline lecture source"}]}
+    ready_config = {
+        "project": {"target_group_key": "inline_self_test"},
+        "source_inputs": {"lecture_slides": ["inline lecture source"]},
+        "output_mode": {"preset": "essay_exam_prep"},
+        "source_policy": {"treat_examples_as_style_only": True},
+    }
+    missing_config = {
+        "project": {"target_group_key": "inline_self_test"},
+        "source_inputs": {"formal_past_papers": ["inline paper source"]},
+        "output_mode": {"preset": "essay_exam_prep"},
+    }
+    ready = build_report(ready_config, lecture_scan)
+    missing = build_report(missing_config, {"files": [{"role": "formal_past_paper", "status": "ok"}]})
+    cases = [
+        {"name": "ready_essay_route", "passed": ready["can_run"] and ready["selected_preset"] == "essay_exam_prep"},
+        {"name": "visual_warning_inline", "passed": any(item.get("warning_id") == "warn_visual_inspection_needed" for item in ready.get("warnings", []))},
+        {"name": "missing_lecture_blocks", "passed": not missing["can_run"] and "lecture_or_official_notes" in missing["missing_required"]},
+    ]
+    failures = [case for case in cases if not case["passed"]]
+    return {"pass": not failures, "cases": cases, "failures": failures}
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--source-scan", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--fail-on-blockers", action="store_true")
     parser.add_argument("--require-warning-id", action="append", default=[])
     args = parser.parse_args()
+
+    if args.self_test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["pass"] else 1
+    if not args.config:
+        print(json.dumps({"status": "fail", "error": "missing_config_or_self_test"}, indent=2), file=sys.stderr)
+        return 1
 
     try:
         config = load_json(args.config)

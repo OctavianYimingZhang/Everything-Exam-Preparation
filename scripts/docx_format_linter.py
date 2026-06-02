@@ -309,13 +309,63 @@ def collect_docx(path: Path) -> list[Path]:
     return [path]
 
 
+
+def create_bad_docx(path: Path) -> None:
+    doc = Document()
+    section = doc.sections[0]
+    section.top_margin = Cm(2.0)
+    section.bottom_margin = Cm(2.0)
+    section.left_margin = Cm(2.0)
+    section.right_margin = Cm(2.0)
+    p = doc.add_paragraph("This essay will discuss a source route without grounding.")
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    p.paragraph_format.line_spacing = 1.0
+    run = p.runs[0]
+    run.font.name = "Times New Roman"
+    run.font.size = Pt(12)
+    doc.save(path)
+
+
+def self_test() -> dict[str, Any]:
+    import tempfile
+    try:
+        from generate_example_essay_docx import inline_positive_essay, write_essay
+    except Exception as exc:  # pragma: no cover
+        return {"pass": False, "failures": [{"type": "generator_import_failed", "error": str(exc)}]}
+    with tempfile.TemporaryDirectory(prefix="docx_format_linter_selftest_") as tmp:
+        root = Path(tmp)
+        out = root / "out"
+        qa = root / "qa"
+        out.mkdir()
+        qa.mkdir()
+        good_doc = write_essay(inline_positive_essay(), out, qa, 1)
+        good_result = lint_docx(Path(good_doc["docx_path"]), Path(good_doc["source_map"]))
+        bad = root / "bad.docx"
+        create_bad_docx(bad)
+        bad_result = lint_docx(bad, None)
+    failures = []
+    if good_result.get("status") != "pass":
+        failures.append({"type": "good_inline_docx_rejected", "result": good_result})
+    if bad_result.get("status") == "pass":
+        failures.append({"type": "bad_inline_docx_accepted", "result": bad_result})
+    return {"pass": not failures, "good": good_result, "bad": bad_result, "failures": failures}
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Lint Example Essay DOCX formatting and source highlighting.")
-    parser.add_argument("paths", nargs="+", type=Path)
+    parser.add_argument("paths", nargs="*", type=Path)
+    parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--source-map", type=Path)
     parser.add_argument("--check-language", action="store_true", help="Also run the complete Example Essay language linter.")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+
+    if args.self_test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["pass"] else 1
+    if not args.paths:
+        print(json.dumps({"status": "fail", "reports": [{"qa_flags": ["missing_paths_or_self_test"]}]}, indent=2))
+        return 1
 
     reports = []
     for path in args.paths:

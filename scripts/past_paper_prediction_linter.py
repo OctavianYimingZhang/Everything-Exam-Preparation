@@ -68,7 +68,7 @@ def lint_language(payload: Any) -> list[dict[str, Any]]:
     if EXACT_CLAIM.search(text):
         failures.append({"type": "exact_future_question_claim", "phrase": EXACT_CLAIM.search(text).group(0)})
     if PRECISE_PROBABILITY.search(text):
-        failures.append({"type": "fake_precise_probability", "phrase": PRECISE_PROBABILITY.search(text).group(0)})
+        failures.append({"type": "fabricated_precise_probability", "phrase": PRECISE_PROBABILITY.search(text).group(0)})
     if ALL_POSSIBLE.search(text) and "slot_grammar" not in text:
         failures.append({"type": "unbounded_all_possible_questions"})
     return failures
@@ -115,12 +115,60 @@ def lint_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {"pass": not failures, "failures": failures}
 
 
+
+def self_test() -> dict[str, Any]:
+    valid_question = {
+        "source_file": "inline_paper.txt",
+        "target_group_key": "inline_self_test",
+        "year": "2025",
+        "paper_id": "inline_paper",
+        "section": "A",
+        "question_no": "1",
+        "raw_stem": "Explain competitive inhibition. [5]",
+        "marks": 5,
+        "question_type": "short_answer_explain",
+        "command_verbs": ["explain"],
+        "input_format": {"text_only": True},
+        "negative_marking": {"present": False},
+        "candidate_options": {"count": 0, "option_texts": []},
+        "extracted_confidence": "High",
+        "review_flag": [],
+        "answer_key_present": False,
+    }
+    valid_archetype = {
+        "archetype_id": "ARCH001",
+        "target_group_key": "inline_self_test",
+        "current_regime_key": "current_regime",
+        "question_family": "short_answer_explain",
+        "recurrent_operation": {"command_verbs": ["explain"]},
+        "slot_grammar": {"slot_types": ["knowledge_point"], "bounded": True},
+        "mark_scheme_skeleton": ["claim", "mechanism"],
+        "compatible_kp_families": [],
+        "seen_in": [{"year": "2025", "question_no": "1"}],
+        "confidence": "Low",
+        "student_output_action": "build_bounded_variant_space_and_mark_schema",
+    }
+    good = lint_payload({"questions": [valid_question], "archetypes": [valid_archetype], "prediction_objects": [{"confidence_band": "Low", "exact_question_wording_claimed": False}]})
+    bad = lint_payload({"summary": "This exact question will appear with 87.5% confidence.", "prediction_objects": [{"confidence_band": "Certain", "exact_question_wording_claimed": True}]})
+    failures = []
+    if not good.get("pass"):
+        failures.append({"type": "valid_payload_rejected", "good": good})
+    if bad.get("pass"):
+        failures.append({"type": "bad_payload_accepted", "bad": bad})
+    return {"pass": not failures, "good": good, "bad": bad, "failures": failures}
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate past-paper prediction outputs.")
     parser.add_argument("--input", action="append", type=Path, default=[])
     parser.add_argument("--suite", action="append", type=Path, default=[])
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
+
+    if args.self_test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["pass"] else 1
 
     reports = []
     overall_pass = True

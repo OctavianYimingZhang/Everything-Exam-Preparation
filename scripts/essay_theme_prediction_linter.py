@@ -28,9 +28,9 @@ BANNED_PATTERNS = [
 
 REQUIRED_PATTERNS = [
     ("skill_predicted_essay_theme", Path("SKILL.md"), re.compile(r"\bPredicted essay theme\b")),
-    ("question_type_theme_schema", Path("references/question_type_protocol.md"), re.compile(r"\bEssayThemePrediction\b")),
-    ("scoring_theme_result", Path("references/scoring_and_pattern_protocol.md"), re.compile(r"\bEssayProblemThemeResult\b")),
-    ("excel_theme_header", Path("references/excel_output_protocol.md"), re.compile(r"\bPredicted Essay Theme / Scope / Practice Angle\b")),
+    ("question_type_theme_schema", Path("references/exam_mode_and_addons_protocol.md"), re.compile(r"\bEssayThemePrediction\b")),
+    ("scoring_theme_result", Path("references/exam_mode_and_addons_protocol.md"), re.compile(r"\bEssayProblemThemeResult\b")),
+    ("excel_theme_header", Path("references/runtime_qa_release_protocol.md"), re.compile(r"\bPredicted Essay Theme / Scope / Practice Angle\b")),
 ]
 
 

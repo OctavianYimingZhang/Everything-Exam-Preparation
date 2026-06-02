@@ -411,16 +411,86 @@ def load_essays(path: Path) -> list[dict[str, Any]]:
     return [data]
 
 
+
+def inline_positive_essay() -> dict[str, Any]:
+    return {
+        "essay_id": "EE_INLINE",
+        "question": "Explain how competitive inhibition changes enzyme kinetics.",
+        "title": "Competitive Inhibition and Enzyme Kinetics",
+        "subtitle": "Explain how competitive inhibition changes enzyme kinetics.",
+        "target_group_key": "inline_self_test",
+        "lecture_anchors": [{"file": "inline lecture source", "slide_or_page_range": "pp.1-2", "claim_supported": "competitive inhibition mechanism"}],
+        "essay_adaptive_budget": {
+            "lecture_scope": "one_lecture",
+            "mechanism_detail_target_ratio": "0.10-0.15",
+            "extra_reading_target_ratio": "0.10-0.15",
+            "conclusion_required": True,
+            "hard_word_count_floor_or_ceiling": False,
+            "compression_policy": "expression_efficiency_not_fixed_count",
+        },
+        "paragraphs": [
+            {"paragraph_id": "T", "function": "title", "is_title": True, "text_runs": [{"text": "Competitive Inhibition and Enzyme Kinetics", "source_type": "student_visible_transition"}], "lecture_anchors": []},
+            {"paragraph_id": "Q", "function": "subtitle", "is_subtitle": True, "text_runs": [{"text": "Explain how competitive inhibition changes enzyme kinetics.", "source_type": "question_framing"}], "lecture_anchors": []},
+            {"paragraph_id": "P1", "function": "argument", "lecture_anchors": [{"file": "inline lecture source", "slide_or_page_range": "p.1"}], "text_runs": [
+                {"text": "Competitive inhibition changes enzyme behaviour because inhibitor and substrate compete for the same active site, so the substrate concentration needed to reach a given rate rises while maximal catalytic capacity remains available. ", "source_type": "lecture_slide_core", "source_anchor": "inline lecture source p.1"},
+                {"text": "A verified kinetic source states the same active-site competition logic in quantitative terms (Segel, 1975). ", "source_type": "citation_original_source", "source_anchor": "Segel 1975 enzyme kinetics text", "highlight": "green", "in_text_citation": "(Segel, 1975)", "citation_original_read": True},
+            ]},
+            {"paragraph_id": "P2", "function": "conclusion", "lecture_anchors": [{"file": "inline lecture source", "slide_or_page_range": "p.2"}], "text_runs": [
+                {"text": "The key conclusion is therefore mechanistic: competitive inhibition raises the substrate requirement for effective catalysis without proving permanent enzyme damage, which is why Km and Vmax must be interpreted together.", "source_type": "lecture_slide_core", "source_anchor": "inline lecture source p.2"}
+            ]},
+        ],
+    }
+
+
+def self_test() -> dict[str, Any]:
+    import tempfile
+    positive = inline_positive_essay()
+    negative = inline_positive_essay()
+    negative["essay_id"] = "EE_BAD"
+    negative["lecture_anchors"] = []
+    negative["paragraphs"][2]["lecture_anchors"] = []
+    negative["paragraphs"][2]["text_runs"][1]["citation_original_read"] = False
+    positive_validation = validate_plan(positive)
+    negative_validation = validate_plan(negative)
+    with tempfile.TemporaryDirectory(prefix="example_essay_docx_selftest_") as tmp:
+        root = Path(tmp)
+        out = root / "out"
+        qa = root / "qa"
+        out.mkdir()
+        qa.mkdir()
+        doc = write_essay(positive, out, qa, 1)
+        docx_exists = Path(doc["docx_path"]).exists()
+        source_map_exists = Path(doc["source_map"]).exists()
+    failures = []
+    if positive_validation:
+        failures.append({"type": "positive_plan_rejected", "validation": positive_validation})
+    if not any("essay_requires_lecture_anchors" in item or "missing_lecture_anchor" in item for item in negative_validation):
+        failures.append({"type": "negative_plan_missing_anchor_not_rejected", "validation": negative_validation})
+    if not any("not_read" in item for item in negative_validation):
+        failures.append({"type": "negative_plan_unread_citation_not_rejected", "validation": negative_validation})
+    if not docx_exists or not source_map_exists:
+        failures.append({"type": "positive_docx_or_source_map_missing", "docx_exists": docx_exists, "source_map_exists": source_map_exists})
+    return {"pass": not failures, "positive_validation": positive_validation, "negative_validation": negative_validation, "failures": failures}
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate standalone DOCX files for Example Essay Mode.")
-    parser.add_argument("--plan", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--plan", type=Path)
+    parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--zip", action="store_true", dest="make_zip")
     parser.add_argument("--clean", action="store_true")
     parser.add_argument("--strict", action="store_true", help="Fail if any generated essay records validation QA flags")
     parser.add_argument("--qa-dir", type=Path, help="Optional internal QA artefact directory. Use this to keep the public output directory deliverable-only.")
     parser.add_argument("--deliverable-only", action="store_true", help="Write helper JSON outside the public output directory.")
     args = parser.parse_args()
+
+    if args.self_test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["pass"] else 1
+    if not args.plan or not args.output_dir:
+        print(json.dumps({"status": "fail", "error": "missing_plan_output_dir_or_self_test"}, indent=2))
+        return 1
 
     if args.clean and args.output_dir.exists():
         shutil.rmtree(args.output_dir)

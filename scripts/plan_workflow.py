@@ -83,14 +83,14 @@ PRESET_MODULES = {
         "public_output_point_build",
         "point_coverage_binding",
         "knowledge_only_rendering_gate",
-        "exam_prep_notes_plan",
+        "public_lecture_notes_plan",
         "public_output_point_linter",
         "output_language_request_linter",
         "question_type_addon_generation",
         "visual_aid_planning",
         "visual_aid_generation_optional",
-        "exam_prep_notes_docx_generation",
-        "exam_prep_docx_style_linter",
+        "public_lecture_notes_docx_generation",
+        "public_notes_docx_linter",
         "exam_prep_notes_linter",
         "deliverable_qa",
     ],
@@ -99,10 +99,10 @@ PRESET_MODULES = {
         "fragment_index",
         "lecture_module_extraction",
         "route_docx_style_profile",
-        "knowledge_walkthrough_plan",
+        "public_lecture_notes_plan",
         "knowledge_only_rendering_gate",
-        "knowledge_walkthrough_docx_generation",
-        "knowledge_walkthrough_docx_style_linter",
+        "public_lecture_notes_docx_generation",
+        "public_notes_docx_linter",
         "deliverable_qa",
     ],
     "mcq_exam_prep": [
@@ -124,14 +124,14 @@ PRESET_MODULES = {
         "public_output_point_build",
         "point_coverage_binding",
         "knowledge_only_rendering_gate",
-        "exam_prep_notes_plan",
+        "public_lecture_notes_plan",
         "public_output_point_linter",
         "output_language_request_linter",
         "question_type_addon_generation",
         "visual_aid_planning",
         "visual_aid_generation_optional",
-        "exam_prep_notes_docx_generation",
-        "exam_prep_docx_style_linter",
+        "public_lecture_notes_docx_generation",
+        "public_notes_docx_linter",
         "exam_prep_notes_linter",
         "mcq_policy",
         "mcq_exam_report_docx",
@@ -156,14 +156,14 @@ PRESET_MODULES = {
         "public_output_point_build",
         "point_coverage_binding",
         "knowledge_only_rendering_gate",
-        "exam_prep_notes_plan",
+        "public_lecture_notes_plan",
         "public_output_point_linter",
         "output_language_request_linter",
         "question_type_addon_generation",
         "visual_aid_planning",
         "visual_aid_generation_optional",
-        "exam_prep_notes_docx_generation",
-        "exam_prep_docx_style_linter",
+        "public_lecture_notes_docx_generation",
+        "public_notes_docx_linter",
         "exam_prep_notes_linter",
         "short_answer_variants",
         "short_answer_exam_report_docx",
@@ -188,14 +188,14 @@ PRESET_MODULES = {
         "public_output_point_build",
         "point_coverage_binding",
         "knowledge_only_rendering_gate",
-        "exam_prep_notes_plan",
+        "public_lecture_notes_plan",
         "public_output_point_linter",
         "output_language_request_linter",
         "question_type_addon_generation",
         "visual_aid_planning",
         "visual_aid_generation_optional",
-        "exam_prep_notes_docx_generation",
-        "exam_prep_docx_style_linter",
+        "public_lecture_notes_docx_generation",
+        "public_notes_docx_linter",
         "exam_prep_notes_linter",
         "method_blocks",
         "long_answer_project_report_docx",
@@ -220,14 +220,14 @@ PRESET_MODULES = {
         "public_output_point_build",
         "point_coverage_binding",
         "knowledge_only_rendering_gate",
-        "exam_prep_notes_plan",
+        "public_lecture_notes_plan",
         "public_output_point_linter",
         "output_language_request_linter",
         "question_type_addon_generation",
         "visual_aid_planning",
         "visual_aid_generation_optional",
-        "exam_prep_notes_docx_generation",
-        "exam_prep_docx_style_linter",
+        "public_lecture_notes_docx_generation",
+        "public_notes_docx_linter",
         "exam_prep_notes_linter",
         "essay_coverage_plan",
         "citation_resolution",
@@ -257,12 +257,6 @@ STYLE_AWARE_PRESETS = {
 }
 
 PAST_PAPER_EVIDENCE_MODULES = ["exam_regime", "past_paper_questions", "question_archetypes", "examiner_operations"]
-EXAMPLE_LEARNING_MODULES = [
-    "example_learning",
-    "transferable_rule_synthesis",
-    "rule_promotion_gate",
-    "example_transfer_linter",
-]
 
 MODULE_DEFS = {
     "source_inventory": {
@@ -276,51 +270,6 @@ MODULE_DEFS = {
         "minimum_inputs": ["source_inventory"],
         "expected_outputs": ["FragmentPartition"],
         "qa_checks": ["partition metadata", "source hash"],
-    },
-    "example_learning": {
-        "action_type": "AnalyzeExamplesIntoTransferableRules",
-        "minimum_inputs": ["style_or_example_evidence"],
-        "expected_outputs": ["ExampleReviewLedger", "TransferableRuleSet", "NonTransferableContentBlocklist", "ExampleTransferQA"],
-        "qa_checks": [
-            "one review record per example",
-            "what worked and what failed recorded",
-            "no course topic or example-name hardcoding",
-            "non-transferable content blocked",
-            "no factual or prediction support",
-        ],
-    },
-    "transferable_rule_synthesis": {
-        "action_type": "SynthesizeTransferableRules",
-        "minimum_inputs": ["ExampleReviewLedger", "NonTransferableContentBlocklist"],
-        "expected_outputs": ["TransferableRuleSet", "QAFlag"],
-        "qa_checks": [
-            "source-specific content stripped",
-            "rules expressed as generic conditions",
-            "rule destination declared",
-            "anti-overfit rule retained",
-        ],
-    },
-    "rule_promotion_gate": {
-        "action_type": "RunRulePromotionGate",
-        "minimum_inputs": ["ExampleReviewLedger", "TransferableRuleSet", "NonTransferableContentBlocklist"],
-        "expected_outputs": ["ExampleTransferQA", "QAFlag"],
-        "qa_checks": [
-            "each promoted rule has validation check",
-            "positive and negative regression coverage declared",
-            "non-transferable content absent from promoted rules",
-            "promotion status explicit",
-        ],
-    },
-    "example_transfer_linter": {
-        "action_type": "LintExampleTransfer",
-        "minimum_inputs": ["ExampleReviewLedger", "TransferableRuleSet", "ExampleTransferQA"],
-        "expected_outputs": ["QAFlag"],
-        "qa_checks": [
-            "good and bad analysis present",
-            "anti-overfit rule present",
-            "no direct example-to-skill copying",
-            "accepted rules have validation checks",
-        ],
     },
     "lecture_module_extraction": {
         "action_type": "BuildLectureModules",
@@ -346,19 +295,19 @@ MODULE_DEFS = {
         "expected_outputs": ["LectureConceptModule"],
         "qa_checks": ["conceptual boundaries", "source-backed module function", "student-facing filter"],
     },
-    "knowledge_walkthrough_plan": {
+    "public_lecture_notes_plan": {
         "action_type": "BuildKnowledgeWalkthroughPlan",
         "minimum_inputs": ["LectureModule", "RouteDocxStyleProfile"],
         "expected_outputs": ["KnowledgeWalkthroughPlan"],
         "qa_checks": ["module map", "lecture recap", "route style profile", "forbidden student fields"],
     },
-    "knowledge_walkthrough_docx_generation": {
+    "public_lecture_notes_docx_generation": {
         "action_type": "GeneratePrepArtifact",
         "minimum_inputs": ["KnowledgeWalkthroughPlan", "RouteDocxStyleProfile"],
         "expected_outputs": ["PrepArtifact"],
         "qa_checks": ["compact walkthrough DOCX format", "2.0 cm margins", "left-aligned compact body text", "knowledge walkthrough linter", "public output boundary"],
     },
-    "knowledge_walkthrough_docx_style_linter": {
+    "public_notes_docx_linter": {
         "action_type": "LintKnowledgeWalkthroughDocxStyle",
         "minimum_inputs": ["PrepArtifact", "RouteDocxStyleProfile"],
         "expected_outputs": ["QAFlag"],
@@ -435,7 +384,7 @@ MODULE_DEFS = {
         "expected_outputs": ["QAFlag"],
         "qa_checks": ["protected items still visible", "no over-compression", "old template fields absent"],
     },
-    "exam_prep_notes_plan": {
+    "public_lecture_notes_plan": {
         "action_type": "BuildPublicLectureNotesPlan",
         "minimum_inputs": [
             "KnowledgeOnlyStudentView",
@@ -559,7 +508,7 @@ MODULE_DEFS = {
         "expected_outputs": ["GeneratedVisualAid"],
         "qa_checks": ["not evidence", "caption boundary", "skip if unavailable"],
     },
-    "exam_prep_notes_docx_generation": {
+    "public_lecture_notes_docx_generation": {
         "action_type": "GenerateExamPrepNotesDocx",
         "minimum_inputs": ["PublicLectureNotesPlan", "RouteDocxStyleProfile", "OutputLanguageProfile"],
         "expected_outputs": ["PrepArtifact"],
@@ -571,7 +520,7 @@ MODULE_DEFS = {
             "public output boundary",
         ],
     },
-    "exam_prep_docx_style_linter": {
+    "public_notes_docx_linter": {
         "action_type": "LintExamPrepDocxStyle",
         "minimum_inputs": ["PrepArtifact"],
         "expected_outputs": ["QAFlag"],
@@ -912,8 +861,7 @@ def build_plan(config: dict[str, Any], source_scan: dict[str, Any] | None = None
                 "past_paper_questions",
                 "question_archetypes",
                 "examiner_operations",
-                *EXAMPLE_LEARNING_MODULES,
-            }
+                    }
         ],
     }
     target_group_key = str(project.get("target_group_key") or "unspecified_target")
@@ -964,15 +912,72 @@ def validate_plan_shape(plan: dict[str, Any]) -> list[str]:
     return failures
 
 
+
+def self_test() -> dict[str, Any]:
+    lecture_source = {"files": [{"role": "lecture_slide", "status": "ok", "analysis_context": "target_current_regime"}]}
+    paper_source = {"files": [{"role": "formal_past_paper", "status": "ok", "analysis_context": "target_current_regime"}]}
+    base_config = {
+        "project": {"target_group_key": "inline_self_test"},
+        "source_inputs": {"lecture_slides": ["inline lecture source"]},
+        "output_mode": {"preset": "exam_prep_notes_docx"},
+    }
+    cases = []
+
+    notes_plan = build_plan(base_config, lecture_source)
+    notes_modules = {action.get("module") for action in notes_plan.get("actions", [])}
+    cases.append({
+        "name": "notes_route_runs_without_example_learning",
+        "passed": notes_plan.get("selected_preset") == "exam_prep_notes_docx"
+        and "public_lecture_notes_docx_generation" in notes_modules
+        and "example_learning" not in notes_modules
+        and not validate_plan_shape(notes_plan),
+    })
+
+    mcq_config = {
+        "project": {"target_group_key": "inline_self_test"},
+        "source_inputs": {"lecture_slides": ["inline lecture source"], "formal_past_papers": ["inline paper source"]},
+        "output_mode": {"preset": "mcq_exam_prep"},
+    }
+    mcq_plan = build_plan(mcq_config, {"files": lecture_source["files"] + paper_source["files"]})
+    mcq_modules = {action.get("module") for action in mcq_plan.get("actions", [])}
+    cases.append({
+        "name": "past_paper_route_adds_exam_modules",
+        "passed": {"exam_regime", "past_paper_questions", "question_archetypes"}.issubset(mcq_modules)
+        and not validate_plan_shape(mcq_plan),
+    })
+
+    missing_config = {
+        "project": {"target_group_key": "inline_self_test"},
+        "source_inputs": {"formal_past_papers": ["inline paper source"]},
+        "output_mode": {"preset": "essay_exam_prep"},
+    }
+    missing_plan = build_plan(missing_config, paper_source)
+    cases.append({
+        "name": "missing_lecture_blocks_dependent_conclusion",
+        "passed": bool(missing_plan.get("blockers")) and missing_plan.get("selected_preset") == "essay_exam_prep",
+    })
+
+    failures = [case for case in cases if not case["passed"]]
+    return {"pass": not failures, "cases": cases, "failures": failures}
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, required=True, help="SkillConfig JSON file.")
+    parser.add_argument("--config", type=Path, help="SkillConfig JSON file.")
+    parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--source-scan", type=Path, help="Optional extract_sources.py source_scan.json.")
     parser.add_argument("--output", type=Path, help="Where to write the WorkflowPlan JSON.")
     parser.add_argument("--fail-on-blockers", action="store_true")
     parser.add_argument("--require-module", action="append", default=[], help="Fail unless the generated plan includes this module.")
     parser.add_argument("--forbid-module", action="append", default=[], help="Fail if the generated plan includes this module.")
     args = parser.parse_args()
+
+    if args.self_test:
+        result = self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["pass"] else 1
+    if not args.config:
+        print(json.dumps({"status": "fail", "error": "missing_config_or_self_test"}, indent=2), file=sys.stderr)
+        return 1
 
     try:
         config = load_json(args.config)
@@ -1006,6 +1011,30 @@ def main() -> int:
         return 2
     return 0
 
+
+
+
+# Consolidated public-notes module definitions override legacy duplicated route names.
+MODULE_DEFS.update({
+    "public_lecture_notes_plan": {
+        "action_type": "BuildPublicLectureNotesPlan",
+        "minimum_inputs": ["AtomicKnowledgeLedger", "RouteDocxStyleProfile"],
+        "expected_outputs": ["PublicLectureNotesPlan"],
+        "qa_checks": ["public lecture sections", "source-scale coverage", "knowledge-only student surface"],
+    },
+    "public_lecture_notes_docx_generation": {
+        "action_type": "GeneratePublicLectureNotesDocx",
+        "minimum_inputs": ["PublicLectureNotesPlan", "RouteDocxStyleProfile"],
+        "expected_outputs": ["Lecture_Knowledge_Walkthrough.docx"],
+        "qa_checks": ["DOCX render", "public notes style", "student-output boundary"],
+    },
+    "public_notes_docx_linter": {
+        "action_type": "LintPublicNotesDocx",
+        "minimum_inputs": ["Lecture_Knowledge_Walkthrough.docx"],
+        "expected_outputs": ["QAFlag"],
+        "qa_checks": ["2.0 cm margins", "compact left-aligned Arial", "knowledge-only public surface"],
+    },
+})
 
 if __name__ == "__main__":
     raise SystemExit(main())

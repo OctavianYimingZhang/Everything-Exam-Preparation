@@ -1,1 +1,0 @@
-Compact lecture notes use Arial, dense spacing, left-aligned body text, stable heading hierarchy, black text, and one lecture section per page. This file is layout evidence only.

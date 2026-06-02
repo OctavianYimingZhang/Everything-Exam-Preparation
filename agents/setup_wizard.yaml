@@ -5,41 +5,16 @@ wizard:
       fields: ["course_name", "module_code", "target_group_key", "exam_year", "output_folder"]
     - id: "source_inputs"
       label: "Source Inputs"
-      fields:
-        - "lecture_slides"
-        - "official_notes"
-        - "course_notes"
-        - "student_notes"
-        - "ai_generated_notes"
-        - "formal_past_papers"
-        - "practical_materials"
-        - "mocks_quizzes_answer_keys"
-        - "exemplars_or_feedback"
-        - "extra_reading_books_or_papers"
+      fields: ["lecture_slides", "official_notes", "course_notes", "student_notes", "ai_generated_notes", "formal_past_papers", "practical_materials", "mocks_quizzes_answer_keys", "exemplars_or_feedback", "extra_reading_books_or_papers"]
     - id: "output_mode"
       label: "Output Mode"
       fields: ["preset", "include_audit_package", "student_visible_only"]
-    - id: "evidence_policy"
-      label: "Evidence Policy"
-      fields:
-        - "allow_online_academic_search"
-        - "allow_extra_reading_enrichment"
-        - "require_verified_citations"
-        - "treat_examples_as_style_only"
+    - id: "source_policy"
+      label: "Source Policy"
+      fields: ["allow_online_academic_search", "allow_extra_reading_enrichment", "require_verified_citations", "treat_examples_as_style_only"]
     - id: "qa"
       label: "QA Gates"
-      fields:
-        - "strict_publish_gate"
-        - "require_lineage"
-        - "run_language_lint"
-        - "run_workflow_validator"
-        - "fail_on_blocking_flags"
-    - id: "plan_preview"
-      label: "Plan Preview"
-      fields: ["actions", "skipped_modules", "blockers", "publish_gate"]
-    - id: "run_status"
-      label: "Run Status"
-      fields: ["current_action", "completed_actions", "blocked_actions"]
+      fields: ["strict_publish_gate", "require_lineage", "run_language_lint", "run_workflow_validator", "fail_on_blocking_flags"]
     - id: "outputs"
       label: "Outputs"
-      fields: ["student_outputs", "internal_qa_outputs", "audit_package"]
+      fields: ["Lecture_Knowledge_Walkthrough.docx", "question_type_addons", "internal_qa_outputs"]

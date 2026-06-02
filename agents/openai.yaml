@@ -1,7 +1,6 @@
 interface:
   display_name: "Everything Exam Preparation"
-  short_description: "Evidence-grounded exam-prep workflow with lecture-first public notes, question-type DOCX add-on routes, and explicit Skill maintenance checks"
-  default_prompt: "Use $everything-exam-preparation to turn my lecture slides, official notes, ordered course notes, past papers, practical materials, answer keys, exemplars, feedback, and readings into the narrowest valid exam-prep route. Build a SkillConfig, create a WorkflowPlan, check input readiness, and by default generate English lecture-first knowledge notes in Lecture_Knowledge_Walkthrough.docx. If I ask for MCQ, Short Answer, Long Answer/Project/Scenario, or Essay preparation, add the matching DOCX report after the base notes. Use past-paper analysis as a chat-only brief before file generation. Keep helper artifacts separate unless I ask for an audit package. If I ask to check, doctor, update, validate, refresh, or release the Skill package, run the explicit maintenance route first."
-
+  short_description: "Source-bound exam prep Skill for notes, exam-mode detection, and question-type add-ons"
+  default_prompt: "Use $everything-exam-preparation to analyse my lecture/course sources and practice materials, generate Exam Preparation Notes, identify exam mode when past papers or prompts are supplied, and create only the required MCQ, short-answer, long-answer/practical/data, or essay add-ons."
 policy:
   allow_implicit_invocation: true

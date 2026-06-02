@@ -7,8 +7,6 @@ from typing import Literal
 
 
 Confidence = Literal["High", "Medium", "Low"]
-ExampleReviewConfidence = Literal["high", "medium", "low"]
-PromotionStatus = Literal["candidate", "accepted", "rejected", "blocked"]
 QuestionFamily = Literal["mcq", "short_answer", "essay", "case_study", "data_problem", "long_answer_project"]
 OutputMode = Literal["default_excel_workbook", "docx_example_essay", "excel_evidence_workbook"]
 EssayScopeType = Literal["one_lecture_one_theme", "one_lecture_two_themes", "two_lectures_one_theme", "cross_lecture_synthesis", "uncertain"]
@@ -30,32 +28,8 @@ AnalysisContext = Literal[
     "cross_target_example",
     "style_exemplar",
     "layout_exemplar",
-    "benchmark_fixture",
     "unsupported_or_unreadable",
 ]
-
-
-@dataclass
-class ExampleReviewRecord:
-    example_id: str
-    source_role: str
-    example_scope: str
-    what_worked: list[str]
-    why_it_worked: list[str]
-    what_failed: list[str]
-    why_it_failed: list[str]
-    transferable_principle: str
-    non_transferable_content: list[str]
-    anti_overfit_rule: str
-    affected_protocols: list[str]
-    affected_scripts: list[str]
-    validation_check: str
-    regression_fixture: str
-    promotion_status: PromotionStatus = "candidate"
-    confidence: ExampleReviewConfidence = "medium"
-
-    def to_dict(self) -> dict:
-        return asdict(self)
 
 
 

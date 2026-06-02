@@ -1,2 +1,0 @@
-{"object_type":"LineageEvent","event_id":"EVT001","run_id":"RUN001","action_id":"ACT001","action_type":"BuildFragmentIndex","input_object_ids":["SRC001"],"output_object_ids":["PART001"],"artifact_ids":[],"qa_flag_ids":[],"timestamp":"2026-05-24T00:00:01Z","status":"pass"}
-{"object_type":"LineageEvent","event_id":"EVT002","run_id":"RUN001","action_id":"ACT002","action_type":"ApproveStudentOutput","input_object_ids":["ART001"],"output_object_ids":[],"artifact_ids":["ART001"],"qa_flag_ids":[],"timestamp":"2026-05-24T00:00:02Z","status":"pass"}

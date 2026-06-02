@@ -1,6 +1,0 @@
-{
-  "fixture_type": "negative",
-  "expected_failure": "inventory_only_list_without_teaching_function",
-  "module_title": "Assay overview",
-  "explanation": "The section includes substrate, enzyme, buffer, wavelength, absorbance, calibration, time, graphing and concentration."
-}

@@ -1,9 +1,7 @@
 name: CI
-
 on:
   push:
   pull_request:
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,48 +14,35 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Compile scripts
         run: python -m compileall -q scripts
-      - name: Lint essay-style fixture
-        run: python scripts/essay_style_linter.py --fixture benchmarks/kp_essay_style_linter_fixtures.json
-      - name: Lint Example Essay language fixture
-        run: python scripts/example_essay_language_linter.py --fixture benchmarks/example_essay_language_linter_fixtures.json
-      - name: Lint essay theme prediction language
-        run: python scripts/essay_theme_prediction_linter.py
-      - name: Validate cross-subject benchmark metadata
-        run: python scripts/cross_subject_regression_check.py --metadata-only --suite benchmarks/cross_subject_regression_suite.json
-      - name: Validate long-answer benchmark metadata
-        run: python scripts/cross_subject_regression_check.py --metadata-only --suite benchmarks/method_long_answer_suite.json
-      - name: Identity-trigger scan
-        run: python scripts/no_identity_trigger_linter.py --forbid-legacy-label
+      - name: Validate workflow planning contract
+        run: python scripts/validate_workflow_planning_contract.py
+      - name: Validate interaction contract
+        run: python scripts/validate_interaction_contract.py
+      - name: Validate student output contract
+        run: python scripts/validate_student_output_contract.py
+      - name: Workflow planner self-test
+        run: python scripts/plan_workflow.py --self-test
+      - name: Input readiness self-test
+        run: python scripts/input_readiness_check.py --self-test
+      - name: Source extraction self-test
+        run: python scripts/extract_sources.py --self-test
+      - name: Past-paper extraction self-test
+        run: python scripts/extract_past_paper_questions.py --self-test
+      - name: Public notes generator self-test
+        run: python scripts/generate_public_lecture_notes_docx.py --self-test
+      - name: Public notes renderer self-test
+        run: python scripts/public_lecture_notes_renderer.py --self-test
+      - name: Public notes linter self-test
+        run: python scripts/public_notes_docx_linter.py --self-test
+      - name: Example Essay generator self-test
+        run: python scripts/generate_example_essay_docx.py --self-test
+      - name: Example Essay DOCX format self-test
+        run: python scripts/docx_format_linter.py --self-test
+      - name: Citation fallback self-test
+        run: python scripts/citation_fallback_linter.py --self-test
+      - name: Example Essay language self-test
+        run: python scripts/example_essay_language_linter.py --self-test
+      - name: Prediction boundary self-test
+        run: python scripts/past_paper_prediction_linter.py --self-test
       - name: GitHub-ready QA
         run: python scripts/github_ready_check.py --ci --require-clean
-      - name: Public safety scan
-        run: |
-          python - <<'PY'
-          import pathlib
-          import re
-          import sys
-
-          patterns = [
-              "/" + "Users/",
-              "One" + "Drive",
-              "Cloud" + "Storage",
-              "octavian" + "zhang",
-              "Desk" + "top",
-              "University of " + "Manchester",
-              "School of " + "Biological",
-          ]
-          regex = re.compile("|".join(re.escape(pattern) for pattern in patterns))
-          hits = []
-          for path in pathlib.Path(".").rglob("*"):
-              if ".git" in path.parts or not path.is_file():
-                  continue
-              try:
-                  text = path.read_text(errors="ignore")
-              except Exception:
-                  continue
-              if regex.search(text):
-                  hits.append(str(path))
-          if hits:
-              print("\n".join(hits))
-              sys.exit(1)
-          PY

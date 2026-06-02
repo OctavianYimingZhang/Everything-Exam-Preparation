@@ -1,3 +1,0 @@
-Neural patterning lecture
-
-The lecture explains how a morphogen gradient specifies positional identity, how experimental transplantation can test organiser activity, and how loss-of-function and gain-of-function evidence distinguish causal signalling from correlated expression.
