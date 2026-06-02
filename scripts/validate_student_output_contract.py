@@ -23,12 +23,12 @@ REQUIRED_FILES = [
     "schemas/knowledge_surface_contract.schema.json",
     "schemas/atomic_knowledge_ledger.schema.json",
     "scripts/generate_public_lecture_notes_docx.py",
-    "scripts/public_notes_docx_linter.py",
+    "scripts/deliverable_surface_linter.py",
     "scripts/notes_exam_ready_language_linter.py",
     "scripts/module_teaching_depth_linter.py",
     "scripts/notes_readability_layout_linter.py",
-    "scripts/source_scale_budget_linter.py",
-    "scripts/docx_layout_surface_normalizer.py",
+    "scripts/output_sufficiency_linter.py",
+    "scripts/deliverable_surface_linter.py",
     "scripts/knowledge_surface_linter.py",
 ]
 
@@ -87,8 +87,8 @@ def validate(root: Path) -> dict[str, Any]:
         "references/essay_exam_prep_protocol.md",
         "references/language_quality_contract.md",
         "references/runtime_qa_release_protocol.md",
-        "scripts/source_scale_budget_linter.py",
-        "scripts/public_notes_docx_linter.py",
+        "scripts/output_sufficiency_linter.py",
+        "scripts/deliverable_surface_linter.py",
     ])
     for term in REQUIRED_SURFACE_TERMS:
         if term not in combined:

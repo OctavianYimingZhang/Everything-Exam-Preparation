@@ -28,7 +28,7 @@ from knowledge_only_rendering_rules import (
 from module_teaching_depth_linter import lint_plan as lint_module_teaching_depth
 from notes_exam_ready_language_linter import lint_plan as lint_exam_ready_language
 from notes_readability_layout_linter import lint_plan as lint_notes_readability_layout
-from source_scale_budget_rules import floor_for_source_scale
+from output_sufficiency_linter import floor_for_source_scale
 
 PUBLIC_STYLE_DEFAULTS = {
     "margin_cm": 2.0,

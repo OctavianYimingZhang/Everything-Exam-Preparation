@@ -37,13 +37,13 @@ python3 scripts/extract_sources.py --self-test
 python3 scripts/extract_past_paper_questions.py --self-test
 python3 scripts/generate_public_lecture_notes_docx.py --self-test
 python3 scripts/public_lecture_notes_renderer.py --self-test
-python3 scripts/public_notes_docx_linter.py --self-test
+python3 scripts/deliverable_surface_linter.py --self-test
 python3 scripts/generate_example_essay_docx.py --self-test
-python3 scripts/docx_format_linter.py --self-test
 python3 scripts/citation_fallback_linter.py --self-test
 python3 scripts/example_essay_language_linter.py --self-test
 python3 scripts/past_paper_prediction_linter.py --self-test
-python3 scripts/source_information_profiler.py --self-test
+python3 scripts/output_sufficiency_linter.py --self-test
+python3 scripts/runtime_audit.py --self-test
 python3 scripts/github_ready_check.py --ci
 ```
 

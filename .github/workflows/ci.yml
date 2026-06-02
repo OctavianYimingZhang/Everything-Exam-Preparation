@@ -32,17 +32,19 @@ jobs:
         run: python scripts/generate_public_lecture_notes_docx.py --self-test
       - name: Public notes renderer self-test
         run: python scripts/public_lecture_notes_renderer.py --self-test
-      - name: Public notes linter self-test
-        run: python scripts/public_notes_docx_linter.py --self-test
+      - name: Deliverable surface linter self-test
+        run: python scripts/deliverable_surface_linter.py --self-test
       - name: Example Essay generator self-test
         run: python scripts/generate_example_essay_docx.py --self-test
-      - name: Example Essay DOCX format self-test
-        run: python scripts/docx_format_linter.py --self-test
       - name: Citation fallback self-test
         run: python scripts/citation_fallback_linter.py --self-test
       - name: Example Essay language self-test
         run: python scripts/example_essay_language_linter.py --self-test
       - name: Prediction boundary self-test
         run: python scripts/past_paper_prediction_linter.py --self-test
+      - name: Output sufficiency self-test
+        run: python scripts/output_sufficiency_linter.py --self-test
+      - name: Runtime audit self-test
+        run: python scripts/runtime_audit.py --self-test
       - name: GitHub-ready QA
         run: python scripts/github_ready_check.py --ci --require-clean
