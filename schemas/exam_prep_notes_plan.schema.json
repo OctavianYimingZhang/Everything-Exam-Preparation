@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/exam_prep_notes_plan.schema.json",
+  "title": "Exam Preparation Notes plan",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "ordering": {
+      "enum": [
+        "exam_emphasis_first",
+        "source_order"
+      ]
+    },
+    "topics": {
+      "type": "array"
+    },
+    "add_on_sections": {
+      "type": "array"
+    },
+    "visuals": {
+      "type": "array"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

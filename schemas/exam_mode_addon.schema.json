@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/exam_mode_addon.schema.json",
+  "title": "Exam mode add-on",
+  "properties": {
+    "detected_mode": {
+      "enum": [
+        "MCQ",
+        "Short Answer",
+        "Long Answer",
+        "Practical/Data/Problem",
+        "Essay",
+        "Mixed",
+        "Unknown"
+      ]
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "evidence_basis": {
+      "type": "array"
+    },
+    "addon_blocks": {
+      "type": "array"
+    },
+    "forbidden_prediction_claims": {
+      "type": "array"
+    }
+  },
+  "required": [
+    "detected_mode"
+  ]
+}

@@ -1,145 +1,181 @@
-#!/usr/bin/env python3
-"""Public-release checks for the exam-prep skill."""
 from __future__ import annotations
 
 import argparse
-import compileall
-import re
+import json
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-
-REQUIRED = [
-    "SKILL.md",
-    "README.md",
-    "LICENSE",
-    "agents/openai.yaml",
-    "references/input_and_evidence_protocol.md",
-    "references/exam_prep_core_workflow.md",
-    "references/exam_mode_and_addons_protocol.md",
-    "references/essay_exam_prep_protocol.md",
-    "references/language_quality_contract.md",
-    "references/runtime_qa_release_protocol.md",
-    "scripts/plan_workflow.py",
+SELF = Path(__file__).resolve()
+FORBIDDEN_TEXT = [
+    "ontology",
+    "Ontology",
+    "Palantir",
+    "Snowflake",
+    "snowflake",
+    "Databricks",
+    "databricks",
+    "lakehouse",
+    "Delta Lake",
+    "medallion",
+    "bronze",
+    "silver",
+    "gold",
+    "serving layer",
+    "Excel-first",
+    "SBS",
+    "Lecture_Knowledge_Walkthrough",
+    "knowledge_walkthrough",
+    "public_lecture_notes",
+    "Public Lecture Notes",
 ]
+FORBIDDEN_PATH_PARTS = [
+    "benchmarks",
+    "tests/fixtures",
+    "custom_gpt_knowledge",
+    "ontology",
+]
+FORBIDDEN_FILENAME_FRAGMENTS = [
+    "fake_",
+    "negative_",
+    "positive_",
+    "_fixture",
+    "example_review_ledger",
+    "language_delta",
+    "unit_example_contribution",
+]
+STALE_SCRIPT_NAMES = [
+    "archetype_models.py",
+    "citation_fallback_linter.py",
+    "citation_rendering_rules.py",
+    "essay_theme_prediction_linter.py",
+    "exam_prep_notes_linter.py",
+    "example_essay_language_linter.py",
+    "example_essay_source_audit.py",
+    "extra_reading_chapter_matcher.py",
+    "extract_past_paper_questions.py",
+    "generate_example_essay_docx.py",
+    "generate_public_lecture_notes_docx.py",
+    "knowledge_only_rendering_rules.py",
+    "knowledge_surface_linter.py",
+    "lecture_citation_resolver.py",
+    "module_teaching_depth_linter.py",
+    "no_identity_trigger_linter.py",
+    "notes_exam_ready_language_linter.py",
+    "notes_readability_layout_linter.py",
+    "past_paper_prediction_linter.py",
+    "public_lecture_notes_renderer.py",
+    "runtime_audit.py",
+    "scientific_precision_linter.py",
+    "skill_maintenance.py",
+    "target_grouper.py",
+    "validate_exam_prep_notes_plan.py",
+    "validate_interaction_contract.py",
+    "validate_student_output_contract.py",
+    "validate_workflow_planning_contract.py",
+    "zero_mention_lint.py",
+]
+EXPECTED_REFERENCES = 6
+EXPECTED_SCHEMAS = 12
+EXPECTED_SCRIPTS = 12
+TEXT_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml", ".txt", ".toml", ".ini"}
+LOCAL_OUTPUT_SUFFIXES = {".docx", ".pptx", ".pdf", ".xlsx", ".zip"}
 
-PRIVATE_PATTERNS = ["/" + "Users/", "One" + "Drive", "Cloud" + "Storage", "octavian" + "zhang", "Desk" + "top", "University of " + "Manchester", "School of " + "Biological"]
-SKIP_PARTS = {".git", "__pycache__"}
 
-CLUTTER_PATH_PREFIXES = ("bench" + "marks/", "tests/" + "fixtures/")
-CLUTTER_NAME_PATTERNS = (
-    re.compile(r"(^|/)" + "fa" + "ke_" + r"[^/]*$"),
-    re.compile(r"(^|/)negative_" + r"[^/]*$"),
-    re.compile(r"(^|/)positive_" + r"[^/]*$"),
-    re.compile(r"(^|/)" + r"[^/]*" + "_fixture" + r"\.[^/]*$"),
-)
-CLUTTER_TEXT_PATTERNS = ("Example" + "ReviewLedger", "Language" + "Delta", "UnitExample" + "Contribution")
-
-
-
-def fail(message: str) -> None:
-    print(f"ERROR: {message}", file=sys.stderr)
-    raise SystemExit(1)
-
-
-def run(name: str, command: list[str]) -> None:
-    result = subprocess.run(command, cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    if result.returncode:
-        print(result.stdout)
-        fail(f"{name} failed")
-
-
-def check_required() -> None:
-    missing = [rel for rel in REQUIRED if not (ROOT / rel).exists()]
-    if missing:
-        fail("missing required files: " + ", ".join(missing))
-
-
-def check_generated_absent() -> None:
-    blocked = [ROOT / "custom_gpt_knowledge", ROOT / "dist", ROOT / "build", ROOT / ".pytest_cache"]
-    present = [str(path.relative_to(ROOT)) for path in blocked if path.exists()]
-    if present:
-        fail("generated or local-only paths are present: " + ", ".join(present))
-
-
-def check_private_strings() -> None:
-    regex = re.compile("|".join(re.escape(pattern) for pattern in PRIVATE_PATTERNS))
-    hits: list[str] = []
+def iter_repo_files():
     for path in ROOT.rglob("*"):
-        if any(part in SKIP_PARTS for part in path.parts) or not path.is_file():
-            continue
-        try:
-            text = path.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            continue
-        if regex.search(text):
-            hits.append(str(path.relative_to(ROOT)))
-    if hits:
-        fail("private strings found in: " + ", ".join(hits))
-
-
-
-def check_clutter_absent() -> None:
-    path_hits: list[str] = []
-    text_hits: list[str] = []
-    for path in ROOT.rglob("*"):
-        if any(part in SKIP_PARTS for part in path.parts):
-            continue
         if not path.is_file():
             continue
-        rel = str(path.relative_to(ROOT))
-        if rel.startswith(CLUTTER_PATH_PREFIXES) or any(pattern.search(rel) for pattern in CLUTTER_NAME_PATTERNS):
-            path_hits.append(rel)
+        rel = path.relative_to(ROOT)
+        if ".git" in rel.parts or "__pycache__" in rel.parts:
             continue
-        try:
-            text = path.read_text(encoding="utf-8", errors="ignore")
-        except OSError:
-            continue
-        if any(pattern in text for pattern in CLUTTER_TEXT_PATTERNS):
-            text_hits.append(rel)
-    if path_hits or text_hits:
-        fail("committed example/fixture clutter found: " + ", ".join(sorted(path_hits + text_hits)))
+        yield path
 
-def main() -> None:
+
+def add_failure(failures: list[str], message: str) -> None:
+    failures.append(message)
+
+
+def check_file_sets(failures: list[str]) -> None:
+    refs = list((ROOT / "references").glob("*.md"))
+    schemas = list((ROOT / "schemas").glob("*.json"))
+    scripts = list((ROOT / "scripts").glob("*.py"))
+    if len(refs) != EXPECTED_REFERENCES:
+        add_failure(failures, f"expected {EXPECTED_REFERENCES} reference files, found {len(refs)}")
+    if len(schemas) != EXPECTED_SCHEMAS:
+        add_failure(failures, f"expected {EXPECTED_SCHEMAS} schema files, found {len(schemas)}")
+    if len(scripts) != EXPECTED_SCRIPTS:
+        add_failure(failures, f"expected {EXPECTED_SCRIPTS} script files, found {len(scripts)}")
+
+
+def check_paths(failures: list[str]) -> None:
+    for path in iter_repo_files():
+        rel = path.relative_to(ROOT)
+        rel_text = rel.as_posix()
+        for part in FORBIDDEN_PATH_PARTS:
+            if part in rel_text:
+                add_failure(failures, f"forbidden path part {part}: {rel_text}")
+        for frag in FORBIDDEN_FILENAME_FRAGMENTS:
+            if frag in path.name:
+                add_failure(failures, f"forbidden filename fragment {frag}: {rel_text}")
+        if path.suffix.lower() in LOCAL_OUTPUT_SUFFIXES and path.name not in {"LICENSE"}:
+            add_failure(failures, f"local generated or source-pack file must not be committed: {rel_text}")
+
+
+def check_text(failures: list[str]) -> None:
+    for path in iter_repo_files():
+        if path.resolve() == SELF or path.suffix.lower() not in TEXT_SUFFIXES:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        rel = path.relative_to(ROOT).as_posix()
+        for term in FORBIDDEN_TEXT:
+            if term in text:
+                add_failure(failures, f"forbidden stale text {term!r} in {rel}")
+        for name in STALE_SCRIPT_NAMES:
+            if name in text:
+                add_failure(failures, f"stale deleted script reference {name} in {rel}")
+
+
+def check_manifest_commands(failures: list[str]) -> None:
+    manifest = json.loads((ROOT / "skill_manifest.json").read_text(encoding="utf-8"))
+    for cmd in manifest.get("health_commands", []):
+        parts = cmd.split()
+        for part in parts:
+            if part.startswith("scripts/") and part.endswith(".py") and not (ROOT / part).exists():
+                add_failure(failures, f"manifest references missing script: {part}")
+
+
+def run_health_commands(failures: list[str]) -> None:
+    manifest = json.loads((ROOT / "skill_manifest.json").read_text(encoding="utf-8"))
+    for cmd in manifest.get("health_commands", []):
+        if "github_ready_check.py --ci" in cmd:
+            continue
+        result = subprocess.run(cmd, cwd=ROOT, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if result.returncode != 0:
+            add_failure(failures, f"health command failed: {cmd}\n{result.stdout}")
+
+
+def run(ci: bool = False) -> int:
+    failures: list[str] = []
+    check_file_sets(failures)
+    check_paths(failures)
+    check_text(failures)
+    check_manifest_commands(failures)
+    if ci:
+        run_health_commands(failures)
+    if failures:
+        print(json.dumps({"status": "fail", "failures": failures}, indent=2))
+        return 1
+    print(json.dumps({"status": "pass"}, indent=2))
+    return 0
+
+
+def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ci", action="store_true")
-    parser.add_argument("--require-clean", action="store_true")
     args = parser.parse_args()
-
-    check_required()
-    check_generated_absent()
-    check_private_strings()
-    check_clutter_absent()
-    if not compileall.compile_dir(ROOT / "scripts", quiet=1):
-        fail("script compilation failed")
-    run("identity trigger scan", [sys.executable, "scripts/no_identity_trigger_linter.py", "--forbid-legacy-label"])
-    run("workflow planning contract", [sys.executable, "scripts/validate_workflow_planning_contract.py"])
-    run("interaction contract", [sys.executable, "scripts/validate_interaction_contract.py"])
-    run("student output contract", [sys.executable, "scripts/validate_student_output_contract.py"])
-    run("workflow planner self-test", [sys.executable, "scripts/plan_workflow.py", "--self-test"])
-    run("input readiness self-test", [sys.executable, "scripts/input_readiness_check.py", "--self-test"])
-    run("source extraction self-test", [sys.executable, "scripts/extract_sources.py", "--self-test"])
-    run("past paper extraction self-test", [sys.executable, "scripts/extract_past_paper_questions.py", "--self-test"])
-    run("public lecture notes renderer", [sys.executable, "scripts/public_lecture_notes_renderer.py", "--self-test"])
-    run("public notes docx generator", [sys.executable, "scripts/generate_public_lecture_notes_docx.py", "--self-test"])
-    run("deliverable surface linter", [sys.executable, "scripts/deliverable_surface_linter.py", "--self-test"])
-    run("example essay docx generator", [sys.executable, "scripts/generate_example_essay_docx.py", "--self-test"])
-    run("citation fallback linter", [sys.executable, "scripts/citation_fallback_linter.py", "--self-test"])
-    run("example essay language linter", [sys.executable, "scripts/example_essay_language_linter.py", "--self-test"])
-    run("past-paper prediction linter", [sys.executable, "scripts/past_paper_prediction_linter.py", "--self-test"])
-    run("notes exam-ready language linter", [sys.executable, "scripts/notes_exam_ready_language_linter.py", "--self-test"])
-    run("module teaching depth linter", [sys.executable, "scripts/module_teaching_depth_linter.py", "--self-test"])
-    run("notes readability layout linter", [sys.executable, "scripts/notes_readability_layout_linter.py", "--self-test"])
-    run("output sufficiency linter", [sys.executable, "scripts/output_sufficiency_linter.py", "--self-test"])
-    run("zero mention lint", [sys.executable, "scripts/zero_mention_lint.py", "--self-test"])
-    run("knowledge surface lint", [sys.executable, "scripts/knowledge_surface_linter.py", "--self-test"])
-    run("scientific precision lint", [sys.executable, "scripts/scientific_precision_linter.py", "--self-test"])
-    if args.require_clean:
-        check_generated_absent()
-    print("OK: public release checks passed")
-
+    return run(args.ci)
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

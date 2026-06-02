@@ -1,40 +1,22 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/everything-exam-preparation/visual_aid_spec.schema.json",
-  "title": "VisualAidSpec",
   "type": "object",
-  "required": [
-    "visual_aid_id",
-    "kp_id",
-    "aid_type",
-    "source_backed_claims",
-    "visual_elements",
-    "caption",
-    "alt_text",
-    "generation_prompt",
-    "forbidden_elements",
-    "qa_flags"
-  ],
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/visual_aid_spec.schema.json",
+  "title": "Visual aid spec",
   "properties": {
-    "visual_aid_id": { "type": "string" },
-    "kp_id": { "type": "string" },
-    "aid_type": {
-      "enum": [
-        "mechanism_pathway",
-        "process_sequence",
-        "spatial_relation",
-        "comparison_framework",
-        "method_workflow",
-        "data_interpretation_logic"
-      ]
+    "source_id": {
+      "type": "string"
     },
-    "source_backed_claims": { "type": "array", "items": { "type": "string" } },
-    "visual_elements": { "type": "array", "items": { "type": "string" } },
-    "caption": { "type": "string" },
-    "alt_text": { "type": "string" },
-    "generation_prompt": { "type": "string" },
-    "forbidden_elements": { "type": "array", "items": { "type": "string" } },
-    "qa_flags": { "type": "array", "items": { "type": "string" } }
-  },
-  "additionalProperties": true
+    "path": {
+      "type": "string"
+    },
+    "caption": {
+      "type": "string"
+    },
+    "max_width_inches": {
+      "type": "number",
+      "maximum": 3.8
+    }
+  }
 }

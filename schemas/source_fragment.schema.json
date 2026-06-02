@@ -1,18 +1,26 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/everything-exam-preparation/source_fragment.schema.json",
-  "title": "SourceFragment",
   "type": "object",
-  "required": ["fragment_id", "source_id", "fragment_type", "locator", "text", "image_anchor", "extraction_confidence"],
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/source_fragment.schema.json",
+  "title": "Source fragment",
   "properties": {
-    "object_type": { "const": "SourceFragment" },
-    "fragment_id": { "type": "string" },
-    "source_id": { "type": "string" },
-    "fragment_type": { "type": "string" },
-    "locator": { "type": "string" },
-    "text": { "type": "string" },
-    "image_anchor": { "type": ["string", "null"] },
-    "extraction_confidence": { "enum": ["High", "Medium", "Low"] }
+    "id": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    }
   },
-  "additionalProperties": true
+  "required": [
+    "id",
+    "source_id",
+    "text"
+  ]
 }

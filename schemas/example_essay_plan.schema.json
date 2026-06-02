@@ -1,97 +1,24 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/everything-exam-preparation/example_essay_plan.schema.json",
-  "title": "ExampleEssayPlan",
   "type": "object",
-  "required": ["essays"],
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/example_essay_plan.schema.json",
+  "title": "Example essay plan",
   "properties": {
-    "citation_rendering_policy": {
-      "type": "object",
-      "properties": {
-        "academic_paper_author_display": { "enum": ["parenthetical_author_year_only"] },
-        "author_led_prose_allowed": { "const": false }
-      },
-      "additionalProperties": true
+    "question": {
+      "type": "string"
     },
-    "essays": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["essay_id", "question", "title", "lecture_anchors", "paragraphs"],
-        "properties": {
-          "essay_id": { "type": "string" },
-          "question": { "type": "string" },
-          "title": { "type": "string" },
-          "subtitle": { "type": ["string", "null"] },
-          "target_group_key": { "type": ["string", "null"] },
-          "citation_rendering_policy": {
-            "type": ["object", "null"],
-            "properties": {
-              "academic_paper_author_display": { "enum": ["parenthetical_author_year_only"] },
-              "author_led_prose_allowed": { "const": false }
-            },
-            "additionalProperties": true
-          },
-          "lecture_anchors": { "type": "array" },
-          "compression_budget": {
-            "type": ["object", "null"],
-            "properties": {
-              "current_word_count": { "type": ["integer", "number", "null"] },
-              "requested_reduction": { "type": ["object", "null"] },
-              "protected_source_skeleton": { "type": "array" },
-              "protected_academic_details": { "type": "array" },
-              "removable_redundancy": { "type": "array" },
-              "safe_reduction_range": { "type": ["object", "null"] },
-              "unsafe_threshold": { "type": ["integer", "number", "null"] },
-              "decision": { "type": ["string", "null"] },
-              "reason": { "type": ["string", "null"] }
-            },
-            "additionalProperties": true
-          },
-          "paragraphs": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["paragraph_id", "function", "text_runs"],
-              "properties": {
-                "paragraph_id": { "type": "string" },
-                "function": { "type": "string" },
-                "is_title": { "type": "boolean" },
-                "is_subtitle": { "type": "boolean" },
-                "is_heading": { "type": "boolean" },
-                "lecture_anchors": { "type": "array" },
-                "text_runs": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": ["text"],
-                    "properties": {
-                      "text": { "type": "string" },
-                      "source_type": { "type": ["string", "null"] },
-                      "source_anchor": { "type": ["string", "null"] },
-                      "highlight": { "enum": ["none", "yellow", "green"] },
-                      "in_text_citation": { "type": ["string", "null"] },
-                      "citation_original_read": { "type": ["boolean", "null"] },
-                      "source_read": { "type": ["boolean", "null"] },
-                      "micro_detail_insert": { "type": "boolean" },
-                      "original_phrase": { "type": ["string", "null"] },
-                      "inserted_phrase": { "type": ["string", "null"] },
-                      "parent_ppt_or_source_slot": { "type": ["string", "null"] },
-                      "question_function": { "type": ["string", "null"] },
-                      "claim_delta": { "type": ["string", "null"] },
-                      "qa_status": { "type": ["string", "null"] }
-                    },
-                    "additionalProperties": true
-                  }
-                }
-              },
-              "additionalProperties": true
-            }
-          }
-        },
-        "additionalProperties": true
-      }
+    "thesis": {
+      "type": "string"
+    },
+    "argument_blocks": {
+      "type": "array"
+    },
+    "evidence_blocks": {
+      "type": "array"
     }
   },
-  "additionalProperties": true
+  "required": [
+    "question"
+  ]
 }

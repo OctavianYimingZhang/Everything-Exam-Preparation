@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/source_evidence_bundle.schema.json",
+  "title": "Source evidence bundle",
+  "properties": {
+    "documents": {
+      "type": "array"
+    },
+    "fragments": {
+      "type": "array"
+    },
+    "evidence_claims": {
+      "type": "array"
+    },
+    "coverage_units": {
+      "type": "array"
+    },
+    "unsupported_gaps": {
+      "type": "array"
+    },
+    "visual_source_references": {
+      "type": "array"
+    }
+  }
+}

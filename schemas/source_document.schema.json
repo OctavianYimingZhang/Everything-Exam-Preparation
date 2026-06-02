@@ -1,22 +1,25 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/everything-exam-preparation/source_document.schema.json",
-  "title": "SourceDocument",
   "type": "object",
-  "required": ["source_id", "path", "file_role", "trust_level", "analysis_context", "allowed_evidence_use", "extraction_status"],
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/source_document.schema.json",
+  "title": "Source document",
   "properties": {
-    "object_type": { "const": "SourceDocument" },
-    "source_id": { "type": "string" },
-    "path": { "type": "string" },
-    "file_role": { "type": "string" },
-    "trust_level": { "type": "string" },
-    "analysis_context": { "type": "string" },
-    "allowed_evidence_use": { "type": "array", "items": { "type": "string" } },
-    "extraction_status": { "type": "string" },
-    "source_hash": { "type": ["string", "null"] },
-    "visual_content_types": { "type": "array", "items": { "type": "string" } },
-    "visual_inspection_status": { "type": "string" },
-    "visual_inspection_required": { "type": "boolean" }
+    "id": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "readable": {
+      "type": "boolean"
+    }
   },
-  "additionalProperties": true
+  "required": [
+    "id",
+    "role"
+  ]
 }

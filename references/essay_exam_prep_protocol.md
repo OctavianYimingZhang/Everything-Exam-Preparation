@@ -1,52 +1,25 @@
-# Essay Exam Prep Protocol
+# Essay exam prep protocol
 
-This is the only canonical protocol for Essay Exam Prep, Example Essay generation, essay-specific planning, citation handling, paragraph banks, adaptation maps, and Essay DOCX output.
+## Inputs
 
-## Trigger
+Use course sources, supplied extra reading, past-paper essay prompts, official mark schemes, answer keys, user drafts, and style references according to their source roles.
 
-Use this route only when the user asks for essay preparation, Example Essays, model essays, full essay-style answers, essay plans, assessed-style drafts, or an essay add-on to exam preparation. Do not trigger it for MCQ, Short Answer, Long Answer, Practical/Data, prediction-only, or ordinary notes requests.
+## Source hierarchy
 
-The default essay-prep package is core notes plus:
+Course and official sources support factual claims. Supplied extra reading may deepen the argument when linked to the prompt. Mark schemes support expected answer operations. Examples and style references support structure, density, tone, citation surface, and layout only.
 
-```text
-Essay_Module_Example_Essays.docx
-```
+## Essay plan structure
 
-Separate essay DOCX files are allowed only when explicitly requested.
+An essay add-on should produce thesis options, an argument map, evidence blocks, counterargument handling, and one coherent example essay when requested. The essay must read as one answer rather than disconnected points.
 
-## Essay Pipeline
+## Evidence and citation rules
 
-```text
-essay-specific intake
--> source readiness
--> question analysis
--> source scope detection
--> lecture/source logic reconstruction
--> citation detection and resolution
--> optional verified extra reading
--> essay coverage plan
--> paragraph plan
--> Example Essay drafting
--> language quality pass
--> source-to-run mapping
--> DOCX generation
--> DOCX formatting/language/source audit QA
-```
+Do not invent citations. Resolve lecture or reading citations when the supplied sources support them; otherwise omit the citation and keep the claim source-bound. Unsupported citations fail release.
 
-An Example Essay is a controlled answer to a question, not a longer lecture summary. Every paragraph must advance the answer by linking question demand, source-backed knowledge, evidence, interpretation, limitation, and synthesis.
+## Extra reading
 
-## Evidence And Citations
+Use extra reading only when it is supplied/read and supports the prompt. Do not add external claims unless the user explicitly permits verified academic lookup.
 
-Do not write complete essays from memory, from a predicted theme alone, or from past-paper stems without reading the relevant source material. Slide citations must be resolved before source-derived essay prose uses them as factual support. Extra reading must be verified through a book chapter, paper, DOI, PubMed record, publisher page, or textbook source. Unverified citation use is blocking.
+## Prediction boundary
 
-Examples, exemplars, feedback, and previous outputs may teach structure, density, and style only. They never provide factual claims or direct predictions for a new target. Example Essay generation must fail or report blocking QA when body paragraphs lack lecture anchors, citation-derived claims use unread or unresolved sources, or extra reading lacks a chapter, section, DOI, PubMed, publisher, paper, or textbook anchor.
-
-## DOCX Output
-
-Essay DOCX files use Arial, 2.5 cm margins, 1.5 line spacing, justified body text, centered main title, left-aligned subtitle and subheadings, no empty spacer paragraphs, and default Word settings otherwise.
-
-Final user-facing essay output includes only the requested DOCX or text artifact. Internal QA JSON, source maps, manifests, source audits, and citation-resolution logs are delivered only when the user explicitly asks for an audit package.
-
-## Language
-
-Use `references/language_quality_contract.md` as the only prose polish authority. Do not duplicate polish rules here. For essays, ensure argument structure, descriptive/analytic balance, citation discipline, compression without mechanism loss, direct positive claims, and conclusion-level synthesis.
+Predicted themes are thematic preparation scopes only. Do not present exact future wording, guaranteed topics, or certainty claims.

@@ -1,96 +1,35 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/everything-exam-preparation/workflow_plan.schema.json",
-  "title": "WorkflowPlan",
   "type": "object",
-  "required": [
-    "object_type",
-    "plan_id",
-    "request_scope",
-    "selected_preset",
-    "target_group_key",
-    "source_inventory_required",
-    "fragment_index_required",
-    "actions",
-    "skipped_modules",
-    "blockers",
-    "publish_gate"
-  ],
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/workflow_plan.schema.json",
+  "title": "Workflow plan",
   "properties": {
-    "object_type": { "const": "WorkflowPlan" },
-    "plan_id": { "type": "string", "minLength": 1 },
-    "request_scope": {
-      "type": "object",
-      "required": ["raw_mode", "normalized_preset", "student_visible_only"],
-      "properties": {
-        "raw_mode": { "type": "string" },
-        "normalized_preset": { "type": "string" },
-        "student_visible_only": { "type": "boolean" },
-        "include_audit_package": { "type": "boolean" },
-        "requested_artifacts": { "type": "array", "items": { "type": "string" } }
-      },
-      "additionalProperties": true
-    },
-    "selected_preset": {
+    "route": {
       "enum": [
+        "exam_prep_notes",
+        "exam_mode_diagnosis",
+        "mcq_addon",
+        "short_answer_addon",
+        "long_answer_practical_addon",
+        "essay_addon",
         "source_inventory_only",
-        "exam_format_diagnosis",
-        "exam_prep_notes_docx",
-        "knowledge_walkthrough_docx",
-        "mcq_exam_prep",
-        "short_answer_exam_prep",
-        "long_answer_project_scenario_prep",
-        "essay_exam_prep",
         "audit_lint_only",
         "github_ready_qa"
       ]
     },
-    "target_group_key": { "type": "string", "minLength": 1 },
-    "source_inventory_required": { "type": "boolean" },
-    "fragment_index_required": { "type": "boolean" },
+    "ordering": {
+      "enum": [
+        "exam_emphasis_first",
+        "source_order"
+      ]
+    },
     "actions": {
       "type": "array",
-      "items": { "$ref": "workflow_action.schema.json" }
-    },
-    "skipped_modules": {
-      "type": "array",
       "items": {
-        "type": "object",
-        "required": ["module", "reason"],
-        "properties": {
-          "module": { "type": "string" },
-          "reason": { "type": "string" }
-        },
-        "additionalProperties": true
+        "$ref": "#/$defs/action"
       }
-    },
-    "blockers": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["blocker_id", "severity", "missing_input", "resolution_prompt"],
-        "properties": {
-          "blocker_id": { "type": "string" },
-          "severity": { "enum": ["blocking", "warning", "info"] },
-          "missing_input": { "type": "string" },
-          "resolution_prompt": { "type": "string" },
-          "blocked_modules": { "type": "array", "items": { "type": "string" } }
-        },
-        "additionalProperties": true
-      }
-    },
-    "publish_gate": {
-      "type": "object",
-      "required": ["object_validation", "lineage_required", "qa_required"],
-      "properties": {
-        "object_validation": { "type": "boolean" },
-        "lineage_required": { "type": "boolean" },
-        "qa_required": { "type": "boolean" },
-        "strict_publish_gate": { "type": "boolean" },
-        "fail_on_blocking_flags": { "type": "boolean" }
-      },
-      "additionalProperties": true
     }
   },
-  "additionalProperties": true
+  "$defs": {"action": {"type": "object", "required": ["id", "purpose"], "properties": {"id": {"type": "string"}, "purpose": {"type": "string"}}}}
 }

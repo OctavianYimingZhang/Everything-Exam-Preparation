@@ -1,20 +1,25 @@
-wizard:
-  sections:
-    - id: "project"
-      label: "Project"
-      fields: ["course_name", "module_code", "target_group_key", "exam_year", "output_folder"]
-    - id: "source_inputs"
-      label: "Source Inputs"
-      fields: ["lecture_slides", "official_notes", "course_notes", "student_notes", "ai_generated_notes", "formal_past_papers", "practical_materials", "mocks_quizzes_answer_keys", "exemplars_or_feedback", "extra_reading_books_or_papers"]
-    - id: "output_mode"
-      label: "Output Mode"
-      fields: ["preset", "include_audit_package", "student_visible_only"]
-    - id: "source_policy"
-      label: "Source Policy"
-      fields: ["allow_online_academic_search", "allow_extra_reading_enrichment", "require_verified_citations", "treat_examples_as_style_only"]
-    - id: "qa"
-      label: "QA Gates"
-      fields: ["strict_publish_gate", "require_lineage", "run_language_lint", "run_workflow_validator", "fail_on_blocking_flags"]
-    - id: "outputs"
-      label: "Outputs"
-      fields: ["Lecture_Knowledge_Walkthrough.docx", "question_type_addons", "internal_qa_outputs"]
+setup_wizard:
+  required:
+    - source_files
+    - requested_output
+  optional:
+    - exam_mode
+    - ordering
+    - output_depth
+    - evidence_policy
+    - visual_policy
+    - output_format
+  source_roles:
+    - lecture_slides
+    - lecture_notes
+    - official_course_notes
+    - practical_material
+    - data_problem_material
+    - past_paper
+    - mark_scheme
+    - answer_key
+    - example_answer
+    - user_draft
+    - style_reference
+    - extra_reading
+    - source_visual

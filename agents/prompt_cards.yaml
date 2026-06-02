@@ -1,65 +1,13 @@
 prompt_cards:
-  - card_id: "source_inventory"
-    preset: "source_inventory_only"
-    purpose: "Classify supplied files and evidence-use limits."
-    minimum_inputs: ["at least one supplied source path or discoverable academic source"]
-    output_contract:
-      - "Return source roles, authority, extraction status, and missing source classes."
-      - "Do not infer hidden content from unreadable files."
-    hard_stops: ["No supplied or discoverable sources."]
-  - card_id: "exam_prep_notes_docx"
-    preset: "exam_prep_notes_docx"
-    purpose: "Build Lecture_Knowledge_Walkthrough.docx from lecture/course sources."
-    minimum_inputs: ["readable_course_notes"]
-    output_contract:
-      - "Generate lecture-first, knowledge-only Exam Preparation Notes."
-      - "Use past papers only for internal emphasis unless an add-on is requested."
-      - "Run public notes language, depth, layout, source-scale, and deliverable gates."
-    hard_stops: ["No lecture slides, official notes, or verified course notes.", "Blocking evidence or student-output QA flag."]
-  - card_id: "exam_format_diagnosis"
-    preset: "exam_format_diagnosis"
-    purpose: "Identify MCQ, Short Answer, Long Answer, Practical/Data, or Essay mode."
-    minimum_inputs: ["formal_past_papers or explicit exam-mode prompt"]
-    output_contract:
-      - "Return current exam mode, evidence basis, route recommendation, and limits."
-      - "Do not output predicted exact questions by default."
-    hard_stops: ["No past paper and no explicit exam-mode prompt."]
-  - card_id: "mcq_exam_prep"
-    preset: "mcq_exam_prep"
-    purpose: "Build core notes plus MCQ point-card add-on."
-    minimum_inputs: ["lecture_or_official_notes"]
-    output_contract:
-      - "Generate core notes first."
-      - "Generate point cards without answer keys, source anchors, confidence, or separate trap banks."
-    hard_stops: ["No lecture or official content."]
-  - card_id: "short_answer_exam_prep"
-    preset: "short_answer_exam_prep"
-    purpose: "Build core notes plus short-answer point cards and Example Answers."
-    minimum_inputs: ["lecture_or_official_notes"]
-    output_contract:
-      - "Generate concise point cards and natural Example Answers."
-      - "Do not expose mark-producing schema or source anchors."
-    hard_stops: ["No lecture or official content."]
-  - card_id: "long_answer_project_scenario_prep"
-    preset: "long_answer_project_scenario_prep"
-    purpose: "Build core notes plus long-answer/practical/data/problem add-on."
-    minimum_inputs: ["lecture_or_official_notes"]
-    output_contract:
-      - "Generate method, readout, interpretation, control, limitation, and adaptation logic."
-      - "Do not turn project/scenario/practical answers into broad essays."
-    hard_stops: ["No lecture or official content."]
-  - card_id: "essay_exam_prep"
-    preset: "essay_exam_prep"
-    purpose: "Build core notes plus Essay Module Example Essays DOCX."
-    minimum_inputs: ["lecture_or_official_notes"]
-    output_contract:
-      - "Use verified source logic, citation resolution, and the shared language quality contract."
-      - "Generate essay add-on only after source readiness and core baseline are clear."
-    hard_stops: ["No lecture or official content.", "Unverified citation used as factual support."]
-  - card_id: "audit_lint_only"
-    preset: "audit_lint_only"
-    purpose: "Run checks and report blockers without creating new student outputs."
-    minimum_inputs: []
-    output_contract:
-      - "Return pass/fail checks and blocking reasons."
-    hard_stops: []
+  - id: exam_prep_notes
+    title: Exam Preparation Notes
+    purpose: Build Exam_Preparation_Notes.docx from supplied course and practice sources.
+    route: exam_prep_notes
+  - id: exam_mode_diagnosis
+    title: Exam Mode Diagnosis
+    purpose: Identify MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay mode.
+    route: exam_mode_diagnosis
+  - id: essay_addon
+    title: Essay Add-on
+    purpose: Build essay plans, argument maps, and example essay outputs from supported sources.
+    route: essay_addon

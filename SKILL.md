@@ -1,57 +1,75 @@
 ---
 name: everything-exam-preparation
-description: Source-bound, function-first exam preparation workflow for lecture material, practical material, past papers, and question-type add-ons.
+description: Source-bound exam preparation workflow for lecture material, practical material, past papers, and exam-mode add-ons.
 ---
 
 # Everything Exam Preparation
 
-This Skill turns supplied study and practice material into exam preparation outputs. Its purpose is narrow:
+This Skill turns supplied study and practice material into student-facing exam preparation outputs.
 
-1. Analyse Lecture Slides, Lecture Notes, official notes, course notes, practical material, past papers, answer keys, exemplars, feedback, and verified extra reading.
-2. Build `Lecture_Knowledge_Walkthrough.docx` as the default Exam Preparation Notes artifact.
-3. Identify the exam mode from past papers or the user's prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
-4. Generate only the add-on content required by that exam mode after the core notes are coherent.
+## Purpose
 
-The Skill is not a slide archive converter, fixed-length summariser, prediction engine, or example library. It must not copy benchmark/example content into production output. Use only the sources supplied by the user unless the user explicitly permits verified academic lookup. Preserve source boundaries between course material, past papers, practical material, extra reading, examples, and style references. Treat unsupported points as gaps instead of filling them from memory.
+1. Analyse Lecture Slides, Lecture Notes, official course notes, practical material, past papers, answer keys, exemplars, feedback, and verified extra reading supplied by the user.
+2. Build `Exam_Preparation_Notes.docx` as the default Exam Preparation Notes artifact.
+3. Identify exam mode from past papers or the user's prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
+4. Generate only the add-on content required by the detected or requested exam mode.
 
-## Canonical Protocols
+## Non-goals
 
-Load only the protocol needed for the requested function:
+This Skill is not:
+
+- a slide archive converter;
+- a fixed-length summariser;
+- an exact prediction engine;
+- a remembered-example system;
+- a style-copying system.
+
+Use only the sources supplied by the user unless the user explicitly permits verified academic lookup. Preserve source boundaries between course material, past papers, practical material, extra reading, examples, and style references. Treat unsupported points as gaps.
+
+## Canonical protocols
+
+Load only the protocol required for the requested function.
 
 | Function | Canonical file |
-| --- | --- |
-| Course-source intake, roles, authority, extraction, evidence boundaries | `references/input_and_evidence_protocol.md` |
-| Default Exam Preparation Notes and lecture-first public DOCX | `references/exam_prep_core_workflow.md` |
+|---|---|
+| Source intake, source roles, authority, extraction, evidence boundaries | `references/input_and_evidence_protocol.md` |
+| Default Exam Preparation Notes | `references/exam_prep_notes_protocol.md` |
 | Exam mode detection and MCQ/Short Answer/Long Answer/Practical/Data add-ons | `references/exam_mode_and_addons_protocol.md` |
-| Essay Exam Prep and Example Essay DOCX add-on | `references/essay_exam_prep_protocol.md` |
-| Student-facing prose quality for every route | `references/language_quality_contract.md` |
-| Setup, modular execution, subagents, regression, QA, release checks | `references/runtime_qa_release_protocol.md` |
+| Essay Exam Prep and Example Essay add-on | `references/essay_exam_prep_protocol.md` |
+| Student-facing prose quality | `references/language_quality_contract.md` |
+| QA/release quality | `references/runtime_quality_protocol.md` |
 
-No other reference file is authoritative. If a rule appears to duplicate another rule, follow the canonical file for the function above.
+No other reference file is authoritative.
 
-## Route Table
+## Route table
 
 | User request | Route | Output |
-| --- | --- | --- |
-| revise, make notes, go through lectures, general exam preparation | `exam_prep_notes_docx` | `Lecture_Knowledge_Walkthrough.docx` |
-| explicitly lecture/source-order walkthrough | `knowledge_walkthrough_docx` | `Lecture_Knowledge_Walkthrough.docx` |
-| identify exam format from past papers | `exam_format_diagnosis` | chat/report diagnosis |
-| MCQ or single-best-answer preparation | `mcq_exam_prep` | core notes plus MCQ add-on |
-| short-answer preparation | `short_answer_exam_prep` | core notes plus short-answer add-on |
-| long-answer, project, scenario, practical, data, graph, calculation, or problem preparation | `long_answer_project_scenario_prep` | core notes plus long-answer/practical/data add-on |
-| essay exam preparation, Example Essays, model essays, full essay-style answers | `essay_exam_prep` | core notes plus Essay Module Example Essays DOCX |
-| source inventory, lint, audit, release check | `source_inventory_only`, `audit_lint_only`, or `github_ready_qa` | QA or inventory result |
+|---|---|---|
+| revise, make notes, general exam preparation, go through lectures | `exam_prep_notes` | `Exam_Preparation_Notes.docx` |
+| source-order or lecture-order notes | `exam_prep_notes` with `ordering=source_order` | `Exam_Preparation_Notes.docx` |
+| identify exam format only | `exam_mode_diagnosis` | chat/report diagnosis |
+| MCQ / SBA preparation | `exam_prep_notes` + `mcq_addon` | notes plus MCQ add-on |
+| Short Answer preparation | `exam_prep_notes` + `short_answer_addon` | notes plus short-answer add-on |
+| Long Answer / Practical / Data / Problem preparation | `exam_prep_notes` + `long_answer_practical_addon` | notes plus methods/data/problem add-on |
+| Essay exam preparation / Example Essays / model essays | `exam_prep_notes` + `essay_addon` | notes plus essay-specific outputs |
+| source inventory / lint / release check | `source_inventory_only`, `audit_lint_only`, or `github_ready_qa` | inventory or QA result |
 
-Past papers shape exam mode, emphasis, and answer operations only. They do not replace the course-source baseline. Question-type add-ons come after the base notes unless the user explicitly requests diagnosis only.
+Past papers shape exam mode, emphasis, and answer operations only. They do not replace the course-source baseline.
 
-## Public Output Rules
+## Student-facing output rules
 
-The default public artifact is `Lecture_Knowledge_Walkthrough.docx`. It must be lecture-first, knowledge-only, source-backed, and proportional to the source pack. Public notes must explain what each concept is, why it matters, how the mechanism, method, calculation, graph, assay, or comparison works, and what limitation or interpretation follows.
+`Exam_Preparation_Notes.docx` must be source-backed, readable, visually efficient, and proportional to the source pack. It must explain what each concept is, why it matters, how the mechanism, method, calculation, graph, assay, or comparison works, and what limitation or interpretation follows.
 
-Student-facing output must not expose source maps, confidence bands, evidence scores, internal manifests, QA flags, extraction notes, source-route narration, AI-process text, prediction traces, or rigid planning scaffolds. Use `references/language_quality_contract.md` as the only prose polish authority.
+Use fewer words where possible, but do not collapse explanations into labels. Expand high-frequency, high-value, or difficult exam content. Compress weakly tested or peripheral material.
 
-## Execution Boundary
+Use source images only when they improve explanation efficiency. Keep images size-controlled.
 
-Run the minimum route that satisfies the user request. If required source material is missing, report the missing source class and block only conclusions that depend on it. Examples are user-supplied style or layout evidence only; they never supply factual course claims or direct predictions for a new target. Internal checks live in script self-tests, not committed example corpora.
+Student-facing output must not expose source maps, confidence bands, evidence scores, internal manifests, QA flags, extraction notes, source-route narration, AI-process text, prediction traces, or planning scaffolds.
 
-Prediction anchor: Predicted essay theme means a theme-level preparation scope, not exact future wording.
+## Execution boundary
+
+Run the minimum route that satisfies the user request. If required source material is missing, report the missing source class and block only conclusions that depend on it.
+
+Examples are style or layout evidence only. They never supply factual course claims or direct predictions for a new target.
+
+Prediction anchor: predicted essay theme means theme-level preparation scope, not exact future wording.

@@ -1,18 +1,25 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/everything-exam-preparation/gate_result.schema.json",
-  "title": "GateResult",
   "type": "object",
-  "required": ["gate_result_id", "gate_name", "outcome", "reason", "blocked_conclusion", "remediation_source", "severity"],
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/gate_result.schema.json",
+  "title": "Gate result",
   "properties": {
-    "object_type": { "const": "GateResult" },
-    "gate_result_id": { "type": "string" },
-    "gate_name": { "type": "string" },
-    "outcome": { "enum": ["pass", "warn", "block"] },
-    "reason": { "type": "string" },
-    "blocked_conclusion": { "type": ["string", "null"] },
-    "remediation_source": { "type": ["string", "null"] },
-    "severity": { "enum": ["blocking", "warning", "info"] }
+    "status": {
+      "enum": [
+        "pass",
+        "warn",
+        "fail"
+      ]
+    },
+    "failures": {
+      "type": "array"
+    },
+    "warnings": {
+      "type": "array"
+    }
   },
-  "additionalProperties": true
+  "required": [
+    "status"
+  ]
 }

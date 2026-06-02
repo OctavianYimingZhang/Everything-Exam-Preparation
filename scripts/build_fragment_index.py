@@ -1,81 +1,62 @@
-#!/usr/bin/env python3
-"""Build source-fragment records for exam-prep workflows."""
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
 import re
+import tempfile
 from pathlib import Path
+from typing import Any
 
 
-def stable_id(prefix: str, *parts: str) -> str:
-    digest = hashlib.sha1('||'.join(parts).encode('utf-8')).hexdigest()[:12]
-    return f'{prefix}_{digest}'
+def normalise(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip())
 
 
-def iter_paragraphs(text: str) -> list[str]:
-    chunks = [chunk.strip() for chunk in re.split(r'\n\s*\n+', text) if chunk.strip()]
-    if chunks:
-        return chunks
-    return [line.strip() for line in text.splitlines() if line.strip()]
-
-
-def write_jsonl(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open('w', encoding='utf-8') as handle:
-        for row in rows:
-            handle.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + '\n')
-
-
-def build(source_paths: list[Path], output_dir: Path) -> None:
-    documents: list[dict] = []
-    fragments: list[dict] = []
-    partitions: list[dict] = []
-    support_links: list[dict] = []
-
-    for source_path in source_paths:
-        text = source_path.read_text(encoding='utf-8', errors='ignore')
-        doc_id = stable_id('source', str(source_path.resolve()), text[:200])
-        documents.append({
-            'id': doc_id,
-            'path': str(source_path),
-            'name': source_path.name,
-            'sha1': hashlib.sha1(text.encode('utf-8')).hexdigest(),
+def build_index(source_scan: dict[str, Any]) -> dict[str, Any]:
+    rows = []
+    for frag in source_scan.get("fragments", []):
+        text = normalise(str(frag.get("text", "")))
+        if not text:
+            continue
+        digest = hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
+        rows.append({
+            "fragment_id": frag.get("id") or digest,
+            "source_id": frag.get("source_id"),
+            "role": frag.get("role"),
+            "hash": digest,
+            "terms": sorted(set(re.findall(r"[A-Za-z][A-Za-z0-9_-]{3,}", text.lower())))[:30],
+            "text": text,
         })
-        for index, paragraph in enumerate(iter_paragraphs(text), start=1):
-            fragment_id = stable_id('fragment', doc_id, str(index), paragraph[:120])
-            partition_id = stable_id('partition', doc_id, str((index - 1) // 10))
-            fragments.append({
-                'id': fragment_id,
-                'source_id': doc_id,
-                'sequence': index,
-                'text': paragraph,
-            })
-            partitions.append({
-                'id': partition_id,
-                'source_id': doc_id,
-                'fragment_id': fragment_id,
-            })
-            support_links.append({
-                'from': fragment_id,
-                'to': doc_id,
-                'type': 'supported_by_source',
-            })
-
-    write_jsonl(output_dir / 'source_documents.jsonl', documents)
-    write_jsonl(output_dir / 'source_fragments.jsonl', fragments)
-    write_jsonl(output_dir / 'fragment_partitions.jsonl', partitions)
-    write_jsonl(output_dir / 'support_links.jsonl', support_links)
+    return {"fragments": rows, "coverage_units": [{"fragment_id": r["fragment_id"], "role": r["role"]} for r in rows]}
 
 
-def main() -> None:
+def self_test() -> int:
+    scan = {"fragments": [{"id": "F1", "source_id": "S1", "role": "lecture_notes", "text": "Mechanism explains graph interpretation."}]}
+    out = build_index(scan)
+    assert out["fragments"] and out["coverage_units"]
+    print("build_fragment_index self-test passed")
+    return 0
+
+
+def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument('sources', nargs='+', type=Path)
-    parser.add_argument('--output-dir', type=Path, required=True)
+    parser.add_argument("--source-scan")
+    parser.add_argument("--out")
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
-    build(args.sources, args.output_dir)
+    if args.self_test:
+        return self_test()
+    if not args.source_scan:
+        parser.error("--source-scan is required")
+    data = json.loads(Path(args.source_scan).read_text(encoding="utf-8"))
+    out = build_index(data)
+    text = json.dumps(out, indent=2)
+    if args.out:
+        Path(args.out).write_text(text + "\n", encoding="utf-8")
+    else:
+        print(text)
+    return 0
 
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    raise SystemExit(main())

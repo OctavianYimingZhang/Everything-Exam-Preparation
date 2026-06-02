@@ -1,50 +1,27 @@
 name: CI
+
 on:
   push:
   pull_request:
+
 jobs:
-  test:
+  skill-health:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
-      - name: Compile scripts
-        run: python -m compileall -q scripts
-      - name: Validate workflow planning contract
-        run: python scripts/validate_workflow_planning_contract.py
-      - name: Validate interaction contract
-        run: python scripts/validate_interaction_contract.py
-      - name: Validate student output contract
-        run: python scripts/validate_student_output_contract.py
-      - name: Workflow planner self-test
-        run: python scripts/plan_workflow.py --self-test
-      - name: Input readiness self-test
-        run: python scripts/input_readiness_check.py --self-test
-      - name: Source extraction self-test
-        run: python scripts/extract_sources.py --self-test
-      - name: Past-paper extraction self-test
-        run: python scripts/extract_past_paper_questions.py --self-test
-      - name: Public notes generator self-test
-        run: python scripts/generate_public_lecture_notes_docx.py --self-test
-      - name: Public notes renderer self-test
-        run: python scripts/public_lecture_notes_renderer.py --self-test
-      - name: Deliverable surface linter self-test
-        run: python scripts/deliverable_surface_linter.py --self-test
-      - name: Example Essay generator self-test
-        run: python scripts/generate_example_essay_docx.py --self-test
-      - name: Citation fallback self-test
-        run: python scripts/citation_fallback_linter.py --self-test
-      - name: Example Essay language self-test
-        run: python scripts/example_essay_language_linter.py --self-test
-      - name: Prediction boundary self-test
-        run: python scripts/past_paper_prediction_linter.py --self-test
-      - name: Output sufficiency self-test
-        run: python scripts/output_sufficiency_linter.py --self-test
-      - name: Runtime audit self-test
-        run: python scripts/runtime_audit.py --self-test
-      - name: GitHub-ready QA
-        run: python scripts/github_ready_check.py --ci --require-clean
+          python-version: '3.x'
+      - run: python3 -m pip install -r requirements.txt
+      - run: python3 -m compileall -q scripts
+      - run: python3 scripts/validate_skill_contracts.py --self-test
+      - run: python3 scripts/plan_workflow.py --self-test
+      - run: python3 scripts/input_readiness_check.py --self-test
+      - run: python3 scripts/extract_sources.py --self-test
+      - run: python3 scripts/exam_mode_tools.py --self-test
+      - run: python3 scripts/generate_exam_prep_notes_docx.py --self-test
+      - run: python3 scripts/exam_prep_notes_quality_linter.py --self-test
+      - run: python3 scripts/output_sufficiency_linter.py --self-test
+      - run: python3 scripts/essay_exam_tools.py --self-test
+      - run: python3 scripts/deliverable_surface_linter.py --self-test
+      - run: python3 scripts/github_ready_check.py --ci

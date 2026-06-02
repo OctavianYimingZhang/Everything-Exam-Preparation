@@ -1,156 +1,27 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/everything-exam-preparation/student_output_contract.schema.json",
-  "title": "StudentOutputContract",
   "type": "object",
-  "required": ["contract_id", "output_mode", "allowed_visible_fields", "forbidden_visible_fields"],
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/student_output_contract.schema.json",
+  "title": "Student output contract",
   "properties": {
-    "contract_id": { "type": "string" },
-    "output_mode": {
-      "enum": [
-        "exam_prep_notes_docx",
-        "knowledge_walkthrough_docx",
-        "mcq_exam_prep",
-        "short_answer_exam_prep",
-        "long_answer_project_scenario_prep",
-        "essay_exam_prep"
-      ]
-    },
-    "allowed_visible_fields": { "type": "array", "items": { "type": "string" } },
-    "forbidden_visible_fields": {
+    "allowed_outputs": {
       "type": "array",
       "items": {
         "enum": [
-          "source_anchor",
-          "confidence",
-          "evidence",
-          "examiner_operation",
-          "discriminator_axis",
-          "practice_mcq",
-          "answer_key",
-          "contrast_table",
-          "separate_trap_bank",
-          "mark_producing_schema",
-          "required_terms",
-          "optional_examples",
-          "reference_expansion",
-          "common_omissions",
-          "task_verb",
-          "recurrence_count",
-          "lecture_centrality",
-          "prediction_score",
-          "assessment_timing",
-          "mark_split",
-          "current_regime",
-          "older_papers",
-          "no_mark_scheme",
-          "coverage_note",
-          "source_coverage",
-          "extraction_quality",
-          "exam_specificity",
-          "core_exam_claim",
-          "exam_use",
-          "common_error_or_trap",
-          "must_master"
+          "Exam_Preparation_Notes.docx",
+          "Example_Essay.docx"
         ]
       }
     },
-    "exam_prep_notes_student_contract": {
-      "type": "object",
-      "properties": {
-        "public_lecture_sections": {
-          "type": "array",
-          "items": { "$ref": "#/properties/public_lecture_section" }
-        }
-      },
-      "additionalProperties": false
+    "forbidden_surface_markers": {
+      "type": "array"
     },
-    "public_lecture_section": {
-      "type": "object",
-      "required": ["lecture_title", "modules"],
-      "properties": {
-        "lecture_title": { "type": "string" },
-        "lecture_scope": { "type": "string" },
-        "modules": { "type": "array", "items": { "$ref": "#/properties/public_lecture_module" } }
-      },
-      "additionalProperties": false
+    "formatting": {
+      "type": "object"
     },
-    "public_lecture_module": {
-      "type": "object",
-      "required": ["module_title", "knowledge_functions", "explanation", "blocks"],
-      "properties": {
-        "module_title": { "type": "string" },
-        "knowledge_functions": {
-          "type": "array",
-          "minItems": 2,
-          "items": {
-            "enum": [
-              "definition_boundary",
-              "mechanism_process",
-              "method_readout",
-              "graph_data_interpretation",
-              "calculation_unit_worked_example",
-              "named_example",
-              "limitation_trap"
-            ]
-          }
-        },
-        "explanation": { "type": "string" },
-        "blocks": { "type": "array", "items": { "$ref": "#/properties/public_point_block" } }
-      },
-      "additionalProperties": false
-    },
-    "public_point_block": {
-      "type": "object",
-      "required": ["block_type", "content"],
-      "properties": {
-        "block_type": {
-          "enum": [
-            "definition",
-            "mechanism",
-            "method",
-            "graph_data",
-            "calculation",
-            "example",
-            "limitation",
-            "comparison",
-            "table",
-            "explanation"
-          ]
-        },
-        "label": { "type": "string" },
-        "content": {
-          "anyOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "mcq_student_point_card": {
-      "type": "object",
-      "properties": {
-        "priority": { "enum": ["★★★", "★★", "★"] },
-        "point": { "type": "string" },
-        "knowledge_explanation": { "type": "string" },
-        "how_exam_tests_it": { "type": "string" },
-        "common_traps": { "type": "array", "items": { "type": "string" } },
-        "must_remember": { "type": "string" }
-      },
-      "additionalProperties": false
-    },
-    "short_answer_point_card": {
-      "type": "object",
-      "properties": {
-        "priority": { "enum": ["★★★", "★★", "★"] },
-        "point": { "type": "string" },
-        "common_question_form": { "type": "string" },
-        "exam_explanation_with_highlighted_keywords": { "type": "string" },
-        "example_answer": { "type": "string" }
-      },
-      "additionalProperties": false
+    "visual_size_constraints": {
+      "type": "object"
     }
-  },
-  "additionalProperties": true
+  }
 }

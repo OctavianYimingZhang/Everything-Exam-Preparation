@@ -1,30 +1,35 @@
-# Input And Evidence Protocol
+# Input and evidence protocol
 
-This is the only canonical source-intake and evidence-boundary protocol.
+## Source roles
 
-## Source Roles
+Use these roles exactly:
 
-Classify every supplied item before drafting:
+- `lecture_slides`
+- `lecture_notes`
+- `official_course_notes`
+- `practical_material`
+- `data_problem_material`
+- `past_paper`
+- `mark_scheme`
+- `answer_key`
+- `example_answer`
+- `user_draft`
+- `style_reference`
+- `extra_reading`
+- `source_visual`
 
-- `subject_knowledge`: lecture slides, official notes, verified course notes, definitions, mechanisms, structures, pathways, methods, calculations, diagrams, examples, data patterns, limitations.
-- `practical_operation`: protocols, apparatus, reagents, controls, safety, assay logic, graph/data readouts, calculation operations.
-- `exam_pattern`: formal past papers, mocks, mark schemes, answer keys, command verbs, section structure, timing, mark operations.
-- `extra_reading`: books, chapters, DOI records, PubMed records, publisher pages, textbooks, peer-reviewed papers, verified academic sources.
-- `style_or_layout_example`: exemplar answers, feedback, format references, visual examples, prior outputs used only for organisation, density, and expression style.
-- `non_knowledge_noise`: admin, emails, staff lists, room information, attendance systems, URLs with no knowledge content, copyright lines, image credits, decorative quotes, OCR debris.
+## Authority rules
 
-Only `subject_knowledge`, relevant `practical_operation`, and verified `extra_reading` may become public knowledge prose. `exam_pattern` may shape routing, emphasis, and add-on answer operations. `style_or_layout_example` may shape presentation only. `non_knowledge_noise` is discarded.
+Course sources support factual course knowledge. Practical and data/problem sources support methods, calculations, readout interpretation, controls, and limitations. Past papers support exam mode, emphasis, and answer operations, but they do not create unsupported course claims. Mark schemes and answer keys support expected marking operations and answer shape.
 
-## Authority And Boundaries
+Example answers, user drafts, and style references are style or layout evidence only unless they are official answer keys. Extra reading supports essay depth only when it is supplied, read, and linked to the prompt.
 
-Use course and official sources as the factual baseline. Use past papers to identify exam mode, command operations, and repeated families only when comparable. Use answer keys and exemplars for answer style and operation logic, not new facts. Use extra reading only after verification and only to deepen source-backed logic.
+## Evidence boundaries
 
-Do not infer hidden content from unreadable files. Do not use benchmark names, old target groups, example topics, or previous project names as production triggers. Unsupported claims become explicit gaps.
+Do not merge source roles into one undifferentiated source pool. A claim is usable only when its source role can support that claim type. Unsupported points become gaps, not inferred facts.
 
-## Extraction Objects
+If a source is unreadable or partial, record the affected source class and block only conclusions that depend on the missing material.
 
-The workflow may internally build `SourceDocument`, `SourceFragment`, `FragmentPartition`, `AnalysisContext`, `EvidenceClaim`, `SourceCoverageMap`, and `AtomicKnowledgeLedger`. These are internal control-plane objects. They must not be rendered in student-facing output unless the user explicitly asks for an audit package.
+## Visual source handling
 
-## Visual And Citation Boundaries
-
-Images, diagrams, tables, graphs, and slide visuals must be inspected when they carry examinable information. Generated visual aids are optional revision schematics, not evidence. Slide citations must be resolved before they support factual essay prose; unresolved citations remain gaps or are labelled as unresolved.
+Source visuals may be used when they explain a mechanism, method, graph, workflow, structure, or comparison faster than text. Decorative images are not evidence. A visual never overrides text evidence. If a resized image would be unreadable, replace it with a concise redraw, table, or description.

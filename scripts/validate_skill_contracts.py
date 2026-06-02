@@ -1,0 +1,146 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+EXPECTED_REFERENCES = {
+    "input_and_evidence_protocol.md",
+    "exam_prep_notes_protocol.md",
+    "exam_mode_and_addons_protocol.md",
+    "essay_exam_prep_protocol.md",
+    "language_quality_contract.md",
+    "runtime_quality_protocol.md",
+}
+EXPECTED_SCHEMAS = {
+    "skill_config.schema.json",
+    "workflow_plan.schema.json",
+    "source_document.schema.json",
+    "source_fragment.schema.json",
+    "source_evidence_bundle.schema.json",
+    "evidence_claim.schema.json",
+    "exam_prep_notes_plan.schema.json",
+    "exam_mode_addon.schema.json",
+    "example_essay_plan.schema.json",
+    "visual_aid_spec.schema.json",
+    "student_output_contract.schema.json",
+    "gate_result.schema.json",
+}
+EXPECTED_SCRIPTS = {
+    "extract_sources.py",
+    "build_fragment_index.py",
+    "input_readiness_check.py",
+    "plan_workflow.py",
+    "exam_mode_tools.py",
+    "generate_exam_prep_notes_docx.py",
+    "exam_prep_notes_quality_linter.py",
+    "output_sufficiency_linter.py",
+    "essay_exam_tools.py",
+    "deliverable_surface_linter.py",
+    "validate_skill_contracts.py",
+    "github_ready_check.py",
+}
+
+
+def fail(msg: str) -> None:
+    raise SystemExit(msg)
+
+
+def load_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        fail(f"invalid json {path}: {exc}")
+
+
+def check_sets() -> None:
+    refs = {p.name for p in (ROOT / "references").glob("*.md")}
+    schemas = {p.name for p in (ROOT / "schemas").glob("*.json")}
+    scripts = {p.name for p in (ROOT / "scripts").glob("*.py")}
+    if refs != EXPECTED_REFERENCES:
+        fail(f"reference set mismatch: {sorted(refs ^ EXPECTED_REFERENCES)}")
+    if schemas != EXPECTED_SCHEMAS:
+        fail(f"schema set mismatch: {sorted(schemas ^ EXPECTED_SCHEMAS)}")
+    if scripts != EXPECTED_SCRIPTS:
+        fail(f"script set mismatch: {sorted(scripts ^ EXPECTED_SCRIPTS)}")
+
+
+def check_schema(schema_path: Path, input_path: Path | None = None) -> None:
+    schema = load_json(schema_path)
+    if schema.get("type") != "object":
+        fail(f"schema must define object type: {schema_path}")
+    if input_path:
+        data = load_json(input_path)
+        for key in schema.get("required", []):
+            if key not in data:
+                fail(f"missing required key {key} in {input_path}")
+
+
+def check_interaction() -> None:
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    if "Exam_Preparation_Notes.docx" not in skill:
+        fail("default artifact missing from SKILL.md")
+    if "exam_prep_notes" not in skill:
+        fail("canonical route missing")
+
+
+def check_student_output() -> None:
+    schema = load_json(ROOT / "schemas/student_output_contract.schema.json")
+    allowed = schema.get("properties", {}).get("allowed_outputs", {})
+    if "Exam_Preparation_Notes.docx" not in json.dumps(allowed):
+        fail("student output contract does not allow default notes artifact")
+
+
+def check_workflow() -> None:
+    schema = load_json(ROOT / "schemas/workflow_plan.schema.json")
+    routes = json.dumps(schema)
+    for route in ["exam_prep_notes", "mcq_addon", "short_answer_addon", "long_answer_practical_addon", "essay_addon"]:
+        if route not in routes:
+            fail(f"route missing from workflow schema: {route}")
+
+
+def run_all() -> None:
+    check_sets()
+    for schema_path in (ROOT / "schemas").glob("*.json"):
+        check_schema(schema_path)
+    check_interaction()
+    check_student_output()
+    check_workflow()
+
+
+def self_test() -> int:
+    run_all()
+    print("validate_skill_contracts self-test passed")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", nargs="?", default="all")
+    parser.add_argument("--schema")
+    parser.add_argument("--input")
+    parser.add_argument("--self-test", action="store_true")
+    args = parser.parse_args()
+    if args.self_test:
+        return self_test()
+    if args.command == "all":
+        run_all()
+    elif args.command == "schema":
+        if not args.schema:
+            parser.error("--schema is required")
+        check_schema(Path(args.schema), Path(args.input) if args.input else None)
+    elif args.command == "interaction":
+        check_interaction()
+    elif args.command == "student-output":
+        check_student_output()
+    elif args.command == "workflow":
+        check_workflow()
+    else:
+        parser.error("command must be all, schema, interaction, student-output, or workflow")
+    print("validation passed")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

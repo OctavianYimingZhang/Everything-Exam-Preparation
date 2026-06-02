@@ -1,109 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/everything-exam-preparation/skill_config.schema.json",
-  "title": "SkillConfig",
   "type": "object",
-  "required": ["project", "source_inputs", "source_policy", "output_mode", "qa", "advanced"],
+  "additionalProperties": true,
+  "$id": "https://example.invalid/everything-exam-preparation/skill_config.schema.json",
+  "title": "Skill config",
   "properties": {
-    "task_type": { "type": "string" },
-    "sources": { "type": "array", "items": { "type": ["string", "object"] } },
-    "output_format": { "type": "string" },
-    "qa_checks": { "type": "array", "items": { "type": "string" } },
-    "project": {
-      "type": "object",
-      "required": ["course_name", "module_code", "target_group_key", "exam_year", "output_folder"],
-      "properties": {
-        "course_name": { "type": "string" },
-        "module_code": { "type": "string" },
-        "target_group_key": { "type": "string" },
-        "exam_year": { "type": ["string", "number", "null"] },
-        "output_folder": { "type": "string" }
-      },
-      "additionalProperties": true
+    "default_output": {
+      "const": "Exam_Preparation_Notes.docx"
     },
-    "source_inputs": {
-      "type": "object",
-      "properties": {
-        "lecture_slides": { "type": "array", "items": { "type": ["string", "object"] } },
-        "official_notes": { "type": "array", "items": { "type": ["string", "object"] } },
-        "course_notes": { "type": "array", "items": { "type": ["string", "object"] } },
-        "student_notes": { "type": "array", "items": { "type": ["string", "object"] } },
-        "ai_generated_notes": { "type": "array", "items": { "type": ["string", "object"] } },
-        "formal_past_papers": { "type": "array", "items": { "type": ["string", "object"] } },
-        "practical_materials": { "type": "array", "items": { "type": ["string", "object"] } },
-        "mocks_quizzes_answer_keys": { "type": "array", "items": { "type": ["string", "object"] } },
-        "exemplars_or_feedback": { "type": "array", "items": { "type": ["string", "object"] } },
-        "extra_reading_books_or_papers": { "type": "array", "items": { "type": ["string", "object"] } }
-      },
-      "additionalProperties": true
-    },
-    "source_policy": {
-      "type": "object",
-      "required": [
-        "allow_online_academic_search",
-        "allow_extra_reading_enrichment",
-        "require_verified_citations",
-        "treat_examples_as_style_only"
-      ],
-      "properties": {
-        "allow_online_academic_search": { "type": "boolean" },
-        "allow_extra_reading_enrichment": { "type": "boolean" },
-        "require_verified_citations": { "type": "boolean" },
-        "treat_examples_as_style_only": { "type": "boolean" }
-      },
-      "additionalProperties": true
-    },
-    "output_mode": {
-      "type": "object",
-      "required": ["preset", "include_audit_package", "student_visible_only"],
-      "properties": {
-        "preset": {
-          "enum": [
-            "source_inventory_only",
-            "exam_format_diagnosis",
-            "exam_prep_notes_docx",
-            "knowledge_walkthrough_docx",
-            "mcq_exam_prep",
-            "short_answer_exam_prep",
-            "long_answer_project_scenario_prep",
-            "essay_exam_prep",
-            "audit_lint_only",
-            "github_ready_qa"
-          ]
-        },
-        "include_audit_package": { "type": "boolean" },
-        "student_visible_only": { "type": "boolean" }
-      },
-      "additionalProperties": true
-    },
-    "qa": {
-      "type": "object",
-      "required": [
-        "strict_publish_gate",
-        "require_lineage",
-        "run_language_lint",
-        "run_workflow_validator",
-        "fail_on_blocking_flags"
-      ],
-      "properties": {
-        "strict_publish_gate": { "type": "boolean" },
-        "require_lineage": { "type": "boolean" },
-        "run_language_lint": { "type": "boolean" },
-        "run_workflow_validator": { "type": "boolean" },
-        "fail_on_blocking_flags": { "type": "boolean" }
-      },
-      "additionalProperties": true
-    },
-    "advanced": {
-      "type": "object",
-      "required": ["reuse_existing_intermediates", "rebuild_fragment_index", "clean_stale_generated_outputs"],
-      "properties": {
-        "reuse_existing_intermediates": { "type": "boolean" },
-        "rebuild_fragment_index": { "enum": ["auto", "always", "never"] },
-        "clean_stale_generated_outputs": { "type": "boolean" }
-      },
-      "additionalProperties": true
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
-  "additionalProperties": true
+  "required": [
+    "default_output"
+  ]
 }
