@@ -38,6 +38,24 @@ GENERIC_LABELS = [
 PRACTICAL_TERMS = ["method", "control", "limitation", "calculate", "graph", "table", "readout"]
 
 
+def sentence_frame(sentence: str) -> str | None:
+    words = re.findall(r"[A-Za-z]+", sentence.lower())
+    if len(words) < 8:
+        return None
+    return " ".join(words[:7])
+
+
+def repeated_sentence_frames(text: str) -> list[dict[str, Any]]:
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+    counts: dict[str, int] = {}
+    for sentence in sentences:
+        frame = sentence_frame(sentence)
+        if frame:
+            counts[frame] = counts.get(frame, 0) + 1
+    threshold = max(3, len(sentences) // 8)
+    return [{"frame": frame, "count": count} for frame, count in sorted(counts.items()) if count > threshold]
+
+
 def read_text(path: Path) -> str:
     if path.suffix.lower() == ".docx":
         with zipfile.ZipFile(path) as zf:
@@ -63,6 +81,9 @@ def lint_text(text: str, plan: dict[str, Any] | None = None) -> dict[str, Any]:
             surface_hits.append({"pattern": pattern, "count": len(hits)})
     if surface_hits:
         failures.append({"check": "forbidden_internal_surface_templates", "patterns": surface_hits})
+    repeated_frames = repeated_sentence_frames(text)
+    if repeated_frames:
+        failures.append({"check": "repeated_generic_sentence_frame", "frames": repeated_frames[:5]})
     label_hits = []
     for label in GENERIC_LABELS:
         label_hits.extend(re.findall(rf"(?im)^\s*{re.escape(label)}\s*:", text))
@@ -93,6 +114,14 @@ def self_test() -> int:
     )
     assert templated["status"] == "fail"
     assert any(f["check"] == "forbidden_internal_surface_templates" for f in templated["failures"])
+    repeated = lint_text(
+        "Development decisions are affected by this topic because formulation changes exposure.\n"
+        "Development decisions are affected by this topic because safety changes dose selection.\n"
+        "Development decisions are affected by this topic because efficacy changes trial design.\n"
+        "Development decisions are affected by this topic because quality changes release testing.\n"
+        "Development decisions are affected by this topic because licensing changes evidence needs."
+    )
+    assert any(f["check"] == "repeated_generic_sentence_frame" for f in repeated["failures"])
     print("exam_prep_notes_quality_linter self-test passed")
     return 0
 

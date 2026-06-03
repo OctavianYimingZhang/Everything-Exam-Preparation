@@ -13,9 +13,10 @@ Exam_Preparation_Notes.docx
 ## What the Skill does
 
 1. Classifies supplied learning and practice sources.
-2. Generates source-backed Exam Preparation Notes with paragraph, list, table, chain, and visual render modes.
-3. Detects exam mode from past papers or the user prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
-4. Generates only the add-on content needed for the detected or requested mode.
+2. Assigns route-specific evidence scope before a source can affect a plan.
+3. Generates source-backed Exam Preparation Notes from strict section/block plans with paragraph, list, table, chain, and block-owned visual render modes.
+4. Detects exam mode from past papers or the user prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
+5. Generates only the add-on content needed for the detected or requested mode.
 
 Past papers shape emphasis, answer operations, and mode. They do not replace the course-source baseline. Internal run manifests support QA and reproducibility; they are not student-facing output and must not shape prose.
 

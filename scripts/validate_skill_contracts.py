@@ -138,16 +138,42 @@ def check_workflow() -> None:
 
 
 def check_notes_rendering_contract() -> None:
-    notes_schema = json.dumps(load_json(ROOT / "schemas/exam_prep_notes_plan.schema.json"))
+    notes_schema_obj = load_json(ROOT / "schemas/exam_prep_notes_plan.schema.json")
+    notes_schema = json.dumps(notes_schema_obj)
+    if notes_schema_obj.get("additionalProperties") is not False:
+        fail("notes plan schema must reject loose top-level fields")
+    for key in ["title", "ordering", "visual_policy", "sections"]:
+        if key not in notes_schema_obj.get("required", []):
+            fail(f"notes plan schema missing required key: {key}")
+    for legacy in ["topics", "methods_and_data", "confusions", "practical_operations", "past_paper_emphasis", "add_on_sections", "revision_checklist"]:
+        if f'"{legacy}"' in notes_schema:
+            fail(f"notes plan schema still accepts legacy key: {legacy}")
     for mode in ["kp_list", "compact_table", "mechanism_chain", "image_plus_kp_list", "paragraph"]:
         if mode not in notes_schema:
             fail(f"notes plan schema missing render mode: {mode}")
+    visual_schema = json.dumps(load_json(ROOT / "schemas/visual_aid_spec.schema.json"))
+    for token in ["visual_id", "placement", "after_block_id", "use_reason"]:
+        if token not in visual_schema:
+            fail(f"visual schema missing block-level ownership token: {token}")
+    source_schema = json.dumps(load_json(ROOT / "schemas/source_evidence_bundle.schema.json"))
+    for token in ["source_decisions", "evidence_scope", "factual_course_content", "needs_confirmation"]:
+        if token not in source_schema:
+            fail(f"source evidence schema missing route-scope token: {token}")
     renderer = (ROOT / "scripts/generate_exam_prep_notes_docx.py").read_text(encoding="utf-8")
-    for token in ["visual_bytes", "word/media/", "image_plus_kp_list", "compact_table"]:
+    for token in ["validate_plan_contract", "build_docx_blocks", "visual_bytes", "word/media/", "image_plus_kp_list", "compact_table"]:
         if token not in renderer:
             fail(f"notes renderer missing visual/render support: {token}")
+    if "plan.get(\"topics\"" in renderer or "plan.get('topics'" in renderer:
+        fail("notes renderer still consumes legacy top-level topics")
+    extractor = (ROOT / "scripts/extract_sources.py").read_text(encoding="utf-8")
+    for token in ["decision_for_route", "source_decisions", "factual_course_content", "style_only"]:
+        if token not in extractor:
+            fail(f"source extractor missing route-specific source decision support: {token}")
+    fragment_index = (ROOT / "scripts/build_fragment_index.py").read_text(encoding="utf-8")
+    if "fragment_allowed_for_notes" not in fragment_index:
+        fail("fragment index does not enforce notes source-scope filtering")
     linter = (ROOT / "scripts/exam_prep_notes_quality_linter.py").read_text(encoding="utf-8")
-    for token in ["FORBIDDEN_SURFACE_PATTERNS", "forbidden_internal_surface_templates", "generic_colon_label_overuse"]:
+    for token in ["FORBIDDEN_SURFACE_PATTERNS", "forbidden_internal_surface_templates", "generic_colon_label_overuse", "repeated_generic_sentence_frame"]:
         if token not in linter:
             fail(f"notes quality linter missing surface-template guard: {token}")
 

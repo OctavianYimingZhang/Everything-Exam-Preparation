@@ -17,6 +17,9 @@
     "role": {
       "type": "string"
     },
+    "evidence_scope": {
+      "type": "string"
+    },
     "fingerprint": {
       "type": "string"
     }

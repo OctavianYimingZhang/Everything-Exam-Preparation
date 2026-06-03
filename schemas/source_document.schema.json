@@ -14,6 +14,9 @@
     "role": {
       "type": "string"
     },
+    "route_use": {
+      "type": "object"
+    },
     "readable": {
       "type": "boolean"
     },

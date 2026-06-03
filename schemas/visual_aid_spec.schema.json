@@ -1,11 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": true,
   "$id": "https://example.invalid/everything-exam-preparation/visual_aid_spec.schema.json",
   "title": "Visual aid spec",
+  "type": "object",
+  "additionalProperties": false,
   "properties": {
+    "visual_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
     "source_id": {
+      "type": "string"
+    },
+    "asset_path": {
       "type": "string"
     },
     "path": {
@@ -27,7 +37,34 @@
       ]
     },
     "caption": {
-      "type": "string"
+      "type": "string",
+      "minLength": 8
+    },
+    "use_reason": {
+      "type": "string",
+      "minLength": 8
+    },
+    "is_decorative": {
+      "type": "boolean"
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "after_block_id": {
+          "type": "string"
+        },
+        "max_width_inches": {
+          "type": "number",
+          "maximum": 3.8
+        },
+        "height_inches": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "after_block_id"
+      ]
     },
     "max_width_inches": {
       "type": "number",
@@ -36,5 +73,35 @@
     "height_inches": {
       "type": "number"
     }
-  }
+  },
+  "required": [
+    "visual_id",
+    "visual_kind",
+    "caption",
+    "use_reason",
+    "placement"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "asset_path"
+      ]
+    },
+    {
+      "required": [
+        "path"
+      ]
+    },
+    {
+      "required": [
+        "image_path"
+      ]
+    },
+    {
+      "required": [
+        "source_path",
+        "media_name"
+      ]
+    }
+  ]
 }

@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 
 ROUTES = {
-    "exam_prep_notes": ["source_inventory", "fragment_index", "run_control_plane", "exam_prep_notes_plan", "exam_prep_notes_generation", "notes_quality_gate", "deliverable_surface_gate"],
-    "exam_mode_diagnosis": ["source_inventory", "run_control_plane", "exam_mode_diagnosis"],
+    "exam_prep_notes": ["source_inventory", "route_source_decision", "evidence_bundle", "fragment_index", "run_control_plane", "exam_prep_notes_plan", "exam_prep_notes_generation", "notes_quality_gate", "deliverable_surface_gate"],
+    "exam_mode_diagnosis": ["source_inventory", "route_source_decision", "run_control_plane", "exam_mode_diagnosis"],
     "mcq_addon": ["exam_prep_notes", "exam_mode_diagnosis", "run_control_plane", "mcq_addon"],
     "short_answer_addon": ["exam_prep_notes", "exam_mode_diagnosis", "run_control_plane", "short_answer_addon"],
     "long_answer_practical_addon": ["exam_prep_notes", "exam_mode_diagnosis", "run_control_plane", "long_answer_practical_addon"],
@@ -57,7 +57,10 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
 
 def self_test() -> int:
     assert plan("make notes")["route"] == "exam_prep_notes"
-    assert "run_control_plane" in [a["id"] for a in plan("make notes")["actions"]]
+    note_actions = [a["id"] for a in plan("make notes")["actions"]]
+    assert "route_source_decision" in note_actions
+    assert "run_control_plane" in note_actions
+    assert "practice_marking" not in json.dumps(plan("make notes"))
     assert plan("make lecture-order notes")["ordering"] == "source_order"
     assert plan("MCQ prep")["route"] == "mcq_addon"
     assert plan("essay exam preparation")["route"] == "essay_addon"

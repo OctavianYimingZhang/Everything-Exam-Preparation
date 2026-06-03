@@ -1,15 +1,27 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": true,
   "$id": "https://example.invalid/everything-exam-preparation/source_evidence_bundle.schema.json",
   "title": "Source evidence bundle",
+  "type": "object",
+  "additionalProperties": true,
   "properties": {
     "documents": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "$ref": "source_document.schema.json"
+      }
+    },
+    "source_decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_decision"
+      }
     },
     "fragments": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "$ref": "source_fragment.schema.json"
+      }
     },
     "evidence_claims": {
       "type": "array"
@@ -25,6 +37,54 @@
       "items": {
         "$ref": "visual_aid_spec.schema.json"
       }
+    }
+  },
+  "$defs": {
+    "source_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "decision_id": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "route": {
+          "type": "string"
+        },
+        "declared_role": {
+          "type": "string"
+        },
+        "inferred_role": {
+          "type": "string"
+        },
+        "evidence_scope": {
+          "enum": [
+            "factual_course_content",
+            "exam_emphasis",
+            "style_only",
+            "visual_candidate_only",
+            "student_answer",
+            "question_source",
+            "marking_authority",
+            "ignored",
+            "needs_confirmation"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision_id",
+        "source_id",
+        "route",
+        "declared_role",
+        "inferred_role",
+        "evidence_scope",
+        "reason"
+      ]
     }
   }
 }

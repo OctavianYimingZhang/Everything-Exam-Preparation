@@ -4,14 +4,16 @@ Default artifact: `Exam_Preparation_Notes.docx`.
 
 ## Required structure
 
-1. High-yield exam map
-2. Core concepts by source/topic
-3. Mechanisms, methods, calculations, and data interpretation
-4. Common confusions and contrasts
-5. Practical/data/problem operations
-6. Past-paper emphasis map
-7. Exam-mode add-on section if applicable
-8. Final quick revision checklist
+The notes plan must be section/block based.
+
+Each section contains ordered blocks. Each block must include:
+
+- `block_id`
+- `heading`
+- `render_mode`
+- `source_ids`
+- content matching the selected render mode
+- optional `visual_ids` only when a source or generated visual is attached to that block
 
 Do not generate a generic introduction unless it directly improves revision.
 
@@ -100,4 +102,12 @@ For a comparison such as graded versus quantal response, use `compact_table` wit
 
 ## Visual policy
 
-Use source slide images only if they explain faster than text. Do not use decorative images. Default maximum image width is 3.8 inches. Use captions only when they help locate meaning. Do not expand the document with huge screenshots. If the renderer cannot safely embed a source image, replace it with a compact table or redraw description rather than a long paragraph.
+Use source slide images only if they explain faster than text. Do not use decorative images. Default maximum image width is 3.8 inches. Use captions only when they help locate meaning. Do not expand the document with huge screenshots.
+
+Visuals are block-level only. A visual may appear only when a block explicitly references it through `visual_ids` and the visual placement points back to that block. The renderer must not append all images to a final `Visual aids` section, insert images without block ownership, use generic captions such as `Visual aid for ...`, or silently convert a missing image into caption-only text.
+
+A visual is required only when a block chooses `image_plus_kp_list`. If source visuals exist but no visual is selected, the plan must record a concise `visual_decisions.skip_reason` rather than dumping arbitrary images into the document.
+
+## Forbidden legacy plan behaviour
+
+The notes renderer must consume strict `sections[].blocks[]` plans. It must not infer document structure from loose top-level fields such as `topics`, `methods_and_data`, `confusions`, `practical_operations`, `past_paper_emphasis`, `add_on_sections`, `revision_checklist`, or root-level image dumps.

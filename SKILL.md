@@ -59,6 +59,22 @@ Past papers shape exam mode, emphasis, and answer operations only. They do not r
 
 Run-control manifests are internal QA artifacts. They may support reproducibility and release checks, but they must not appear in student-facing prose and must not make the notes sound like object, action, or link records.
 
+## Workflow invariants
+
+Every run has five separate phases:
+
+1. Source inventory.
+2. Route-specific source decision.
+3. Evidence bundle construction.
+4. Output plan construction.
+5. Rendering and QA.
+
+A later phase must not silently redo an earlier phase. Any source used for factual notes must have `exam_prep_notes` evidence scope that permits factual course content.
+
+`exam_prep_notes` must not read student-answer, teacher-feedback, marking-gap, or practice-marking objects. A future `practice_marking` route may reuse source inventory and lecture or knowledge-point mapping, but it must not call the notes renderer or mutate the notes plan contract.
+
+Run-control objects are internal QA only. They must not shape student-facing prose.
+
 ## Student-facing output rules
 
 `Exam_Preparation_Notes.docx` must be source-backed, readable, visually efficient, and proportional to the source pack. It must explain what each concept is, why it matters, how the mechanism, method, calculation, graph, assay, or comparison works, and what limitation or interpretation follows.

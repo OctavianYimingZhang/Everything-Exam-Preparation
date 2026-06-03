@@ -4,6 +4,7 @@ import argparse
 import base64
 import html
 import json
+import re
 import tempfile
 import zipfile
 from pathlib import Path
@@ -21,6 +22,22 @@ IMAGE_CONTENT_TYPES = {
     ".gif": "image/gif",
     ".bmp": "image/bmp",
 }
+RENDER_MODES = {"kp_list", "compact_table", "mechanism_chain", "image_plus_kp_list", "paragraph"}
+LEGACY_TOP_LEVEL_KEYS = {
+    "high_yield_exam_map",
+    "topics",
+    "methods_and_data",
+    "confusions",
+    "practical_operations",
+    "past_paper_emphasis",
+    "add_on_sections",
+    "revision_checklist",
+}
+GENERIC_CAPTION_PATTERNS = [
+    r"^\s*visual aid for\b",
+    r"^\s*source visual\s*$",
+    r"^\s*image\d+\s*$",
+]
 
 
 def xml_escape(text: str) -> str:
@@ -59,13 +76,27 @@ def drawing(rid: str, caption: str, index: int, width_inches: float, height_inch
 </w:drawing></w:r></w:p>"""
 
 
+def visual_id(visual: dict[str, Any]) -> str:
+    return str(visual.get("visual_id") or visual.get("id") or "")
+
+
+def visual_caption(visual: Any) -> str:
+    if isinstance(visual, dict):
+        return str(visual.get("caption") or visual.get("media_name") or visual.get("asset_path") or visual.get("path") or "Source visual")
+    return str(visual)
+
+
+def is_generic_caption(caption: str) -> bool:
+    return any(re.search(pattern, caption, flags=re.I) for pattern in GENERIC_CAPTION_PATTERNS)
+
+
 def visual_bytes(visual: Any) -> tuple[bytes, str] | None:
     if not isinstance(visual, dict):
         path = Path(str(visual))
         if path.exists() and path.suffix.lower() in IMAGE_CONTENT_TYPES:
             return path.read_bytes(), path.suffix.lower()
         return None
-    direct = visual.get("image_path") or visual.get("path")
+    direct = visual.get("asset_path") or visual.get("image_path") or visual.get("path")
     if direct:
         path = Path(str(direct))
         if path.exists() and path.suffix.lower() in IMAGE_CONTENT_TYPES:
@@ -81,18 +112,13 @@ def visual_bytes(visual: Any) -> tuple[bytes, str] | None:
     return None
 
 
-def visual_caption(visual: Any) -> str:
-    if isinstance(visual, dict):
-        return str(visual.get("caption") or visual.get("media_name") or visual.get("path") or "Source visual")
-    return str(visual)
-
-
 def visual_size(visual: Any) -> tuple[float, float]:
     width = MAX_IMAGE_WIDTH_INCHES
     height = 2.1
     if isinstance(visual, dict):
-        width = min(float(visual.get("max_width_inches") or width), MAX_IMAGE_WIDTH_INCHES)
-        height = float(visual.get("height_inches") or max(0.6, width * 0.56))
+        placement = visual.get("placement") or {}
+        width = min(float(placement.get("max_width_inches") or visual.get("max_width_inches") or width), MAX_IMAGE_WIDTH_INCHES)
+        height = float(placement.get("height_inches") or visual.get("height_inches") or max(0.6, width * 0.56))
     return width, height
 
 
@@ -107,17 +133,17 @@ def build_body_and_media(blocks: list[Any]) -> tuple[str, list[tuple[str, str, b
             caption = visual_caption(visual)
             resolved = visual_bytes(visual)
             if not resolved:
-                body_parts.append(paragraph(f"Visual: {caption}", "Normal", "both"))
-                continue
+                raise ValueError(f"visual_asset_missing:{caption}")
             data, ext = resolved
             rid = f"rIdImage{image_index}"
             name = f"image{image_index}{ext}"
             width, height = visual_size(visual)
             body_parts.append(drawing(rid, caption, image_index, width, height))
-            if caption:
-                body_parts.append(paragraph(caption, "Normal", "center"))
+            body_parts.append(paragraph(caption, "Normal", "center"))
             media_parts.append((f"word/media/{name}", ext, data, IMAGE_CONTENT_TYPES[ext]))
-            rel_parts.append(f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{name}"/>')
+            rel_parts.append(
+                f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{name}"/>'
+            )
             image_index += 1
         else:
             text, style, align = block
@@ -135,6 +161,7 @@ def write_minimal_docx(path: Path, blocks: list[Any]) -> None:
   <w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:pPr><w:jc w:val="both"/><w:spacing w:line="{LINE_SPACING}" w:lineRule="auto"/></w:pPr><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:color w:val="000000"/></w:rPr></w:style>
   <w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:pPr><w:jc w:val="center"/><w:spacing w:line="{LINE_SPACING}" w:lineRule="auto"/></w:pPr><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:color w:val="000000"/></w:rPr></w:style>
   <w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:pPr><w:jc w:val="left"/><w:spacing w:line="{LINE_SPACING}" w:lineRule="auto"/></w:pPr><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:color w:val="000000"/></w:rPr></w:style>
+  <w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:pPr><w:jc w:val="left"/><w:spacing w:line="{LINE_SPACING}" w:lineRule="auto"/></w:pPr><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:color w:val="000000"/></w:rPr></w:style>
 </w:styles>"""
     image_defaults = "".join(f'<Default Extension="{ext.lstrip(".")}" ContentType="{content_type}"/>' for ext, content_type in IMAGE_CONTENT_TYPES.items())
     content_types = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -154,120 +181,219 @@ def write_minimal_docx(path: Path, blocks: list[Any]) -> None:
             zf.writestr(name, data)
 
 
-def infer_render_mode(item: dict[str, Any]) -> str:
-    if item.get("render_mode"):
-        return str(item["render_mode"])
-    if item.get("visuals") and item.get("bullets"):
-        return "image_plus_kp_list"
-    if item.get("table_rows"):
-        return "compact_table"
-    if item.get("chain"):
-        return "mechanism_chain"
-    if item.get("bullets"):
-        return "kp_list"
-    return "paragraph"
+def plan_visuals(plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    visuals = {}
+    for visual in plan.get("visuals", []):
+        if isinstance(visual, dict) and visual_id(visual):
+            visuals[visual_id(visual)] = visual
+    return visuals
 
 
-def add_notes_item(blocks: list[Any], item: Any) -> None:
-    if not isinstance(item, dict):
-        blocks.append((f"- {item}", "Normal", "both"))
-        return
-    heading = item.get("heading") or item.get("title") or item.get("concept")
-    detail = item.get("explanation") or item.get("detail") or item.get("content") or ""
-    mode = infer_render_mode(item)
-    if heading:
-        blocks.append((str(heading), "Heading1", "left"))
-    if mode == "image_plus_kp_list":
-        for visual in item.get("visuals", [])[:3]:
-            blocks.append({"kind": "image", "visual": visual})
-        if detail:
-            blocks.append((str(detail), "Normal", "both"))
-        for bullet in item.get("bullets", [])[:12]:
-            blocks.append((f"- {bullet}", "Normal", "both"))
-    elif mode == "kp_list":
-        if detail:
-            blocks.append((str(detail), "Normal", "both"))
-        for bullet in item.get("bullets", [])[:16]:
-            blocks.append((f"- {bullet}", "Normal", "both"))
-    elif mode == "compact_table":
-        if detail:
-            blocks.append((str(detail), "Normal", "both"))
-        for row in item.get("table_rows", [])[:24]:
-            cells = row if isinstance(row, list) else [row]
-            blocks.append((" | ".join(str(cell) for cell in cells), "Normal", "both"))
-    elif mode == "mechanism_chain":
-        chain = item.get("chain") or []
-        if chain:
-            blocks.append((" -> ".join(str(step) for step in chain), "Normal", "both"))
-        if detail:
-            blocks.append((str(detail), "Normal", "both"))
-    else:
-        if detail:
-            blocks.append((str(detail), "Normal", "both"))
-        for bullet in item.get("bullets", [])[:8]:
-            blocks.append((f"- {bullet}", "Normal", "both"))
+def validate_plan_contract(plan: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    legacy = sorted(LEGACY_TOP_LEVEL_KEYS.intersection(plan))
+    if legacy:
+        failures.append(f"legacy_top_level_keys:{','.join(legacy)}")
+    for key in ["title", "ordering", "visual_policy", "sections"]:
+        if key not in plan:
+            failures.append(f"missing_required:{key}")
+    if plan.get("visual_policy") not in {"block_level_only", "text_only_with_skip_reason"}:
+        failures.append("invalid_visual_policy")
 
-
-def plan_to_blocks(plan: dict[str, Any]) -> list[Any]:
-    blocks: list[Any] = [(plan.get("title") or "Exam Preparation Notes", "Title", "center")]
-    sections = [
-        ("High-yield exam map", plan.get("high_yield_exam_map", [])),
-        ("Core concepts by source/topic", plan.get("topics", [])),
-        ("Mechanisms, methods, calculations, and data interpretation", plan.get("methods_and_data", [])),
-        ("Common confusions and contrasts", plan.get("confusions", [])),
-        ("Practical/data/problem operations", plan.get("practical_operations", [])),
-        ("Past-paper emphasis map", plan.get("past_paper_emphasis", [])),
-        ("Exam-mode add-on", plan.get("add_on_sections", [])),
-        ("Final quick revision checklist", plan.get("revision_checklist", [])),
-    ]
-    for heading, value in sections:
-        if not value:
+    visual_map = plan_visuals(plan)
+    block_ids: set[str] = set()
+    referenced_visuals: set[str] = set()
+    visual_references: dict[str, set[str]] = {}
+    sections = plan.get("sections", [])
+    if not isinstance(sections, list) or not sections:
+        failures.append("sections_required")
+        sections = []
+    for section_index, section in enumerate(sections, start=1):
+        if not isinstance(section, dict):
+            failures.append(f"section_not_object:{section_index}")
             continue
-        blocks.append((heading, "Heading1", "left"))
-        items = value if isinstance(value, list) else [value]
-        for item in items:
-            add_notes_item(blocks, item)
-    visuals = plan.get("visuals", [])
-    if visuals:
-        blocks.append(("Visual aids", "Heading1", "left"))
-        for visual in visuals[:12]:
-            blocks.append({"kind": "image", "visual": visual})
-    if len(blocks) == 1:
-        blocks.extend([
-            ("High-yield exam map", "Heading1", "left"),
-            ("Use supplied course sources to build source-backed concepts, methods, calculations, and exam operations.", "Normal", "both"),
-            ("Final quick revision checklist", "Heading1", "left"),
-            ("- Rehearse definitions, mechanisms, method steps, graph interpretation, limitations, and answer structures.", "Normal", "both"),
-        ])
+        if not section.get("section_id"):
+            failures.append(f"section_missing_id:{section_index}")
+        if not section.get("heading"):
+            failures.append(f"section_missing_heading:{section_index}")
+        blocks = section.get("blocks")
+        if not isinstance(blocks, list) or not blocks:
+            failures.append(f"section_missing_blocks:{section.get('section_id', section_index)}")
+            continue
+        for block_index, block in enumerate(blocks, start=1):
+            if not isinstance(block, dict):
+                failures.append(f"block_not_object:{section_index}.{block_index}")
+                continue
+            block_id = str(block.get("block_id") or "")
+            if not block_id:
+                failures.append(f"block_missing_id:{section_index}.{block_index}")
+            elif block_id in block_ids:
+                failures.append(f"duplicate_block_id:{block_id}")
+            else:
+                block_ids.add(block_id)
+            mode = block.get("render_mode")
+            if mode not in RENDER_MODES:
+                failures.append(f"invalid_render_mode:{block_id or section_index}")
+            if not block.get("heading"):
+                failures.append(f"block_missing_heading:{block_id or section_index}")
+            if not block.get("source_ids"):
+                failures.append(f"block_missing_source_ids:{block_id or section_index}")
+            if mode == "paragraph" and not block.get("paragraph"):
+                failures.append(f"paragraph_missing_text:{block_id}")
+            if mode == "kp_list" and not block.get("points"):
+                failures.append(f"kp_list_missing_points:{block_id}")
+            if mode == "compact_table" and not block.get("table"):
+                failures.append(f"compact_table_missing_table:{block_id}")
+            if mode == "mechanism_chain" and not block.get("chain"):
+                failures.append(f"mechanism_chain_missing_chain:{block_id}")
+            if mode == "image_plus_kp_list" and (not block.get("visual_ids") or not block.get("points")):
+                failures.append(f"image_plus_kp_list_missing_visual_or_points:{block_id}")
+            for vid in block.get("visual_ids", []) or []:
+                vid_text = str(vid)
+                referenced_visuals.add(vid_text)
+                visual_references.setdefault(vid_text, set()).add(block_id)
+                if vid_text not in visual_map:
+                    failures.append(f"missing_visual_spec:{vid}")
+
+    for vid, visual in visual_map.items():
+        caption = visual_caption(visual)
+        placement = visual.get("placement") or {}
+        after_block_id = str(placement.get("after_block_id") or "")
+        if visual.get("is_decorative"):
+            failures.append(f"decorative_visual_selected:{vid}")
+        if is_generic_caption(caption):
+            failures.append(f"generic_visual_caption:{vid}")
+        if not visual.get("use_reason"):
+            failures.append(f"visual_missing_use_reason:{vid}")
+        if after_block_id not in block_ids:
+            failures.append(f"visual_without_block_ownership:{vid}")
+        if vid in visual_references and after_block_id not in visual_references[vid]:
+            failures.append(f"visual_placement_mismatch:{vid}")
+    unreferenced = sorted(set(visual_map) - referenced_visuals)
+    if unreferenced:
+        failures.append(f"unreferenced_visuals:{','.join(unreferenced)}")
+    if plan.get("visual_policy") == "text_only_with_skip_reason" and visual_map:
+        failures.append("text_only_plan_has_visuals")
+    if plan.get("visual_policy") == "text_only_with_skip_reason" and not (plan.get("visual_decisions") or {}).get("skip_reason"):
+        failures.append("text_only_plan_missing_skip_reason")
+    return failures
+
+
+def render_visuals_for_block(block: dict[str, Any], visual_map: dict[str, dict[str, Any]]) -> list[Any]:
+    rendered = []
+    for vid in block.get("visual_ids", []) or []:
+        visual = visual_map[str(vid)]
+        rendered.append({"kind": "image", "visual": visual})
+    return rendered
+
+
+def add_points(blocks: list[Any], points: list[Any], limit: int = 16) -> None:
+    for point in points[:limit]:
+        blocks.append((f"- {point}", "Normal", "both"))
+
+
+def add_table(blocks: list[Any], rows: list[Any]) -> None:
+    for row in rows[:28]:
+        cells = row if isinstance(row, list) else [row]
+        blocks.append((" | ".join(str(cell) for cell in cells), "Normal", "both"))
+
+
+def build_docx_blocks(plan: dict[str, Any]) -> list[Any]:
+    failures = validate_plan_contract(plan)
+    if failures:
+        raise ValueError("invalid_exam_prep_notes_plan:" + ";".join(failures))
+
+    visual_map = plan_visuals(plan)
+    blocks: list[Any] = [(plan.get("title") or "Exam Preparation Notes", "Title", "center")]
+    for section in plan["sections"]:
+        blocks.append((str(section["heading"]), "Heading1", "left"))
+        for block in section["blocks"]:
+            blocks.append((str(block["heading"]), "Heading2", "left"))
+            paragraph_text = block.get("paragraph")
+            if paragraph_text:
+                blocks.append((str(paragraph_text), "Normal", "both"))
+            mode = block["render_mode"]
+            if mode == "image_plus_kp_list":
+                blocks.extend(render_visuals_for_block(block, visual_map))
+                add_points(blocks, block.get("points", []), 12)
+            elif mode == "kp_list":
+                add_points(blocks, block.get("points", []))
+                blocks.extend(render_visuals_for_block(block, visual_map))
+            elif mode == "compact_table":
+                add_table(blocks, block.get("table", []))
+                blocks.extend(render_visuals_for_block(block, visual_map))
+            elif mode == "mechanism_chain":
+                blocks.append((" -> ".join(str(step) for step in block.get("chain", [])), "Normal", "both"))
+                blocks.extend(render_visuals_for_block(block, visual_map))
     return blocks
 
 
 def generate(plan: dict[str, Any], output_dir: Path) -> Path:
     out = output_dir / OUTPUT_NAME
-    write_minimal_docx(out, plan_to_blocks(plan))
+    write_minimal_docx(out, build_docx_blocks(plan))
     return out
+
+
+def sample_strict_plan(image_path: Path) -> dict[str, Any]:
+    return {
+        "title": "Exam Preparation Notes",
+        "ordering": "exam_emphasis_first",
+        "visual_policy": "block_level_only",
+        "visual_decisions": {"selected_visual_ids": ["V1"]},
+        "visuals": [
+            {
+                "visual_id": "V1",
+                "asset_path": str(image_path),
+                "visual_kind": "source_image",
+                "caption": "Reaction curve showing early rate estimation",
+                "use_reason": "The graph explains why the initial slope is used before substrate depletion.",
+                "placement": {"after_block_id": "B1", "max_width_inches": 1.0, "height_inches": 1.0},
+                "is_decorative": False,
+            }
+        ],
+        "sections": [
+            {
+                "section_id": "S1",
+                "heading": "Core concepts",
+                "blocks": [
+                    {
+                        "block_id": "B1",
+                        "heading": "Enzyme rate",
+                        "render_mode": "image_plus_kp_list",
+                        "source_ids": ["SRC1"],
+                        "paragraph": "Initial slope estimates early reaction rate before substrate depletion.",
+                        "points": ["Axes define the measured readout.", "A later plateau can reflect substrate depletion rather than initial velocity."],
+                        "visual_ids": ["V1"],
+                    }
+                ],
+            }
+        ],
+    }
 
 
 def self_test() -> int:
     with tempfile.TemporaryDirectory() as td:
         image_path = Path(td) / "visual.png"
         image_path.write_bytes(base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lzU2VwAAAABJRU5ErkJggg=="))
-        plan = {
-            "title": "Exam Preparation Notes",
-            "topics": [{
-                "heading": "Enzyme rate",
-                "render_mode": "image_plus_kp_list",
-                "explanation": "Initial slope estimates early reaction rate before substrate depletion.",
-                "bullets": ["Axes define the measured readout."],
-                "visuals": [{"path": str(image_path), "caption": "Reaction curve", "max_width_inches": 1.0, "height_inches": 1.0}],
-            }],
-            "revision_checklist": ["Practise graph interpretation."],
-        }
-        out = generate(plan, Path(td))
+        out = generate(sample_strict_plan(image_path), Path(td))
         assert out.name == OUTPUT_NAME and out.exists()
         with zipfile.ZipFile(out) as zf:
+            doc = zf.read("word/document.xml").decode("utf-8", errors="ignore")
             assert "word/document.xml" in zf.namelist()
             assert any(name.startswith("word/media/") for name in zf.namelist())
+            assert "Visual aids" not in doc
+        try:
+            generate({"title": "Exam Preparation Notes", "topics": ["legacy"]}, Path(td))
+        except ValueError as exc:
+            assert "legacy_top_level_keys" in str(exc)
+        else:
+            raise AssertionError("legacy plan was accepted")
+        bad_plan = sample_strict_plan(image_path)
+        bad_plan["visuals"][0]["caption"] = "Visual aid for enzyme rate"
+        assert "generic_visual_caption" in ";".join(validate_plan_contract(bad_plan))
+        mismatch_plan = sample_strict_plan(image_path)
+        mismatch_plan["visuals"][0]["placement"]["after_block_id"] = "B2"
+        assert "visual_placement_mismatch" in ";".join(validate_plan_contract(mismatch_plan))
     print("generate_exam_prep_notes_docx self-test passed")
     return 0
 
@@ -286,6 +412,7 @@ def main() -> int:
     path = generate(plan, Path(args.out))
     print(path)
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
