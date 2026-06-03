@@ -100,6 +100,58 @@
     "sections"
   ],
   "$defs": {
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "explanation": {
+          "type": "string",
+          "minLength": 8
+        },
+        "exam_use": {
+          "type": "string"
+        },
+        "limitation": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "explanation"
+      ]
+    },
+    "compact_table": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "headers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "headers",
+        "rows"
+      ]
+    },
     "section": {
       "type": "object",
       "additionalProperties": false,
@@ -147,6 +199,24 @@
             "paragraph"
           ]
         },
+        "listability_reason": {
+          "enum": [
+            "source_numbered_list",
+            "source_bulleted_list",
+            "past_paper_list_question",
+            "criteria_set",
+            "taxonomy_or_contrast",
+            "short_answer_mark_points",
+            "definition_group",
+            "not_listable"
+          ]
+        },
+        "exam_prompt_signal": {
+          "type": "string"
+        },
+        "source_form_signal": {
+          "type": "string"
+        },
         "source_ids": {
           "type": "array",
           "minItems": 1,
@@ -166,17 +236,11 @@
         "points": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/point"
           }
         },
         "table": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
+          "$ref": "#/$defs/compact_table"
         },
         "chain": {
           "type": "array",
@@ -195,9 +259,41 @@
         "block_id",
         "heading",
         "render_mode",
+        "listability_reason",
         "source_ids"
       ],
       "allOf": [
+        {
+          "if": {
+            "properties": {
+              "listability_reason": {
+                "enum": [
+                  "source_numbered_list",
+                  "source_bulleted_list",
+                  "past_paper_list_question",
+                  "criteria_set",
+                  "taxonomy_or_contrast",
+                  "short_answer_mark_points",
+                  "definition_group"
+                ]
+              }
+            },
+            "required": [
+              "listability_reason"
+            ]
+          },
+          "then": {
+            "properties": {
+              "render_mode": {
+                "enum": [
+                  "kp_list",
+                  "compact_table",
+                  "image_plus_kp_list"
+                ]
+              }
+            }
+          }
+        },
         {
           "if": {
             "properties": {

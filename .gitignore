@@ -10,6 +10,7 @@ outputs/
 out/
 qa/
 tmp/
+.skill_assets/
 *.docx
 *.pdf
 *.pptx

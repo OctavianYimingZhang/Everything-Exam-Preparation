@@ -60,4 +60,10 @@ Each readable source document and extracted fragment should keep a stable ID and
 
 Source visuals may be used when they explain a mechanism, method, graph, workflow, structure, or comparison faster than text. Decorative images are not evidence. A visual never overrides text evidence. If a resized image would be unreadable, replace it with a concise redraw, table, or description.
 
-Extracted PPT media should retain enough locator metadata for rendering: `source_id`, `source_path`, `media_name`, role, and optional caption. Generated schematic images are allowed only as explanatory redraws from already-supported claims; they are not independent factual evidence.
+Visuals have a three-state lifecycle:
+
+- `candidate`: extracted from source media with `source_id`, `asset_path` or `source_path` plus `media_name`, `caption`, `source_locator`, and `candidate_reason`.
+- `selected`: chosen by a notes block because it improves explanation efficiency; it must have `use_reason` and `placement`.
+- `rejected`: not used; it must have `rejection_reason`.
+
+Candidate visuals must not carry fake placement such as an unassigned block. Placement is created only after block-level selection. Extracted PPT or DOCX media should retain enough locator metadata for rendering: `source_id`, stable asset path when exported, original `source_path`, `media_name`, and `source_locator`. Generated schematic images are allowed only as explanatory redraws from already-supported claims; they are not independent factual evidence and must have an image asset before rendering.

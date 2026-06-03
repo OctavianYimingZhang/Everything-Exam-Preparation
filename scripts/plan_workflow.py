@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 ROUTES = {
-    "exam_prep_notes": ["source_inventory", "route_source_decision", "evidence_bundle", "fragment_index", "visual_candidate_index", "exam_prep_notes_plan", "block_visual_placement", "exam_prep_notes_generation", "notes_quality_gate", "deliverable_surface_gate"],
+    "exam_prep_notes": ["source_inventory", "route_source_decision", "evidence_bundle", "fragment_index", "visual_candidate_index", "render_mode_selection", "exam_prep_notes_plan", "block_visual_placement", "exam_prep_notes_generation", "notes_quality_gate", "deliverable_surface_gate"],
     "exam_mode_diagnosis": ["source_inventory", "route_source_decision", "exam_mode_diagnosis"],
     "mcq_addon": ["exam_prep_notes", "exam_mode_diagnosis", "mcq_addon"],
     "short_answer_addon": ["exam_prep_notes", "exam_mode_diagnosis", "short_answer_addon"],
@@ -60,6 +60,7 @@ def self_test() -> int:
     note_actions = [a["id"] for a in plan("make notes")["actions"]]
     assert "route_source_decision" in note_actions
     assert "visual_candidate_index" in note_actions
+    assert "render_mode_selection" in note_actions
     assert "block_visual_placement" in note_actions
     assert "run_control_plane" not in note_actions
     assert "practice_marking" not in json.dumps(plan("make notes"))

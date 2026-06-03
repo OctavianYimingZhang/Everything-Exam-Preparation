@@ -26,6 +26,7 @@ ROLE_KEYWORDS = [
 ]
 
 TEXT_SUFFIXES = {".txt", ".md", ".csv", ".json", ".yaml", ".yml"}
+MEDIA_PREFIXES = {"docx": "word/media/", "pptx": "ppt/media/"}
 EXAM_NOTES_FACTUAL_ROLES = {"lecture_slides", "lecture_notes", "official_course_notes", "practical_material", "data_problem_material", "extra_reading"}
 EXAM_NOTES_EMPHASIS_ROLES = {"past_paper", "mark_scheme", "answer_key"}
 EXAM_NOTES_STYLE_ROLES = {"example_answer", "user_draft", "style_reference", "previous_generated_output", "generated_output"}
@@ -124,26 +125,86 @@ def exam_notes_scope(source_scan: dict[str, Any], source_id: str) -> str | None:
     return None
 
 
-def extract_docx_text(path: Path) -> str:
+def media_candidate(
+    *,
+    source_id: str,
+    path: Path,
+    media_name: str,
+    index: int,
+    asset_dir: Path | None,
+    visual_mode: str,
+) -> dict[str, Any]:
+    asset_path = ""
+    if asset_dir and visual_mode in {"embedded_media", "both"}:
+        asset_path = str(asset_dir / source_id / Path(media_name).name)
+    item: dict[str, Any] = {
+        "visual_id": f"{source_id}_V{index}",
+        "id": f"{source_id}_V{index}",
+        "source_id": source_id,
+        "visual_kind": "source_embedded_image",
+        "selection_state": "candidate",
+        "source_path": str(path),
+        "media_name": media_name,
+        "caption": Path(media_name).stem.replace("_", " "),
+        "source_locator": {"media_name": media_name},
+        "candidate_reason": "Extracted source image candidate from source media.",
+    }
+    if asset_path:
+        item["asset_path"] = asset_path
+    return item
+
+
+def export_media_asset(zf: zipfile.ZipFile, media_name: str, source_id: str, asset_dir: Path | None, visual_mode: str) -> None:
+    if not asset_dir or visual_mode not in {"embedded_media", "both"}:
+        return
+    out = asset_dir / source_id / Path(media_name).name
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(zf.read(media_name))
+
+
+def extract_docx_text(path: Path, source_id: str, asset_dir: Path | None = None, visual_mode: str = "metadata_only") -> tuple[str, list[dict[str, Any]]]:
+    visuals: list[dict[str, Any]] = []
     with zipfile.ZipFile(path) as zf:
         chunks = []
         for name in zf.namelist():
             if name.startswith("word/") and name.endswith(".xml"):
                 raw = zf.read(name).decode("utf-8", errors="ignore")
                 chunks.extend(re.findall(r"<w:t[^>]*>(.*?)</w:t>", raw))
-        return html.unescape("\n".join(chunks))
+            if name.startswith(MEDIA_PREFIXES["docx"]):
+                export_media_asset(zf, name, source_id, asset_dir, visual_mode)
+                visuals.append(
+                    media_candidate(
+                        source_id=source_id,
+                        path=path,
+                        media_name=name,
+                        index=len(visuals) + 1,
+                        asset_dir=asset_dir,
+                        visual_mode=visual_mode,
+                    )
+                )
+        return html.unescape("\n".join(chunks)), visuals
 
 
-def extract_pptx_text(path: Path) -> tuple[str, list[dict[str, Any]]]:
-    visuals = []
+def extract_pptx_text(path: Path, source_id: str, asset_dir: Path | None = None, visual_mode: str = "metadata_only") -> tuple[str, list[dict[str, Any]]]:
+    visuals: list[dict[str, Any]] = []
     with zipfile.ZipFile(path) as zf:
         chunks = []
         for name in zf.namelist():
             if name.startswith("ppt/slides/") and name.endswith(".xml"):
                 raw = zf.read(name).decode("utf-8", errors="ignore")
                 chunks.extend(re.findall(r"<a:t>(.*?)</a:t>", raw))
-            if name.startswith("ppt/media/"):
-                visuals.append({"source_path": str(path), "media_name": name, "caption": Path(name).stem.replace("_", " "), "role": "source_visual"})
+            if name.startswith(MEDIA_PREFIXES["pptx"]):
+                export_media_asset(zf, name, source_id, asset_dir, visual_mode)
+                visuals.append(
+                    media_candidate(
+                        source_id=source_id,
+                        path=path,
+                        media_name=name,
+                        index=len(visuals) + 1,
+                        asset_dir=asset_dir,
+                        visual_mode=visual_mode,
+                    )
+                )
         return html.unescape("\n".join(chunks)), visuals
 
 
@@ -156,8 +217,9 @@ def extract_pdf_text(path: Path) -> str:
     return "\n".join(page.extract_text() or "" for page in reader.pages)
 
 
-def read_source(path: Path, idx: int) -> SourceDoc:
+def read_source(path: Path, idx: int, asset_dir: Path | None = None, visual_mode: str = "metadata_only") -> SourceDoc:
     suffix = path.suffix.lower()
+    source_id = f"S{idx}"
     gaps: list[str] = []
     visuals: list[dict[str, Any]] = []
     text = ""
@@ -165,9 +227,9 @@ def read_source(path: Path, idx: int) -> SourceDoc:
         if suffix in TEXT_SUFFIXES:
             text = path.read_text(encoding="utf-8", errors="ignore")
         elif suffix == ".docx":
-            text = extract_docx_text(path)
+            text, visuals = extract_docx_text(path, source_id, asset_dir, visual_mode)
         elif suffix == ".pptx":
-            text, visuals = extract_pptx_text(path)
+            text, visuals = extract_pptx_text(path, source_id, asset_dir, visual_mode)
         elif suffix == ".pdf":
             text = extract_pdf_text(path)
             if not text:
@@ -180,7 +242,7 @@ def read_source(path: Path, idx: int) -> SourceDoc:
     readable = bool(text.strip())
     if not readable and not gaps:
         gaps.append("no_readable_text")
-    return SourceDoc(f"S{idx}", str(path), role, readable, text, visuals, gaps)
+    return SourceDoc(source_id, str(path), role, readable, text, visuals, gaps)
 
 
 def fragment_text(doc: SourceDoc) -> list[dict[str, Any]]:
@@ -192,22 +254,19 @@ def fragment_text(doc: SourceDoc) -> list[dict[str, Any]]:
     ]
 
 
-def build_scan(paths: list[Path]) -> dict[str, Any]:
-    docs = [read_source(path, i + 1) for i, path in enumerate(paths)]
+def build_scan(paths: list[Path], asset_dir: Path | None = None, visual_mode: str = "metadata_only") -> dict[str, Any]:
+    docs = [read_source(path, i + 1, asset_dir, visual_mode) for i, path in enumerate(paths)]
     fragments = [frag for doc in docs for frag in fragment_text(doc)]
     decisions = [decision_for_route(doc, route) for doc in docs for route in ["exam_prep_notes", "practice_marking"]]
     visuals: list[dict[str, Any]] = []
     for doc in docs:
-        for idx, visual in enumerate(doc.visuals, start=1):
+        for visual in doc.visuals:
             item = dict(visual)
             item["source_id"] = doc.id
-            item["id"] = f"{doc.id}_V{idx}"
-            item["visual_id"] = f"{doc.id}_V{idx}"
             item.setdefault("visual_kind", "source_embedded_image")
-            item.setdefault("caption", f"Source figure candidate {doc.id}.{idx}")
-            item.setdefault("use_reason", "Candidate source visual; a notes block must select it before rendering.")
-            item.setdefault("placement", {"after_block_id": "unassigned_source_candidate", "max_width_inches": 3.2})
-            item.setdefault("is_decorative", False)
+            item.setdefault("selection_state", "candidate")
+            item.setdefault("caption", f"Source figure candidate {doc.id}")
+            item.setdefault("source_locator", {"media_name": item.get("media_name", "")})
             visuals.append(item)
     return {
         "documents": [{"id": d.id, "path": d.path, "role": d.role, "route_use": route_use_for_doc(d), "readable": d.readable} for d in docs],
@@ -227,6 +286,16 @@ def self_test() -> int:
         assert scan["documents"][0]["role"] in {"lecture_notes", "practical_material", "data_problem_material"}
         assert any(d["route"] == "exam_prep_notes" and d["evidence_scope"] == "factual_course_content" for d in scan["source_decisions"])
         assert scan["fragments"]
+        pptx = Path(td) / "lecture_slides.pptx"
+        with zipfile.ZipFile(pptx, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("ppt/slides/slide1.xml", "<a:t>Graph interpretation slide</a:t>")
+            zf.writestr("ppt/media/image1.png", b"\x89PNG\r\n\x1a\n")
+        asset_dir = Path(td) / "assets"
+        visual_scan = build_scan([pptx], asset_dir=asset_dir, visual_mode="embedded_media")
+        visual = visual_scan["visual_source_references"][0]
+        assert visual["selection_state"] == "candidate"
+        assert "placement" not in visual
+        assert Path(visual["asset_path"]).exists()
         generated = Path(td) / "previous.txt"
         generated.write_text("Exam Preparation Notes\nHigh-yield exam map\nFinal quick revision checklist", encoding="utf-8")
         out = build_scan([generated])
@@ -239,12 +308,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("inputs", nargs="*")
     parser.add_argument("--out")
+    parser.add_argument("--asset-dir", default=".skill_assets")
+    parser.add_argument("--visual-mode", choices=["metadata_only", "embedded_media", "slide_snapshots", "both"], default="embedded_media")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
         return self_test()
     paths = [Path(p) for p in args.inputs]
-    scan = build_scan(paths)
+    scan = build_scan(paths, Path(args.asset_dir), args.visual_mode)
     text = json.dumps(scan, indent=2)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")

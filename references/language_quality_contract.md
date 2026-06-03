@@ -9,6 +9,7 @@ This is the only prose-polish authority.
 - Use direct academic and exam prose.
 - Be concise but explanatory.
 - Do not compress explanations into labels.
+- Do not use a colon label as a substitute for explanation.
 - Do not paraphrase source text verbosely.
 - Use tables and bullets when they improve scan speed.
 - Keep captions short and meaning-bearing.
@@ -46,6 +47,7 @@ Label budget:
 - no more than one generic label per 150 words;
 - no repeated label in consecutive blocks;
 - no label may replace explanation.
+- list bullets must combine a label with explanatory content; label-only bullets are invalid.
 
 ## Essay prose
 

@@ -14,6 +14,7 @@ EXPECTED = {
 }
 INTERNAL_SUFFIXES = {".json", ".jsonl", ".log", ".tmp"}
 INTERNAL_MARKERS = ["qa flag", "source map", "confidence band", "internal manifest", "extraction note", "ai process"]
+CAPTION_MAX_WORDS = 25
 
 
 def stale_term(*parts: str) -> str:
@@ -139,6 +140,17 @@ def lint(route: str, path: Path, plan: dict | None = None) -> dict:
                 and not visual_decisions.get("rejected_visuals")
             ):
                 failures.append({"check": "auto_source_visuals_no_selection"})
+                failures.append({"check": "visual_candidates_without_selection_or_rejection"})
+            for visual in (plan or {}).get("visuals", []) or []:
+                if visual.get("selection_state") != "selected":
+                    continue
+                caption = str(visual.get("caption") or "")
+                if len(re.findall(r"\w+", caption)) > CAPTION_MAX_WORDS:
+                    failures.append({"check": "caption_too_long", "visual_id": visual.get("visual_id")})
+                if visual.get("visual_kind") == "generated_schematic":
+                    lowered_caption = caption.lower()
+                    if "evidence shows" in lowered_caption or "source proves" in lowered_caption:
+                        failures.append({"check": "generated_schematic_claims_evidence_status", "visual_id": visual.get("visual_id")})
         except Exception as exc:
             failures.append({"check": "docx_openability", "error": type(exc).__name__})
     return {"status": "fail" if failures else "pass", "failures": failures}
@@ -159,6 +171,13 @@ def self_test() -> int:
         bad = Path(td) / "Exam_Preparation_Notes_bad.docx"
         write_minimal_docx(bad, [("Exam Preparation Notes", "Title", "center"), ("Visual aids", "Heading1", "left")])
         assert lint("exam_prep_notes", bad)["status"] == "fail"
+        caption_plan = plan
+        caption_plan["visuals"][0]["caption"] = "Evidence shows this generated schematic source proves every mechanism decision in the course without needing the original source figure, source table, lecture text, practical result, or exam context"
+        caption_plan["visuals"][0]["visual_kind"] = "generated_schematic"
+        caption_plan["visuals"][0]["asset_path"] = str(image_path)
+        result = lint("exam_prep_notes", Path(td), caption_plan)
+        assert any(f["check"] == "caption_too_long" for f in result["failures"])
+        assert any(f["check"] == "generated_schematic_claims_evidence_status" for f in result["failures"])
     print("deliverable_surface_linter self-test passed")
     return 0
 

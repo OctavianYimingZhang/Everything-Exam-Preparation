@@ -36,6 +36,16 @@ GENERIC_LABELS = [
     "worked example",
 ]
 PRACTICAL_TERMS = ["method", "control", "limitation", "calculate", "graph", "table", "readout"]
+LISTABLE_REASONS = {
+    "source_numbered_list",
+    "source_bulleted_list",
+    "past_paper_list_question",
+    "criteria_set",
+    "taxonomy_or_contrast",
+    "short_answer_mark_points",
+    "definition_group",
+}
+LIST_RENDER_MODES = {"kp_list", "compact_table", "image_plus_kp_list"}
 
 
 def sentence_frame(sentence: str) -> str | None:
@@ -56,12 +66,66 @@ def repeated_sentence_frames(text: str) -> list[dict[str, Any]]:
     return [{"frame": frame, "count": count} for frame, count in sorted(counts.items()) if count > threshold]
 
 
+def read_docx_surface(path: Path) -> tuple[str, int, int]:
+    with zipfile.ZipFile(path) as zf:
+        raw = zf.read("word/document.xml").decode("utf-8", errors="ignore")
+        media_count = sum(1 for name in zf.namelist() if name.startswith("word/media/"))
+        table_count = raw.count("<w:tbl")
+    return html.unescape("\n".join(re.findall(r"<w:t[^>]*>(.*?)</w:t>", raw))), media_count, table_count
+
+
 def read_text(path: Path) -> str:
     if path.suffix.lower() == ".docx":
-        with zipfile.ZipFile(path) as zf:
-            raw = zf.read("word/document.xml").decode("utf-8", errors="ignore")
-        return html.unescape("\n".join(re.findall(r"<w:t[^>]*>(.*?)</w:t>", raw)))
+        return read_docx_surface(path)[0]
     return path.read_text(encoding="utf-8", errors="ignore")
+
+
+def iter_blocks(plan: dict[str, Any]):
+    for section in plan.get("sections", []) or []:
+        for block in section.get("blocks", []) or []:
+            if isinstance(block, dict):
+                yield block
+
+
+def lint_plan(plan: dict[str, Any], docx_media_count: int = 0, docx_table_count: int = 0) -> list[dict[str, Any]]:
+    failures: list[dict[str, Any]] = []
+    for block in iter_blocks(plan):
+        block_id = block.get("block_id")
+        reason = block.get("listability_reason")
+        mode = block.get("render_mode")
+        if reason in LISTABLE_REASONS and mode not in LIST_RENDER_MODES:
+            failures.append({
+                "check": "listable_content_not_rendered_as_list_or_table",
+                "block_id": block_id,
+                "reason": reason,
+                "render_mode": mode,
+            })
+        if mode in {"kp_list", "image_plus_kp_list"}:
+            for point in block.get("points", []) or []:
+                if not isinstance(point, dict):
+                    failures.append({"check": "legacy_string_point", "block_id": block_id})
+                    continue
+                if len(re.findall(r"\w+", str(point.get("explanation", "")))) < 5:
+                    failures.append({
+                        "check": "bullet_points_are_labels_without_explanation",
+                        "block_id": block_id,
+                        "label": point.get("label"),
+                    })
+        if mode == "image_plus_kp_list" and docx_media_count == 0:
+            failures.append({"check": "image_plus_kp_list_has_no_embedded_image", "block_id": block_id})
+        if mode == "compact_table" and docx_table_count == 0:
+            failures.append({"check": "compact_table_has_no_docx_table", "block_id": block_id})
+    visual_decisions = plan.get("visual_decisions") or {}
+    if (
+        plan.get("visual_policy") == "auto_source_visuals"
+        and int(visual_decisions.get("candidate_count") or 0) > 0
+        and int(visual_decisions.get("selected_count") or 0) == 0
+        and not visual_decisions.get("rejected_visuals")
+    ):
+        failures.append({"check": "source_visual_candidates_unresolved"})
+    if int(visual_decisions.get("selected_count") or 0) > 0 and docx_media_count == 0:
+        failures.append({"check": "plan_requires_visual_but_docx_has_no_media"})
+    return failures
 
 
 def lint_text(text: str, plan: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -122,6 +186,47 @@ def self_test() -> int:
         "Development decisions are affected by this topic because licensing changes evidence needs."
     )
     assert any(f["check"] == "repeated_generic_sentence_frame" for f in repeated["failures"])
+    listable_paragraph = {
+        "sections": [
+            {
+                "blocks": [
+                    {
+                        "block_id": "B_LIPINSKI",
+                        "heading": "Lipinski Rule of 5",
+                        "render_mode": "paragraph",
+                        "listability_reason": "criteria_set",
+                        "source_ids": ["S1"],
+                        "paragraph": "Lipinski's rule covers donors, acceptors, mass and logP.",
+                    }
+                ]
+            }
+        ]
+    }
+    assert lint_plan(listable_paragraph)[0]["check"] == "listable_content_not_rendered_as_list_or_table"
+    good_list = {
+        "sections": [
+            {
+                "blocks": [
+                    {
+                        "block_id": "B_IN_VIVO",
+                        "heading": "What only in vivo studies can do",
+                        "render_mode": "kp_list",
+                        "listability_reason": "source_numbered_list",
+                        "source_ids": ["S1"],
+                        "points": [
+                            {
+                                "label": "Whole-body effects",
+                                "explanation": "Captures integrated physiology that isolated cells cannot reproduce.",
+                            }
+                        ],
+                    }
+                ]
+            }
+        ],
+        "visual_policy": "user_requested_text_only",
+        "visual_decisions": {"candidate_count": 0, "selected_count": 0, "user_requested_text_only": True},
+    }
+    assert lint_plan(good_list) == []
     print("exam_prep_notes_quality_linter self-test passed")
     return 0
 
@@ -137,7 +242,17 @@ def main() -> int:
     if not args.input:
         parser.error("--input is required")
     plan = json.loads(Path(args.plan).read_text(encoding="utf-8")) if args.plan else None
-    result = lint_text(read_text(Path(args.input)), plan)
+    input_path = Path(args.input)
+    if input_path.suffix.lower() == ".docx":
+        text, media_count, table_count = read_docx_surface(input_path)
+    else:
+        text, media_count, table_count = read_text(input_path), 0, 0
+    result = lint_text(text, plan)
+    if plan:
+        plan_failures = lint_plan(plan, media_count, table_count)
+        result["failures"].extend(plan_failures)
+        if plan_failures:
+            result["status"] = "fail"
     print(json.dumps(result, indent=2))
     return 1 if result["status"] == "fail" else 0
 

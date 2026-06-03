@@ -11,6 +11,8 @@ Each section contains ordered blocks. Each block must include:
 - `block_id`
 - `heading`
 - `render_mode`
+- `listability_reason`
+- optional `exam_prompt_signal` and `source_form_signal` when they explain the render decision
 - `source_ids`
 - content matching the selected render mode
 - optional `visual_ids` only when a source or generated visual is attached to that block
@@ -47,6 +49,17 @@ Rules:
 
 Each knowledge block must choose exactly one render mode.
 
+Decision algorithm:
+
+1. Identify source form: numbered list, bullet list, table, diagram, graph, paragraph, worked example, or mixed slide.
+2. Identify exam signal: list/state/name/give, describe N points, compare, calculate, interpret graph, explain mechanism, evaluate limitation, or essay-style reasoning.
+3. Set `listability_reason`. Use a specific listable reason when source form or exam signal contains separable answer units. Use `not_listable` only when connected reasoning is required.
+4. Choose `compact_table` for comparisons, parameter sets, definition groups, phase sets, assay sets, or rule/criteria sets with repeated columns.
+5. Choose `image_plus_kp_list` only when a selected block-owned visual explains faster than text and the block also has structured key points.
+6. Choose `kp_list` when the answer is separable but not table-shaped.
+7. Choose `mechanism_chain` for causal or sequence content that loses meaning as isolated labels.
+8. Choose `paragraph` only when `listability_reason=not_listable` and the idea needs integrated explanation or caveat handling.
+
 | render_mode | Use when | Student-facing form |
 |---|---|---|
 | `kp_list` | The source or exam asks for named points, criteria, uses, causes, features, examples, advantages, limitations, steps, or `describe/list TWO/THREE/N` answers. | Compact bullets. Each bullet has a label plus one short explanatory clause. |
@@ -69,7 +82,7 @@ Do not use list mode when the core meaning is a causal mechanism, argument, or m
 
 ## Bullet explanation minimum
 
-A bullet is valid only if it contains the answer point plus at least one of: why it matters, how it works, when it applies, what it predicts, what limitation follows, or how it earns marks.
+A bullet is valid only if it is a structured point with `label` and `explanation`. The explanation must contain the answer point plus at least one of: why it matters, how it works, when it applies, what it predicts, what limitation follows, or how it earns marks. Optional `exam_use` and `limitation` may be added when they reduce prose elsewhere.
 
 Invalid bullets:
 
@@ -94,10 +107,10 @@ For a listable source slide such as `what only in vivo studies can do`, use `ima
 
 For a low-mark rule question, use `kp_list`:
 
-- H-bond donors below 5.
-- H-bond acceptors below 10.
-- Molecular mass below 500 Da.
-- logP not above 5.
+- H-bond donors - keep the count below 5 to preserve likely oral absorption.
+- H-bond acceptors - keep the count below 10 to limit excessive polarity.
+- Molecular mass - keep it below 500 Da because larger molecules often cross membranes less efficiently.
+- logP - keep it at or below 5 to avoid excessive lipophilicity and solubility problems.
 
 For a comparison such as graded versus quantal response, use `compact_table` with columns for type, measure, and typical output.
 
@@ -105,7 +118,7 @@ For a comparison such as graded versus quantal response, use `compact_table` wit
 
 Use source slide images only if they explain faster than text. Do not use decorative images. Default maximum image width is 3.8 inches. Use captions only when they help locate meaning. Do not expand the document with huge screenshots.
 
-Visuals are block-level only. A visual may appear only when a block explicitly references it through `visual_ids` and the visual placement points back to that block. The renderer must not append all images to a final `Visual aids` section, insert images without block ownership, use generic captions such as `Visual aid for ...`, or silently convert a missing image into caption-only text.
+Visuals are block-level only. A visual may appear only when `selection_state=selected`, a block explicitly references it through `visual_ids`, and the visual placement points back to that block. The renderer must not append all images to a final `Visual aids` section, insert images without block ownership, use generic captions such as `Visual aid for ...`, or silently convert a missing image into caption-only text.
 
 The default visual policy is `auto_source_visuals`. `user_requested_text_only` is valid only when the user explicitly asks for text-only or no images. If source visual candidates exist under `auto_source_visuals`, the plan must either select block-owned visuals or record structured rejection reasons for every candidate.
 

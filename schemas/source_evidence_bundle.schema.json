@@ -41,11 +41,63 @@
     "visual_source_references": {
       "type": "array",
       "items": {
-        "$ref": "visual_aid_spec.schema.json"
+        "$ref": "#/$defs/visual_candidate"
       }
     }
   },
   "$defs": {
+    "visual_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "visual_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "visual_kind": {
+          "enum": [
+            "source_embedded_image",
+            "source_slide_snapshot",
+            "source_table_redraw",
+            "generated_schematic"
+          ]
+        },
+        "selection_state": {
+          "const": "candidate"
+        },
+        "asset_path": {
+          "type": "string"
+        },
+        "source_path": {
+          "type": "string"
+        },
+        "media_name": {
+          "type": "string"
+        },
+        "caption": {
+          "type": "string"
+        },
+        "source_locator": {
+          "type": "object"
+        },
+        "candidate_reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "visual_id",
+        "source_id",
+        "visual_kind",
+        "selection_state",
+        "caption",
+        "source_locator"
+      ]
+    },
     "source_decision": {
       "type": "object",
       "additionalProperties": false,

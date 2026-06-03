@@ -136,7 +136,7 @@ def check_workflow() -> None:
     note_actions = [action["id"] for action in plan("make notes")["actions"]]
     if "run_control_plane" in note_actions:
         fail("notes route must not schedule run_control_plane")
-    for action in ["visual_candidate_index", "block_visual_placement"]:
+    for action in ["visual_candidate_index", "render_mode_selection", "block_visual_placement"]:
         if action not in note_actions:
             fail(f"notes route missing required visual workflow action: {action}")
     qa_actions = [action["id"] for action in plan("github ready qa")["actions"]]
@@ -166,10 +166,22 @@ def check_notes_rendering_contract() -> None:
     for mode in ["kp_list", "compact_table", "mechanism_chain", "image_plus_kp_list", "paragraph"]:
         if mode not in notes_schema:
             fail(f"notes plan schema missing render mode: {mode}")
+    for token in ["listability_reason", "source_numbered_list", "criteria_set", "taxonomy_or_contrast", "short_answer_mark_points", "not_listable"]:
+        if token not in notes_schema:
+            fail(f"notes plan schema missing listability token: {token}")
+    for token in ["label", "explanation", "exam_use", "limitation"]:
+        if token not in notes_schema:
+            fail(f"notes plan schema missing structured point token: {token}")
+    for token in ["headers", "rows"]:
+        if token not in notes_schema:
+            fail(f"notes plan schema missing structured table token: {token}")
     visual_schema = json.dumps(load_json(ROOT / "schemas/visual_aid_spec.schema.json"))
     for token in ["visual_id", "source_id", "source_embedded_image", "source_slide_snapshot", "source_table_redraw", "placement", "after_block_id", "use_reason"]:
         if token not in visual_schema:
             fail(f"visual schema missing block-level ownership token: {token}")
+    for token in ["selection_state", "candidate", "selected", "rejected", "rejection_reason", "source_locator"]:
+        if token not in visual_schema:
+            fail(f"visual schema missing lifecycle token: {token}")
     source_schema_obj = load_json(ROOT / "schemas/source_evidence_bundle.schema.json")
     if source_schema_obj.get("additionalProperties") is not False:
         fail("source evidence bundle schema must reject extra top-level fields")
@@ -177,16 +189,27 @@ def check_notes_rendering_contract() -> None:
     for token in ["source_decisions", "evidence_scope", "factual_course_content", "needs_confirmation"]:
         if token not in source_schema:
             fail(f"source evidence schema missing route-scope token: {token}")
+    for token in ["visual_candidate", "selection_state", "candidate", "source_locator", "candidate_reason"]:
+        if token not in source_schema:
+            fail(f"source evidence schema missing visual candidate token: {token}")
     renderer = (ROOT / "scripts/generate_exam_prep_notes_docx.py").read_text(encoding="utf-8")
     for token in ["validate_plan_contract", "build_docx_blocks", "visual_bytes", "word/media/", "image_plus_kp_list", "compact_table", "table_xml", "<w:tbl>"]:
         if token not in renderer:
             fail(f"notes renderer missing visual/render support: {token}")
+    for token in ["legacy_string_point_not_allowed", "listable_block_wrong_render_mode", "legacy_array_table_not_allowed", "generated_schematic_missing_asset_path"]:
+        if token not in renderer:
+            fail(f"notes renderer missing hard listability/visual guard: {token}")
     if "plan.get(\"topics\"" in renderer or "plan.get('topics'" in renderer:
         fail("notes renderer still consumes legacy top-level topics")
     extractor = (ROOT / "scripts/extract_sources.py").read_text(encoding="utf-8")
     for token in ["decision_for_route", "source_decisions", "factual_course_content", "style_only"]:
         if token not in extractor:
             fail(f"source extractor missing route-specific source decision support: {token}")
+    for token in ["--asset-dir", "selection_state", "candidate", "asset_path", "source_locator"]:
+        if token not in extractor:
+            fail(f"source extractor missing stable visual candidate support: {token}")
+    if "unassigned_source_candidate" in extractor:
+        fail("source extractor still creates fake visual placement")
     fragment_index = (ROOT / "scripts/build_fragment_index.py").read_text(encoding="utf-8")
     if "fragment_allowed_for_notes" not in fragment_index:
         fail("fragment index does not enforce notes source-scope filtering")
@@ -194,6 +217,18 @@ def check_notes_rendering_contract() -> None:
     for token in ["FORBIDDEN_SURFACE_PATTERNS", "forbidden_internal_surface_templates", "generic_colon_label_overuse", "repeated_generic_sentence_frame"]:
         if token not in linter:
             fail(f"notes quality linter missing surface-template guard: {token}")
+    for token in ["lint_plan", "listable_content_not_rendered_as_list_or_table", "bullet_points_are_labels_without_explanation", "image_plus_kp_list_has_no_embedded_image", "source_visual_candidates_unresolved"]:
+        if token not in linter:
+            fail(f"notes quality linter missing plan-aware guard: {token}")
+    surface_linter = (ROOT / "scripts/deliverable_surface_linter.py").read_text(encoding="utf-8")
+    for token in ["caption_too_long", "generated_schematic_claims_evidence_status", "visual_candidates_without_selection_or_rejection"]:
+        if token not in surface_linter:
+            fail(f"deliverable surface linter missing visual surface guard: {token}")
+    agents = (ROOT / "agents/presets.yaml").read_text(encoding="utf-8")
+    if "embed_source_visuals_when_explanatory" in agents:
+        fail("agents use non-schema visual_policy value")
+    if ", text_only" in agents or "[text_only" in agents:
+        fail("agents use text_only instead of user_requested_text_only")
 
 
 def check_release_guards() -> None:

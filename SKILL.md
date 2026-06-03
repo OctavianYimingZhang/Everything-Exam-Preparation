@@ -71,6 +71,10 @@ Every run has five separate phases:
 
 A later phase must not silently redo an earlier phase. Any source used for factual notes must have `exam_prep_notes` evidence scope that permits factual course content.
 
+Every notes block must state `listability_reason`. If a source block is listable because it is a source list, criteria set, taxonomy/contrast, short-answer mark point set, definition group, or past-paper list question, the plan must use `kp_list`, `compact_table`, or `image_plus_kp_list`. It must not be rendered as a paragraph unless `listability_reason=not_listable`.
+
+Bullet points must be structured answer units with `label` and `explanation`; short labels without explanation are invalid. Compact tables must be structured with `headers` and `rows`, not free-form arrays. Source visual candidates must remain candidates until a notes block selects them; candidates must not carry fake placement.
+
 `exam_prep_notes` must not read student-answer, teacher-feedback, marking-gap, or practice-marking objects. A future `practice_marking` route may reuse source inventory and lecture or knowledge-point mapping, but it must not call the notes renderer or mutate the notes plan contract.
 
 Run-control objects are internal QA only. They must not shape student-facing prose.

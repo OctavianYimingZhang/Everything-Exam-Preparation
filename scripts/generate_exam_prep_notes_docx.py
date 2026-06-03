@@ -23,6 +23,15 @@ IMAGE_CONTENT_TYPES = {
     ".bmp": "image/bmp",
 }
 RENDER_MODES = {"kp_list", "compact_table", "mechanism_chain", "image_plus_kp_list", "paragraph"}
+LISTABLE_REASONS = {
+    "source_numbered_list",
+    "source_bulleted_list",
+    "past_paper_list_question",
+    "criteria_set",
+    "taxonomy_or_contrast",
+    "short_answer_mark_points",
+    "definition_group",
+}
 LEGACY_TOP_LEVEL_KEYS = {
     "high_yield_exam_map",
     "topics",
@@ -85,6 +94,10 @@ def table_cell_xml(text: Any) -> str:
         f"<w:t>{xml_escape(text)}</w:t></w:r></w:p>"
         "</w:tc>"
     )
+
+
+def table_rows(table: dict[str, Any]) -> list[Any]:
+    return [table["headers"]] + table["rows"]
 
 
 def table_xml(rows: list[Any]) -> str:
@@ -255,6 +268,44 @@ def validate_source_scopes(block: dict[str, Any], scopes: dict[str, str], failur
             failures.append(f"source_scope_not_allowed:{block_id}:{source_id}:{scope}")
 
 
+def word_count(text: Any) -> int:
+    return len(re.findall(r"\w+", str(text)))
+
+
+def validate_points(block: dict[str, Any], failures: list[str]) -> None:
+    block_id = str(block.get("block_id") or "unknown")
+    points = block.get("points")
+    if not isinstance(points, list) or not points:
+        failures.append(f"points_required:{block_id}")
+        return
+    for index, point in enumerate(points, start=1):
+        if not isinstance(point, dict):
+            failures.append(f"legacy_string_point_not_allowed:{block_id}:{index}")
+            continue
+        if not str(point.get("label") or "").strip():
+            failures.append(f"point_missing_label:{block_id}:{index}")
+        explanation = str(point.get("explanation") or "").strip()
+        if word_count(explanation) < 5:
+            failures.append(f"point_explanation_too_short:{block_id}:{point.get('label', index)}")
+
+
+def validate_table(block: dict[str, Any], failures: list[str]) -> None:
+    block_id = str(block.get("block_id") or "unknown")
+    table = block.get("table")
+    if isinstance(table, list):
+        failures.append(f"legacy_array_table_not_allowed:{block_id}")
+        return
+    if not isinstance(table, dict):
+        failures.append(f"compact_table_missing_table:{block_id}")
+        return
+    headers = table.get("headers")
+    rows = table.get("rows")
+    if not isinstance(headers, list) or not headers:
+        failures.append(f"compact_table_missing_headers:{block_id}")
+    if not isinstance(rows, list) or not rows:
+        failures.append(f"compact_table_missing_rows:{block_id}")
+
+
 def validate_plan_contract(plan: dict[str, Any], source_scan: dict[str, Any] | None = None) -> list[str]:
     failures: list[str] = []
     legacy = sorted(LEGACY_TOP_LEVEL_KEYS.intersection(plan))
@@ -321,6 +372,11 @@ def validate_plan_contract(plan: dict[str, Any], source_scan: dict[str, Any] | N
             mode = block.get("render_mode")
             if mode not in RENDER_MODES:
                 failures.append(f"invalid_render_mode:{block_id or section_index}")
+            reason = block.get("listability_reason")
+            if not reason:
+                failures.append(f"missing_listability_reason:{block_id or section_index}")
+            if reason in LISTABLE_REASONS and mode not in {"kp_list", "compact_table", "image_plus_kp_list"}:
+                failures.append(f"listable_block_wrong_render_mode:{block_id}:{reason}:{mode}")
             if not block.get("heading"):
                 failures.append(f"block_missing_heading:{block_id or section_index}")
             if not block.get("source_ids"):
@@ -328,14 +384,16 @@ def validate_plan_contract(plan: dict[str, Any], source_scan: dict[str, Any] | N
             validate_source_scopes(block, source_scopes, failures)
             if mode == "paragraph" and not block.get("paragraph"):
                 failures.append(f"paragraph_missing_text:{block_id}")
-            if mode == "kp_list" and not block.get("points"):
-                failures.append(f"kp_list_missing_points:{block_id}")
-            if mode == "compact_table" and not block.get("table"):
-                failures.append(f"compact_table_missing_table:{block_id}")
+            if mode == "kp_list":
+                validate_points(block, failures)
+            if mode == "compact_table":
+                validate_table(block, failures)
             if mode == "mechanism_chain" and not block.get("chain"):
                 failures.append(f"mechanism_chain_missing_chain:{block_id}")
             if mode == "image_plus_kp_list" and (not block.get("visual_ids") or not block.get("points")):
                 failures.append(f"image_plus_kp_list_missing_visual_or_points:{block_id}")
+            if mode == "image_plus_kp_list":
+                validate_points(block, failures)
             if mode != "image_plus_kp_list" and block.get("visual_ids"):
                 failures.append(f"visual_ids_require_image_plus_kp_list:{block_id}")
             for vid in block.get("visual_ids", []) or []:
@@ -349,12 +407,16 @@ def validate_plan_contract(plan: dict[str, Any], source_scan: dict[str, Any] | N
         caption = visual_caption(visual)
         placement = visual.get("placement") or {}
         after_block_id = str(placement.get("after_block_id") or "")
+        if visual.get("selection_state") != "selected":
+            failures.append(f"visual_not_selected:{vid}")
         if visual.get("is_decorative"):
             failures.append(f"decorative_visual_selected:{vid}")
         if is_generic_caption(caption):
             failures.append(f"generic_visual_caption:{vid}")
         if not visual.get("use_reason"):
             failures.append(f"visual_missing_use_reason:{vid}")
+        if visual.get("visual_kind") == "generated_schematic" and not visual.get("asset_path"):
+            failures.append(f"generated_schematic_missing_asset_path:{vid}")
         if after_block_id not in block_ids:
             failures.append(f"visual_without_block_ownership:{vid}")
         if vid in visual_references and after_block_id not in visual_references[vid]:
@@ -373,13 +435,28 @@ def render_visuals_for_block(block: dict[str, Any], visual_map: dict[str, dict[s
     return rendered
 
 
+def point_text(point: Any) -> str:
+    if not isinstance(point, dict):
+        raise ValueError("legacy_string_point_not_allowed")
+    label = str(point["label"]).strip()
+    explanation = str(point["explanation"]).strip()
+    text = f"{label} - {explanation}"
+    exam_use = str(point.get("exam_use") or "").strip()
+    limitation = str(point.get("limitation") or "").strip()
+    if exam_use:
+        text += f"; exam use: {exam_use}"
+    if limitation:
+        text += f"; limitation: {limitation}"
+    return text
+
+
 def add_points(blocks: list[Any], points: list[Any], limit: int = 16) -> None:
     for point in points[:limit]:
-        blocks.append((f"- {point}", "Normal", "both"))
+        blocks.append((f"- {point_text(point)}", "Normal", "both"))
 
 
-def add_table(blocks: list[Any], rows: list[Any]) -> None:
-    blocks.append({"kind": "table", "rows": rows})
+def add_table(blocks: list[Any], table: dict[str, Any]) -> None:
+    blocks.append({"kind": "table", "rows": table_rows(table)})
 
 
 def build_docx_blocks(plan: dict[str, Any], source_scan: dict[str, Any] | None = None) -> list[Any]:
@@ -403,7 +480,7 @@ def build_docx_blocks(plan: dict[str, Any], source_scan: dict[str, Any] | None =
             elif mode == "kp_list":
                 add_points(blocks, block.get("points", []))
             elif mode == "compact_table":
-                add_table(blocks, block.get("table", []))
+                add_table(blocks, block["table"])
             elif mode == "mechanism_chain":
                 blocks.append((" -> ".join(str(step) for step in block.get("chain", [])), "Normal", "both"))
     return blocks
@@ -425,11 +502,13 @@ def sample_strict_plan(image_path: Path) -> dict[str, Any]:
             {
                 "visual_id": "V1",
                 "source_id": "SRC1",
+                "selection_state": "selected",
                 "asset_path": str(image_path),
                 "visual_kind": "source_embedded_image",
                 "caption": "Reaction curve showing early rate estimation",
                 "use_reason": "The graph explains why the initial slope is used before substrate depletion.",
                 "placement": {"after_block_id": "B1", "max_width_inches": 1.0, "height_inches": 1.0},
+                "source_locator": {"slide": "1"},
                 "is_decorative": False,
             }
         ],
@@ -442,17 +521,34 @@ def sample_strict_plan(image_path: Path) -> dict[str, Any]:
                         "block_id": "B1",
                         "heading": "Enzyme rate",
                         "render_mode": "image_plus_kp_list",
+                        "listability_reason": "source_bulleted_list",
+                        "source_form_signal": "source slide pairs a graph with named interpretation points",
+                        "exam_prompt_signal": "graph interpretation answers often need named readout cues",
                         "source_ids": ["SRC1"],
                         "paragraph": "Initial slope estimates early reaction rate before substrate depletion.",
-                        "points": ["Axes define the measured readout.", "A later plateau can reflect substrate depletion rather than initial velocity."],
+                        "points": [
+                            {
+                                "label": "Axes",
+                                "explanation": "Define the measured readout and the variable being changed."
+                            },
+                            {
+                                "label": "Plateau",
+                                "explanation": "Can reflect substrate depletion rather than initial velocity."
+                            }
+                        ],
                         "visual_ids": ["V1"],
                     },
                     {
                         "block_id": "B2",
                         "heading": "Rate readout table",
                         "render_mode": "compact_table",
+                        "listability_reason": "taxonomy_or_contrast",
+                        "source_form_signal": "features and exam uses form a two-column contrast",
                         "source_ids": ["SRC1"],
-                        "table": [["Feature", "Exam use"], ["Initial slope", "Estimate early rate before depletion"]],
+                        "table": {
+                            "headers": ["Feature", "Exam use"],
+                            "rows": [["Initial slope", "Estimate early rate before depletion"]]
+                        },
                     }
                 ],
             }
@@ -489,6 +585,17 @@ def self_test() -> int:
         mismatch_plan = sample_strict_plan(image_path)
         mismatch_plan["visuals"][0]["placement"]["after_block_id"] = "B2"
         assert "visual_placement_mismatch" in ";".join(validate_plan_contract(mismatch_plan))
+        legacy_points = sample_strict_plan(image_path)
+        legacy_points["sections"][0]["blocks"][0]["points"] = ["Axes define the measured readout."]
+        assert "legacy_string_point_not_allowed" in ";".join(validate_plan_contract(legacy_points))
+        paragraph_listable = sample_strict_plan(image_path)
+        paragraph_listable["sections"][0]["blocks"][1]["render_mode"] = "paragraph"
+        paragraph_listable["sections"][0]["blocks"][1]["paragraph"] = "The comparison is a set of named criteria."
+        paragraph_listable["sections"][0]["blocks"][1].pop("table")
+        assert "listable_block_wrong_render_mode" in ";".join(validate_plan_contract(paragraph_listable))
+        legacy_table = sample_strict_plan(image_path)
+        legacy_table["sections"][0]["blocks"][1]["table"] = [["Feature", "Exam use"]]
+        assert "legacy_array_table_not_allowed" in ";".join(validate_plan_contract(legacy_table))
         text_only = sample_strict_plan(image_path)
         text_only["visual_policy"] = "user_requested_text_only"
         text_only["visual_decisions"] = {"candidate_count": 1, "selected_count": 0, "user_requested_text_only": False}
