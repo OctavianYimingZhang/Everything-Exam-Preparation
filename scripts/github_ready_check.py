@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 SELF = Path(__file__).resolve()
 FORBIDDEN_TEXT = [
@@ -26,8 +28,12 @@ FORBIDDEN_TEXT = [
     "Excel-first",
     "SBS",
     "Lecture_Knowledge_Walkthrough",
+    "Lecture Knowledge Walkthrough",
     "knowledge_walkthrough",
+    "knowledge_walkthrough_docx",
     "public_lecture_notes",
+    "public lecture notes",
+    "PublicLectureNotesPlan",
     "Public Lecture Notes",
 ]
 FORBIDDEN_PATH_PARTS = [
@@ -77,9 +83,10 @@ STALE_SCRIPT_NAMES = [
     "zero_mention_lint.py",
 ]
 EXPECTED_REFERENCES = 6
-EXPECTED_SCHEMAS = 12
-EXPECTED_SCRIPTS = 12
+EXPECTED_SCHEMAS = 13
+EXPECTED_SCRIPTS = 13
 TEXT_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml", ".txt", ".toml", ".ini"}
+READABILITY_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml"}
 LOCAL_OUTPUT_SUFFIXES = {".docx", ".pptx", ".pdf", ".xlsx", ".zip"}
 
 
@@ -128,13 +135,38 @@ def check_text(failures: list[str]) -> None:
         if path.resolve() == SELF or path.suffix.lower() not in TEXT_SUFFIXES:
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
+        lowered = text.lower()
         rel = path.relative_to(ROOT).as_posix()
         for term in FORBIDDEN_TEXT:
-            if term in text:
+            if term.lower() in lowered:
                 add_failure(failures, f"forbidden stale text {term!r} in {rel}")
         for name in STALE_SCRIPT_NAMES:
             if name in text:
                 add_failure(failures, f"stale deleted script reference {name} in {rel}")
+
+
+def check_readability(failures: list[str]) -> None:
+    for path in iter_repo_files():
+        if path.suffix.lower() not in READABILITY_SUFFIXES:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if len(text) > 240 and text.count("\n") < 2:
+            rel = path.relative_to(ROOT).as_posix()
+            add_failure(failures, f"formatted source file appears compressed into one line: {rel}")
+
+
+def check_yaml_syntax(failures: list[str]) -> None:
+    for folder, pattern in [(".github/workflows", "*.yml"), ("agents", "*.yaml")]:
+        for path in (ROOT / folder).glob(pattern):
+            try:
+                parsed = yaml.safe_load(path.read_text(encoding="utf-8"))
+            except Exception as exc:
+                rel = path.relative_to(ROOT).as_posix()
+                add_failure(failures, f"invalid yaml {rel}: {type(exc).__name__}: {exc}")
+                continue
+            if not isinstance(parsed, dict):
+                rel = path.relative_to(ROOT).as_posix()
+                add_failure(failures, f"yaml root must be a mapping: {rel}")
 
 
 def check_manifest_commands(failures: list[str]) -> None:
@@ -161,6 +193,8 @@ def run(ci: bool = False) -> int:
     check_file_sets(failures)
     check_paths(failures)
     check_text(failures)
+    check_readability(failures)
+    check_yaml_syntax(failures)
     check_manifest_commands(failures)
     if ci:
         run_health_commands(failures)

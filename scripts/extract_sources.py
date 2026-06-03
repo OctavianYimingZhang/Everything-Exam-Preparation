@@ -118,10 +118,16 @@ def fragment_text(doc: SourceDoc) -> list[dict[str, Any]]:
 def build_scan(paths: list[Path]) -> dict[str, Any]:
     docs = [read_source(path, i + 1) for i, path in enumerate(paths)]
     fragments = [frag for doc in docs for frag in fragment_text(doc)]
+    visuals: list[dict[str, Any]] = []
+    for doc in docs:
+        for visual in doc.visuals:
+            item = dict(visual)
+            item["source_id"] = doc.id
+            visuals.append(item)
     return {
         "documents": [{"id": d.id, "path": d.path, "role": d.role, "readable": d.readable} for d in docs],
         "fragments": fragments,
-        "visual_source_references": [v for d in docs for v in d.visuals],
+        "visual_source_references": visuals,
         "unsupported_gaps": [{"source_id": d.id, "gap": gap} for d in docs for gap in d.gaps],
         "source_roles": sorted({d.role for d in docs}),
     }

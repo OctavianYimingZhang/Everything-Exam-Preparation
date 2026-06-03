@@ -9,7 +9,10 @@
       "type": "string"
     },
     "source_ids": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "support_level": {
       "enum": [
@@ -22,5 +25,29 @@
   "required": [
     "claim",
     "support_level"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "support_level": {
+            "const": "supported"
+          }
+        },
+        "required": [
+          "support_level"
+        ]
+      },
+      "then": {
+        "required": [
+          "source_ids"
+        ],
+        "properties": {
+          "source_ids": {
+            "minItems": 1
+          }
+        }
+      }
+    }
   ]
 }

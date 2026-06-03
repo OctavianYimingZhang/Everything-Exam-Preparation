@@ -16,6 +16,7 @@
     "python3 scripts/output_sufficiency_linter.py --self-test",
     "python3 scripts/essay_exam_tools.py --self-test",
     "python3 scripts/deliverable_surface_linter.py --self-test",
+    "python3 scripts/run_control_plane.py --self-test",
     "python3 scripts/github_ready_check.py --ci"
   ],
   "post_update_commands": [

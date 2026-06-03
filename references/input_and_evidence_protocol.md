@@ -30,6 +30,10 @@ Do not merge source roles into one undifferentiated source pool. A claim is usab
 
 If a source is unreadable or partial, record the affected source class and block only conclusions that depend on the missing material.
 
+## Runtime identity
+
+Each readable source document and extracted fragment should keep a stable ID and fingerprint. Downstream claims, preparation artifacts, and QA gates should link back to those IDs internally. The student-facing output must receive only the resulting explanation, not the internal IDs or link records.
+
 ## Visual source handling
 
 Source visuals may be used when they explain a mechanism, method, graph, workflow, structure, or comparison faster than text. Decorative images are not evidence. A visual never overrides text evidence. If a resized image would be unreadable, replace it with a concise redraw, table, or description.

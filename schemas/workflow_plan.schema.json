@@ -24,12 +24,65 @@
         "source_order"
       ]
     },
+    "output": {
+      "enum": [
+        "Exam_Preparation_Notes.docx",
+        "Example_Essay.docx",
+        "chat_report"
+      ]
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "Exam_Preparation_Notes.docx",
+          "Example_Essay.docx",
+          "chat_report"
+        ]
+      }
+    },
     "actions": {
       "type": "array",
       "items": {
         "$ref": "#/$defs/action"
       }
+    },
+    "source_roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
+  "required": [
+    "route",
+    "ordering",
+    "output",
+    "outputs",
+    "actions"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "route": {
+            "const": "essay_addon"
+          }
+        },
+        "required": [
+          "route"
+        ]
+      },
+      "then": {
+        "properties": {
+          "outputs": {
+            "contains": {
+              "const": "Example_Essay.docx"
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {"action": {"type": "object", "required": ["id", "purpose"], "properties": {"id": {"type": "string"}, "purpose": {"type": "string"}}}}
 }

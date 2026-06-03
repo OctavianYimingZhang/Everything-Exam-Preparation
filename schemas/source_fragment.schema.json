@@ -16,6 +16,9 @@
     },
     "role": {
       "type": "string"
+    },
+    "fingerprint": {
+      "type": "string"
     }
   },
   "required": [

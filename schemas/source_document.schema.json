@@ -16,6 +16,9 @@
     },
     "readable": {
       "type": "boolean"
+    },
+    "fingerprint": {
+      "type": "string"
     }
   },
   "required": [

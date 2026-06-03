@@ -13,11 +13,12 @@ Exam_Preparation_Notes.docx
 ## What the Skill does
 
 1. Classifies supplied learning and practice sources.
-2. Generates source-backed Exam Preparation Notes.
-3. Detects exam mode from past papers or the user prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
-4. Generates only the add-on content needed for the detected or requested mode.
+2. Builds a run control manifest with stable source, fragment, action, artifact, lineage, validation, and reuse records.
+3. Generates source-backed Exam Preparation Notes.
+4. Detects exam mode from past papers or the user prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
+5. Generates only the add-on content needed for the detected or requested mode.
 
-Past papers shape emphasis, answer operations, and mode. They do not replace the course-source baseline.
+Past papers shape emphasis, answer operations, and mode. They do not replace the course-source baseline. Internal run manifests support reproducibility and incremental reruns; they are not student-facing output.
 
 ## Canonical files
 
@@ -37,6 +38,7 @@ python3 scripts/exam_prep_notes_quality_linter.py --self-test
 python3 scripts/output_sufficiency_linter.py --self-test
 python3 scripts/essay_exam_tools.py --self-test
 python3 scripts/deliverable_surface_linter.py --self-test
+python3 scripts/run_control_plane.py --self-test
 python3 scripts/github_ready_check.py --ci
 ```
 

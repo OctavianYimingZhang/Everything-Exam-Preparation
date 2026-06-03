@@ -27,6 +27,7 @@ EXPECTED_SCHEMAS = {
     "visual_aid_spec.schema.json",
     "student_output_contract.schema.json",
     "gate_result.schema.json",
+    "run_control_plane.schema.json",
 }
 EXPECTED_SCRIPTS = {
     "extract_sources.py",
@@ -39,8 +40,34 @@ EXPECTED_SCRIPTS = {
     "output_sufficiency_linter.py",
     "essay_exam_tools.py",
     "deliverable_surface_linter.py",
+    "run_control_plane.py",
     "validate_skill_contracts.py",
     "github_ready_check.py",
+}
+
+def stale_term(*parts: str) -> str:
+    return "".join(parts)
+
+
+REQUIRED_RELEASE_GUARD_TERMS = {
+    stale_term("Lecture", "_Knowledge", "_Walkthrough"),
+    stale_term("Lecture ", "Knowledge ", "Walkthrough"),
+    stale_term("knowledge", "_walkthrough"),
+    stale_term("knowledge", "_walkthrough", "_docx"),
+    stale_term("public", "_lecture", "_notes"),
+    stale_term("public ", "lecture ", "notes"),
+    stale_term("Public", "Lecture", "Notes", "Plan"),
+    stale_term("Excel", "-first"),
+    stale_term("S", "BS"),
+    stale_term("onto", "logy"),
+    stale_term("Snow", "flake"),
+    stale_term("Data", "bricks"),
+    stale_term("Pal", "antir"),
+    stale_term("lake", "house"),
+    stale_term("medal", "lion"),
+    stale_term("bro", "nze"),
+    stale_term("sil", "ver"),
+    stale_term("go", "ld"),
 }
 
 
@@ -99,6 +126,26 @@ def check_workflow() -> None:
     for route in ["exam_prep_notes", "mcq_addon", "short_answer_addon", "long_answer_practical_addon", "essay_addon"]:
         if route not in routes:
             fail(f"route missing from workflow schema: {route}")
+    for key in ["output", "outputs"]:
+        if key not in schema.get("required", []):
+            fail(f"workflow schema missing required key: {key}")
+    from plan_workflow import plan
+    essay_outputs = plan("essay exam preparation").get("outputs", [])
+    if essay_outputs != ["Exam_Preparation_Notes.docx", "Example_Essay.docx"]:
+        fail(f"essay route outputs mismatch: {essay_outputs}")
+    if "run_control_plane" not in (ROOT / "scripts/plan_workflow.py").read_text(encoding="utf-8"):
+        fail("workflow planner does not schedule run_control_plane")
+
+
+def check_release_guards() -> None:
+    guard = (ROOT / "scripts/github_ready_check.py").read_text(encoding="utf-8")
+    missing = sorted(term for term in REQUIRED_RELEASE_GUARD_TERMS if term not in guard)
+    if missing:
+        fail(f"github_ready_check missing stale-term guards: {missing}")
+    if "check_readability" not in guard:
+        fail("github_ready_check missing compressed-file readability guard")
+    if "check_yaml_syntax" not in guard or "yaml.safe_load" not in guard:
+        fail("github_ready_check missing yaml syntax guard")
 
 
 def run_all() -> None:
@@ -108,6 +155,7 @@ def run_all() -> None:
     check_interaction()
     check_student_output()
     check_workflow()
+    check_release_guards()
 
 
 def self_test() -> int:

@@ -10,9 +10,10 @@ This Skill turns supplied study and practice material into student-facing exam p
 ## Purpose
 
 1. Analyse Lecture Slides, Lecture Notes, official course notes, practical material, past papers, answer keys, exemplars, feedback, and verified extra reading supplied by the user.
-2. Build `Exam_Preparation_Notes.docx` as the default Exam Preparation Notes artifact.
-3. Identify exam mode from past papers or the user's prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
-4. Generate only the add-on content required by the detected or requested exam mode.
+2. Build an internal run control manifest that records source objects, fragments, actions, output artifacts, lineage links, validation errors, and reuse decisions.
+3. Build `Exam_Preparation_Notes.docx` as the default Exam Preparation Notes artifact.
+4. Identify exam mode from past papers or the user's prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
+5. Generate only the add-on content required by the detected or requested exam mode.
 
 ## Non-goals
 
@@ -37,7 +38,7 @@ Load only the protocol required for the requested function.
 | Exam mode detection and MCQ/Short Answer/Long Answer/Practical/Data add-ons | `references/exam_mode_and_addons_protocol.md` |
 | Essay Exam Prep and Example Essay add-on | `references/essay_exam_prep_protocol.md` |
 | Student-facing prose quality | `references/language_quality_contract.md` |
-| QA/release quality | `references/runtime_quality_protocol.md` |
+| Run control, lineage, reuse, QA/release quality | `references/runtime_quality_protocol.md` |
 
 No other reference file is authoritative.
 
@@ -55,6 +56,8 @@ No other reference file is authoritative.
 | source inventory / lint / release check | `source_inventory_only`, `audit_lint_only`, or `github_ready_qa` | inventory or QA result |
 
 Past papers shape exam mode, emphasis, and answer operations only. They do not replace the course-source baseline.
+
+Every route that reads source material should schedule `run_control_plane` after source intake or fragment indexing so reusable work, lineage, and validation failures are explicit before student-facing generation.
 
 ## Student-facing output rules
 
