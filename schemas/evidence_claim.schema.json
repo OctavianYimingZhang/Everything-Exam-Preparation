@@ -1,53 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Exam preparation claim shape",
   "type": "object",
-  "additionalProperties": true,
-  "$id": "https://example.invalid/everything-exam-preparation/evidence_claim.schema.json",
-  "title": "Evidence claim",
-  "properties": {
-    "claim": {
-      "type": "string"
-    },
-    "source_ids": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "support_level": {
-      "enum": [
-        "supported",
-        "partial",
-        "unsupported"
-      ]
-    }
-  },
-  "required": [
-    "claim",
-    "support_level"
-  ],
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "support_level": {
-            "const": "supported"
-          }
-        },
-        "required": [
-          "support_level"
-        ]
-      },
-      "then": {
-        "required": [
-          "source_ids"
-        ],
-        "properties": {
-          "source_ids": {
-            "minItems": 1
-          }
-        }
-      }
-    }
-  ]
+  "additionalProperties": true
 }

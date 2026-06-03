@@ -1,69 +1,21 @@
-# Input and evidence protocol
+# Input and source handling
 
-## Source roles
+This Skill uses source hints to make file handling easier. Hints help the assistant understand the file pack; they do not restrict how the content can be used.
 
-Use these roles exactly:
+## Source hints
 
-- `lecture_slides`
-- `lecture_notes`
-- `official_course_notes`
-- `practical_material`
-- `data_problem_material`
-- `past_paper`
-- `mark_scheme`
-- `answer_key`
-- `example_answer`
-- `user_draft`
-- `style_reference`
-- `extra_reading`
-- `previous_generated_output`
-- `generated_output`
-- `source_visual`
-- `unknown`
+- `knowledge_material`: lecture slides, lecture notes, official notes, practical handouts, module notes, reading notes.
+- `practice_material`: past papers, practice questions, MCQ banks, short-answer questions, long-answer questions, problem sheets, data/practical questions, essay prompts.
+- `marking_material`: mark schemes, answer keys, solution sets, examiner feedback.
+- `style_reference`: example answers, model answers, preferred essay style material.
+- `other_material`: files that do not clearly fit the hints above.
 
-## Authority rules
+## Intake
 
-Course sources support factual course knowledge. Practical and data/problem sources support methods, calculations, readout interpretation, controls, and limitations. Past papers support exam mode, emphasis, and answer operations, but they do not create unsupported course claims. Mark schemes and answer keys support expected marking operations and answer shape.
+For each file, record the file name, source hint, readable character count, extraction notes, text fragments, and extracted media when available.
 
-Example answers, user drafts, and style references are style or layout evidence only unless they are official answer keys. Extra reading supports essay depth only when it is supplied, read, and linked to the prompt.
+Mixed files remain useful. The assistant can inspect the fragments directly and use them for course explanation, exam habit analysis, answer walkthroughs, or essay preparation.
 
-## Route-specific source decision
+## Practical extraction
 
-Every source must receive a role and a route-specific `evidence_scope` before it can affect a plan.
-
-For `exam_prep_notes`, factual course claims may only come from sources assigned `factual_course_content` for that route. Past papers normally provide `exam_emphasis`: they shape likely emphasis, answer operations, and practice priority, but they do not override course material. Mark schemes and answer keys normally support `exam_emphasis` or answer operations, not new course facts. Style references, example answers, user drafts, and previous generated outputs may only affect style or layout when explicitly useful; they must not supply factual claims.
-
-Allowed `exam_prep_notes` scopes:
-
-- `factual_course_content`
-- `exam_emphasis`
-- `style_only`
-- `visual_candidate_only`
-- `ignored`
-- `needs_confirmation`
-
-For `practice_marking`, allowed scopes are `student_answer`, `question_source`, `marking_authority`, `factual_course_content`, `ignored`, and `needs_confirmation`. That route may reuse source inventory, but it must not change the notes plan or notes renderer contract.
-
-This is a role-purpose-evidence-scope decision. It is not a filename blacklist. Ambiguous sources are assigned `needs_confirmation` or kept out of factual notes until their role is clear.
-
-## Evidence boundaries
-
-Do not merge source roles into one undifferentiated source pool. A claim is usable only when its source role can support that claim type. Unsupported points become gaps, not inferred facts.
-
-If a source is unreadable or partial, record the affected source class and block only conclusions that depend on the missing material.
-
-## Runtime identity
-
-Each readable source document and extracted fragment should keep a stable ID and fingerprint. Downstream claims, preparation artifacts, and QA gates should link back to those IDs internally. The student-facing output must receive only the resulting explanation, not the internal IDs or link records.
-
-## Visual source handling
-
-Source visuals may be used when they explain a mechanism, method, graph, workflow, structure, or comparison faster than text. Decorative images are not evidence. A visual never overrides text evidence. If a resized image would be unreadable, replace it with a concise redraw, table, or description.
-
-Visuals have a three-state lifecycle:
-
-- `candidate`: extracted from source media with `source_id`, `asset_path` or `source_path` plus `media_name`, `caption`, `source_locator`, and `candidate_reason`.
-- `selected`: chosen by a notes block because it improves explanation efficiency; it must have `use_reason` and `placement`.
-- `rejected`: not used; it must have `rejection_reason`.
-
-Candidate visuals must not carry fake placement such as an unassigned block. Placement is created only after block-level selection. Extracted PPT or DOCX media should retain enough locator metadata for rendering: `source_id`, stable asset path when exported, original `source_path`, `media_name`, and `source_locator`. Generated schematic images are allowed only as explanatory redraws from already-supported claims; they are not independent factual evidence and must have an image asset before rendering.
+Text files, Markdown, JSON, YAML, CSV, DOCX, PPTX, and PDF are read when the local runtime can read them. Embedded images from DOCX/PPTX can be exported to an asset folder. Files without automatic text extraction remain listed with an extraction note.

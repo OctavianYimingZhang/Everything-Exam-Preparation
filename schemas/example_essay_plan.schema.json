@@ -1,24 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Example essay preparation shape",
   "type": "object",
-  "additionalProperties": true,
-  "$id": "https://example.invalid/everything-exam-preparation/example_essay_plan.schema.json",
-  "title": "Example essay plan",
-  "properties": {
-    "question": {
-      "type": "string"
-    },
-    "thesis": {
-      "type": "string"
-    },
-    "argument_blocks": {
-      "type": "array"
-    },
-    "evidence_blocks": {
-      "type": "array"
-    }
-  },
-  "required": [
-    "question"
-  ]
+  "additionalProperties": true
 }

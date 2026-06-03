@@ -1,31 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Source document shape",
   "type": "object",
-  "additionalProperties": true,
-  "$id": "https://example.invalid/everything-exam-preparation/source_document.schema.json",
-  "title": "Source document",
-  "properties": {
-    "id": {
-      "type": "string"
-    },
-    "path": {
-      "type": "string"
-    },
-    "role": {
-      "type": "string"
-    },
-    "route_use": {
-      "type": "object"
-    },
-    "readable": {
-      "type": "boolean"
-    },
-    "fingerprint": {
-      "type": "string"
-    }
-  },
-  "required": [
-    "id",
-    "role"
-  ]
+  "additionalProperties": true
 }

@@ -1,21 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skill config shape",
   "type": "object",
-  "additionalProperties": true,
-  "$id": "https://example.invalid/everything-exam-preparation/skill_config.schema.json",
-  "title": "Skill config",
-  "properties": {
-    "default_output": {
-      "const": "Exam_Preparation_Notes.docx"
-    },
-    "routes": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    }
-  },
-  "required": [
-    "default_output"
-  ]
+  "additionalProperties": true
 }

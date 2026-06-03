@@ -1,47 +1,40 @@
 # Everything Exam Preparation
 
-Function-first exam preparation Skill for supplied lecture material, practical material, past papers, and exam-mode add-ons.
+Simple exam preparation Skill for uploaded course content and practice material.
 
 ## Default output
-
-The default student-facing notes artifact is:
 
 ```text
 Exam_Preparation_Notes.docx
 ```
 
-## What the Skill does
+## What it does
 
-1. Classifies supplied learning and practice sources.
-2. Assigns route-specific evidence scope before a source can affect a plan.
-3. Generates source-backed Exam Preparation Notes from strict section/block plans with paragraph, list, table, chain, and block-owned visual render modes.
-4. Detects exam mode from past papers or the user prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
-5. Generates only the add-on content needed for the detected or requested mode.
+1. Reads notes, lecture slides, practical material, past papers, practice questions, mark schemes, answer keys, example answers, and other useful course files.
+2. Uses rough source hints to understand what the files contain.
+3. Builds a fragment index from readable content.
+4. Diagnoses the exam mode from the prompt and practice material.
+5. Produces exam preparation notes and mode-specific preparation for MCQ, short answer, long answer, or essay exams.
 
-Past papers shape emphasis, answer operations, and mode. They do not replace the course-source baseline. Internal run manifests support QA and reproducibility; they are not student-facing output and must not shape prose.
+## Routes
 
-## Canonical files
+- `exam_prep_notes`
+- `exam_mode_diagnosis`
+- `mcq_preparation`
+- `short_answer_preparation`
+- `long_answer_preparation`
+- `essay_preparation`
 
-References are limited to six protocol files in `references/`. Schemas are consolidated by function in `schemas/`. Scripts are consolidated into routing, extraction, generation, linting, and release checks in `scripts/`.
+## Step 8: publish and update
 
-## Health commands
+The repository keeps one simple publish/update layer:
 
 ```bash
-python3 -m compileall -q scripts
-python3 scripts/validate_skill_contracts.py --self-test
-python3 scripts/plan_workflow.py --self-test
-python3 scripts/input_readiness_check.py --self-test
-python3 scripts/extract_sources.py --self-test
-python3 scripts/exam_mode_tools.py --self-test
-python3 scripts/generate_exam_prep_notes_docx.py --self-test
-python3 scripts/exam_prep_notes_quality_linter.py --self-test
-python3 scripts/output_sufficiency_linter.py --self-test
-python3 scripts/essay_exam_tools.py --self-test
-python3 scripts/deliverable_surface_linter.py --self-test
-python3 scripts/run_control_plane.py --self-test
-python3 scripts/github_ready_check.py --ci
+python3 scripts/validate_skill_contracts.py
+python3 scripts/github_ready_check.py
+python3 scripts/publish_skill.py --push
+python3 scripts/publish_skill.py --sync-local-skill
+python3 scripts/publish_skill.py --push --sync-local-skill
 ```
 
-## Release rule
-
-The repository should contain only canonical protocols, functional schemas, consolidated scripts, agents, CI, manifest, and top-level project files. Generated outputs and private course packs stay out of version control.
+`--push` runs `git push` from the repository root. `--sync-local-skill` copies the repository into `~/.codex/skills/everything-exam-preparation` so the local Skill installation updates from the current repository files. The manifest also declares this local sync command in `post_update_commands` for automatic Skill update after repository updates.

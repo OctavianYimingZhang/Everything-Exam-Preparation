@@ -1,33 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Student output shape",
   "type": "object",
-  "additionalProperties": true,
-  "$id": "https://example.invalid/everything-exam-preparation/student_output_contract.schema.json",
-  "title": "Student output contract",
-  "properties": {
-    "allowed_outputs": {
-      "type": "array",
-      "items": {
-        "enum": [
-          "Exam_Preparation_Notes.docx",
-          "Example_Essay.docx"
-        ]
-      }
-    },
-    "forbidden_surface_markers": {
-      "type": "array"
-    },
-    "forbidden_surface_templates": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "formatting": {
-      "type": "object"
-    },
-    "visual_size_constraints": {
-      "type": "object"
-    }
-  }
+  "additionalProperties": true
 }

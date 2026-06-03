@@ -1,81 +1,123 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 from typing import Any
 
-ROUTES = {
-    "exam_prep_notes": ["source_inventory", "route_source_decision", "evidence_bundle", "fragment_index", "visual_candidate_index", "render_mode_selection", "exam_prep_notes_plan", "block_visual_placement", "exam_prep_notes_generation", "notes_quality_gate", "deliverable_surface_gate"],
-    "exam_mode_diagnosis": ["source_inventory", "route_source_decision", "exam_mode_diagnosis"],
-    "mcq_addon": ["exam_prep_notes", "exam_mode_diagnosis", "mcq_addon"],
-    "short_answer_addon": ["exam_prep_notes", "exam_mode_diagnosis", "short_answer_addon"],
-    "long_answer_practical_addon": ["exam_prep_notes", "exam_mode_diagnosis", "long_answer_practical_addon"],
-    "essay_addon": ["exam_prep_notes", "exam_mode_diagnosis", "essay_addon"],
-    "source_inventory_only": ["source_inventory"],
-    "audit_lint_only": ["run_control_plane", "release_lint"],
-    "github_ready_qa": ["run_control_plane", "github_ready_check"],
+PRIMARY_OUTPUT = "Exam_Preparation_Notes.docx"
+
+ROUTES: dict[str, list[str]] = {
+    "exam_prep_notes": [
+        "source_inventory",
+        "fragment_index",
+        "course_knowledge_map",
+        "exam_habit_analysis_if_practice_material_exists",
+        "exam_prep_notes",
+    ],
+    "exam_mode_diagnosis": ["source_inventory", "exam_mode_diagnosis"],
+    "mcq_preparation": [
+        "source_inventory",
+        "fragment_index",
+        "course_knowledge_map",
+        "mcq_exam_habit_analysis",
+        "mcq_notes_enrichment",
+    ],
+    "short_answer_preparation": [
+        "source_inventory",
+        "fragment_index",
+        "course_knowledge_map",
+        "short_answer_habit_analysis",
+        "definition_and_mark_point_highlights",
+        "explain_answer_examples",
+    ],
+    "long_answer_preparation": [
+        "source_inventory",
+        "fragment_index",
+        "course_knowledge_map",
+        "practice_question_walkthroughs",
+        "example_answers",
+    ],
+    "essay_preparation": [
+        "source_inventory",
+        "fragment_index",
+        "course_knowledge_map",
+        "exam_ready_essay_paragraphs",
+        "module_covering_essay_questions",
+        "example_essays",
+    ],
 }
-PRIMARY_NOTES_OUTPUT = "Exam_Preparation_Notes.docx"
+
 ROUTE_OUTPUTS = {
-    "exam_prep_notes": [PRIMARY_NOTES_OUTPUT],
-    "mcq_addon": [PRIMARY_NOTES_OUTPUT],
-    "short_answer_addon": [PRIMARY_NOTES_OUTPUT],
-    "long_answer_practical_addon": [PRIMARY_NOTES_OUTPUT],
-    "essay_addon": [PRIMARY_NOTES_OUTPUT, "Example_Essay.docx"],
+    "exam_mode_diagnosis": ["chat_report"],
+    "essay_preparation": [PRIMARY_OUTPUT, "Example_Essay.docx"],
 }
 
 
-def infer_route(prompt: str) -> tuple[str, str]:
-    p = prompt.lower()
-    if re.search(r"github|release|lint|audit", p):
-        return "github_ready_qa", "exam_emphasis_first"
-    if re.search(r"format only|exam mode|question type", p):
-        return "exam_mode_diagnosis", "exam_emphasis_first"
-    if "source-order" in p or "source order" in p or "lecture-order" in p or "lecture order" in p:
-        return "exam_prep_notes", "source_order"
-    if re.search(r"\bmcq\b|single[- ]best|sba", p):
-        return "mcq_addon", "exam_emphasis_first"
-    if "short answer" in p:
-        return "short_answer_addon", "exam_emphasis_first"
-    if re.search(r"practical|data|problem|calculation|long answer|scenario", p):
-        return "long_answer_practical_addon", "exam_emphasis_first"
-    if re.search(r"essay|model answer|example essay", p):
-        return "essay_addon", "exam_emphasis_first"
-    if re.search(r"inventory|sources only", p):
-        return "source_inventory_only", "exam_emphasis_first"
-    return "exam_prep_notes", "exam_emphasis_first"
+def detect_route(prompt: str) -> str:
+    p = (prompt or "").lower()
+    if any(k in p for k in ["essay", "in-campus", "model essay", "example essay", "thesis"]):
+        return "essay_preparation"
+    if any(k in p for k in ["mcq", "sba", "single best", "multiple choice", "true/false"]):
+        return "mcq_preparation"
+    if any(k in p for k in ["short answer", "saq", "definition", "define", "state", "list question"]):
+        return "short_answer_preparation"
+    if any(k in p for k in ["long answer", "walkthrough", "worked answer", "practical", "data", "problem", "calculate"]):
+        return "long_answer_preparation"
+    if any(k in p for k in ["exam mode", "exam format", "how is", "diagnose", "identify format"]):
+        return "exam_mode_diagnosis"
+    return "exam_prep_notes"
+
+
+def source_summary(source_scan: dict[str, Any] | None) -> dict[str, Any]:
+    if not source_scan:
+        return {"document_count": 0, "fragment_count": 0, "categories": {}}
+    cats: dict[str, int] = {}
+    for doc in source_scan.get("documents", []):
+        cat = str(doc.get("category") or "other_material")
+        cats[cat] = cats.get(cat, 0) + 1
+    return {
+        "document_count": len(source_scan.get("documents", [])),
+        "fragment_count": len(source_scan.get("fragments", [])),
+        "categories": cats,
+    }
 
 
 def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
-    route, ordering = infer_route(prompt)
+    route = detect_route(prompt)
     actions = [{"id": action, "purpose": action.replace("_", " ")} for action in ROUTES[route]]
-    outputs = ROUTE_OUTPUTS.get(route, ["chat_report"])
-    return {"route": route, "ordering": ordering, "output": outputs[0], "outputs": outputs, "actions": actions, "source_roles": (source_scan or {}).get("source_roles", [])}
+    outputs = ROUTE_OUTPUTS.get(route, [PRIMARY_OUTPUT])
+    return {
+        "schema_version": 2,
+        "route": route,
+        "outputs": outputs,
+        "actions": actions,
+        "source_summary": source_summary(source_scan),
+        "notes": [
+            "Use knowledge material to explain the course.",
+            "Use practice material to identify repeated topics, command words, question types, and answer habits.",
+            "Connect knowledge to likely answer use in the selected exam mode.",
+        ],
+    }
 
 
-def self_test() -> int:
-    assert plan("make notes")["route"] == "exam_prep_notes"
-    note_actions = [a["id"] for a in plan("make notes")["actions"]]
-    assert "route_source_decision" in note_actions
-    assert "visual_candidate_index" in note_actions
-    assert "render_mode_selection" in note_actions
-    assert "block_visual_placement" in note_actions
-    assert "run_control_plane" not in note_actions
-    assert "practice_marking" not in json.dumps(plan("make notes"))
-    assert "run_control_plane" in [a["id"] for a in plan("github ready qa")["actions"]]
-    assert plan("make lecture-order notes")["ordering"] == "source_order"
-    assert plan("MCQ prep")["route"] == "mcq_addon"
-    assert plan("essay exam preparation")["route"] == "essay_addon"
-    assert plan("essay exam preparation")["outputs"] == ["Exam_Preparation_Notes.docx", "Example_Essay.docx"]
-    encoded = json.dumps(plan("make notes"))
-    assert "Exam_Preparation_Notes.docx" in encoded
-    print("plan_workflow self-test passed")
-    return 0
+def load_json(path: str | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def main() -> int:
+def self_test() -> None:
+    assert detect_route("make MCQ notes") == "mcq_preparation"
+    assert detect_route("short answer definitions") == "short_answer_preparation"
+    assert detect_route("give essay plans") == "essay_preparation"
+    out = plan("prepare this course", {"documents": [{"category": "knowledge_material"}], "fragments": [1, 2]})
+    assert out["route"] == "exam_prep_notes"
+    assert out["source_summary"]["fragment_count"] == 2
+
+
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--prompt", default="make notes")
     parser.add_argument("--source-scan")
@@ -83,15 +125,15 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
-        return self_test()
-    scan = json.loads(Path(args.source_scan).read_text(encoding="utf-8")) if args.source_scan else None
-    out = plan(args.prompt, scan)
-    text = json.dumps(out, indent=2)
+        self_test()
+        return
+    result = plan(args.prompt, load_json(args.source_scan))
+    text = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")
     else:
         print(text)
-    return 0
+
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

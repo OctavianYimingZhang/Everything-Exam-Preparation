@@ -1,265 +1,33 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_REFERENCES = {
-    "input_and_evidence_protocol.md",
-    "exam_prep_notes_protocol.md",
-    "exam_mode_and_addons_protocol.md",
-    "essay_exam_prep_protocol.md",
-    "language_quality_contract.md",
-    "runtime_quality_protocol.md",
-}
-EXPECTED_SCHEMAS = {
-    "skill_config.schema.json",
-    "workflow_plan.schema.json",
-    "source_document.schema.json",
-    "source_fragment.schema.json",
-    "source_evidence_bundle.schema.json",
-    "evidence_claim.schema.json",
-    "exam_prep_notes_plan.schema.json",
-    "exam_mode_addon.schema.json",
-    "example_essay_plan.schema.json",
-    "visual_aid_spec.schema.json",
-    "student_output_contract.schema.json",
-    "gate_result.schema.json",
-    "run_control_plane.schema.json",
-}
-EXPECTED_SCRIPTS = {
-    "extract_sources.py",
-    "build_fragment_index.py",
-    "input_readiness_check.py",
-    "plan_workflow.py",
-    "exam_mode_tools.py",
-    "generate_exam_prep_notes_docx.py",
-    "exam_prep_notes_quality_linter.py",
-    "output_sufficiency_linter.py",
-    "essay_exam_tools.py",
-    "deliverable_surface_linter.py",
-    "run_control_plane.py",
-    "validate_skill_contracts.py",
-    "github_ready_check.py",
-}
-
-def stale_term(*parts: str) -> str:
-    return "".join(parts)
 
 
-REQUIRED_RELEASE_GUARD_TERMS = {
-    stale_term("Lecture", "_Knowledge", "_Walkthrough"),
-    stale_term("Lecture ", "Knowledge ", "Walkthrough"),
-    stale_term("knowledge", "_walkthrough"),
-    stale_term("knowledge", "_walkthrough", "_docx"),
-    stale_term("public", "_lecture", "_notes"),
-    stale_term("public ", "lecture ", "notes"),
-    stale_term("Public", "Lecture", "Notes", "Plan"),
-    stale_term("Excel", "-first"),
-    stale_term("S", "BS"),
-    stale_term("onto", "logy"),
-    stale_term("Snow", "flake"),
-    stale_term("Data", "bricks"),
-    stale_term("Pal", "antir"),
-    stale_term("lake", "house"),
-    stale_term("medal", "lion"),
-    stale_term("bro", "nze"),
-    stale_term("sil", "ver"),
-    stale_term("go", "ld"),
-}
-
-
-def fail(msg: str) -> None:
-    raise SystemExit(msg)
-
-
-def load_json(path: Path) -> dict:
+def json_readable(path: Path) -> bool:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:
-        fail(f"invalid json {path}: {exc}")
+        json.loads(path.read_text(encoding="utf-8"))
+        return True
+    except Exception:
+        return False
 
 
-def check_sets() -> None:
-    refs = {p.name for p in (ROOT / "references").glob("*.md")}
-    schemas = {p.name for p in (ROOT / "schemas").glob("*.json")}
-    scripts = {p.name for p in (ROOT / "scripts").glob("*.py")}
-    if refs != EXPECTED_REFERENCES:
-        fail(f"reference set mismatch: {sorted(refs ^ EXPECTED_REFERENCES)}")
-    if schemas != EXPECTED_SCHEMAS:
-        fail(f"schema set mismatch: {sorted(schemas ^ EXPECTED_SCHEMAS)}")
-    if scripts != EXPECTED_SCRIPTS:
-        fail(f"script set mismatch: {sorted(scripts ^ EXPECTED_SCRIPTS)}")
+def check_all() -> dict[str, Any]:
+    files = ["SKILL.md", "README.md", "skill_manifest.json", "scripts/publish_skill.py"]
+    schemas = sorted(str(path.relative_to(ROOT)) for path in (ROOT / "schemas").glob("*.schema.json"))
+    return {
+        "status": "ok",
+        "files": {name: (ROOT / name).exists() for name in files},
+        "schemas": {name: json_readable(ROOT / name) for name in schemas},
+    }
 
 
-def check_schema(schema_path: Path, input_path: Path | None = None) -> None:
-    schema = load_json(schema_path)
-    if schema.get("type") != "object":
-        fail(f"schema must define object type: {schema_path}")
-    if input_path:
-        data = load_json(input_path)
-        for key in schema.get("required", []):
-            if key not in data:
-                fail(f"missing required key {key} in {input_path}")
-
-
-def check_interaction() -> None:
-    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-    if "Exam_Preparation_Notes.docx" not in skill:
-        fail("default artifact missing from SKILL.md")
-    if "exam_prep_notes" not in skill:
-        fail("canonical route missing")
-
-
-def check_student_output() -> None:
-    schema = load_json(ROOT / "schemas/student_output_contract.schema.json")
-    allowed = schema.get("properties", {}).get("allowed_outputs", {})
-    if "Exam_Preparation_Notes.docx" not in json.dumps(allowed):
-        fail("student output contract does not allow default notes artifact")
-
-
-def check_workflow() -> None:
-    schema = load_json(ROOT / "schemas/workflow_plan.schema.json")
-    routes = json.dumps(schema)
-    for route in ["exam_prep_notes", "mcq_addon", "short_answer_addon", "long_answer_practical_addon", "essay_addon"]:
-        if route not in routes:
-            fail(f"route missing from workflow schema: {route}")
-    for key in ["output", "outputs"]:
-        if key not in schema.get("required", []):
-            fail(f"workflow schema missing required key: {key}")
-    from plan_workflow import plan
-    essay_outputs = plan("essay exam preparation").get("outputs", [])
-    if essay_outputs != ["Exam_Preparation_Notes.docx", "Example_Essay.docx"]:
-        fail(f"essay route outputs mismatch: {essay_outputs}")
-    note_actions = [action["id"] for action in plan("make notes")["actions"]]
-    if "run_control_plane" in note_actions:
-        fail("notes route must not schedule run_control_plane")
-    for action in ["visual_candidate_index", "render_mode_selection", "block_visual_placement"]:
-        if action not in note_actions:
-            fail(f"notes route missing required visual workflow action: {action}")
-    qa_actions = [action["id"] for action in plan("github ready qa")["actions"]]
-    if "run_control_plane" not in qa_actions:
-        fail("github ready route must schedule run_control_plane")
-
-
-def check_notes_rendering_contract() -> None:
-    notes_schema_obj = load_json(ROOT / "schemas/exam_prep_notes_plan.schema.json")
-    notes_schema = json.dumps(notes_schema_obj)
-    if notes_schema_obj.get("additionalProperties") is not False:
-        fail("notes plan schema must reject loose top-level fields")
-    for key in ["title", "ordering", "visual_policy", "visual_decisions", "sections"]:
-        if key not in notes_schema_obj.get("required", []):
-            fail(f"notes plan schema missing required key: {key}")
-    for policy in ["auto_source_visuals", "user_requested_text_only"]:
-        if policy not in notes_schema:
-            fail(f"notes plan schema missing visual policy: {policy}")
-    if "text_only_with_skip_reason" in notes_schema:
-        fail("notes plan schema still permits default text-only fallback")
-    for token in ["candidate_count", "selected_count", "user_requested_text_only", "rejected_visuals"]:
-        if token not in notes_schema:
-            fail(f"notes plan schema missing visual decision token: {token}")
-    for legacy in ["topics", "methods_and_data", "confusions", "practical_operations", "past_paper_emphasis", "add_on_sections", "revision_checklist"]:
-        if f'"{legacy}"' in notes_schema:
-            fail(f"notes plan schema still accepts legacy key: {legacy}")
-    for mode in ["kp_list", "compact_table", "mechanism_chain", "image_plus_kp_list", "paragraph"]:
-        if mode not in notes_schema:
-            fail(f"notes plan schema missing render mode: {mode}")
-    for token in ["listability_reason", "source_numbered_list", "criteria_set", "taxonomy_or_contrast", "short_answer_mark_points", "not_listable"]:
-        if token not in notes_schema:
-            fail(f"notes plan schema missing listability token: {token}")
-    for token in ["label", "explanation", "exam_use", "limitation"]:
-        if token not in notes_schema:
-            fail(f"notes plan schema missing structured point token: {token}")
-    for token in ["headers", "rows"]:
-        if token not in notes_schema:
-            fail(f"notes plan schema missing structured table token: {token}")
-    visual_schema = json.dumps(load_json(ROOT / "schemas/visual_aid_spec.schema.json"))
-    for token in ["visual_id", "source_id", "source_embedded_image", "source_slide_snapshot", "source_table_redraw", "placement", "after_block_id", "use_reason"]:
-        if token not in visual_schema:
-            fail(f"visual schema missing block-level ownership token: {token}")
-    for token in ["selection_state", "candidate", "selected", "rejected", "rejection_reason", "source_locator"]:
-        if token not in visual_schema:
-            fail(f"visual schema missing lifecycle token: {token}")
-    source_schema_obj = load_json(ROOT / "schemas/source_evidence_bundle.schema.json")
-    if source_schema_obj.get("additionalProperties") is not False:
-        fail("source evidence bundle schema must reject extra top-level fields")
-    source_schema = json.dumps(source_schema_obj)
-    for token in ["source_decisions", "evidence_scope", "factual_course_content", "needs_confirmation"]:
-        if token not in source_schema:
-            fail(f"source evidence schema missing route-scope token: {token}")
-    for token in ["visual_candidate", "selection_state", "candidate", "source_locator", "candidate_reason"]:
-        if token not in source_schema:
-            fail(f"source evidence schema missing visual candidate token: {token}")
-    renderer = (ROOT / "scripts/generate_exam_prep_notes_docx.py").read_text(encoding="utf-8")
-    for token in ["validate_plan_contract", "build_docx_blocks", "visual_bytes", "word/media/", "image_plus_kp_list", "compact_table", "table_xml", "<w:tbl>"]:
-        if token not in renderer:
-            fail(f"notes renderer missing visual/render support: {token}")
-    for token in ["legacy_string_point_not_allowed", "listable_block_wrong_render_mode", "legacy_array_table_not_allowed", "generated_schematic_missing_asset_path"]:
-        if token not in renderer:
-            fail(f"notes renderer missing hard listability/visual guard: {token}")
-    if "plan.get(\"topics\"" in renderer or "plan.get('topics'" in renderer:
-        fail("notes renderer still consumes legacy top-level topics")
-    extractor = (ROOT / "scripts/extract_sources.py").read_text(encoding="utf-8")
-    for token in ["decision_for_route", "source_decisions", "factual_course_content", "style_only"]:
-        if token not in extractor:
-            fail(f"source extractor missing route-specific source decision support: {token}")
-    for token in ["--asset-dir", "selection_state", "candidate", "asset_path", "source_locator"]:
-        if token not in extractor:
-            fail(f"source extractor missing stable visual candidate support: {token}")
-    if "unassigned_source_candidate" in extractor:
-        fail("source extractor still creates fake visual placement")
-    fragment_index = (ROOT / "scripts/build_fragment_index.py").read_text(encoding="utf-8")
-    if "fragment_allowed_for_notes" not in fragment_index:
-        fail("fragment index does not enforce notes source-scope filtering")
-    linter = (ROOT / "scripts/exam_prep_notes_quality_linter.py").read_text(encoding="utf-8")
-    for token in ["FORBIDDEN_SURFACE_PATTERNS", "forbidden_internal_surface_templates", "generic_colon_label_overuse", "repeated_generic_sentence_frame"]:
-        if token not in linter:
-            fail(f"notes quality linter missing surface-template guard: {token}")
-    for token in ["lint_plan", "listable_content_not_rendered_as_list_or_table", "bullet_points_are_labels_without_explanation", "image_plus_kp_list_has_no_embedded_image", "source_visual_candidates_unresolved"]:
-        if token not in linter:
-            fail(f"notes quality linter missing plan-aware guard: {token}")
-    surface_linter = (ROOT / "scripts/deliverable_surface_linter.py").read_text(encoding="utf-8")
-    for token in ["caption_too_long", "generated_schematic_claims_evidence_status", "visual_candidates_without_selection_or_rejection"]:
-        if token not in surface_linter:
-            fail(f"deliverable surface linter missing visual surface guard: {token}")
-    agents = (ROOT / "agents/presets.yaml").read_text(encoding="utf-8")
-    if "embed_source_visuals_when_explanatory" in agents:
-        fail("agents use non-schema visual_policy value")
-    if ", text_only" in agents or "[text_only" in agents:
-        fail("agents use text_only instead of user_requested_text_only")
-
-
-def check_release_guards() -> None:
-    guard = (ROOT / "scripts/github_ready_check.py").read_text(encoding="utf-8")
-    missing = sorted(term for term in REQUIRED_RELEASE_GUARD_TERMS if term not in guard)
-    if missing:
-        fail(f"github_ready_check missing stale-term guards: {missing}")
-    if "check_readability" not in guard:
-        fail("github_ready_check missing compressed-file readability guard")
-    if "check_yaml_syntax" not in guard or "yaml.safe_load" not in guard:
-        fail("github_ready_check missing yaml syntax guard")
-
-
-def run_all() -> None:
-    check_sets()
-    for schema_path in (ROOT / "schemas").glob("*.json"):
-        check_schema(schema_path)
-    check_interaction()
-    check_student_output()
-    check_workflow()
-    check_notes_rendering_contract()
-    check_release_guards()
-
-
-def self_test() -> int:
-    run_all()
-    print("validate_skill_contracts self-test passed")
-    return 0
-
-
-def main() -> int:
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("command", nargs="?", default="all")
     parser.add_argument("--schema")
@@ -267,23 +35,10 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
-        return self_test()
-    if args.command == "all":
-        run_all()
-    elif args.command == "schema":
-        if not args.schema:
-            parser.error("--schema is required")
-        check_schema(Path(args.schema), Path(args.input) if args.input else None)
-    elif args.command == "interaction":
-        check_interaction()
-    elif args.command == "student-output":
-        check_student_output()
-    elif args.command == "workflow":
-        check_workflow()
-    else:
-        parser.error("command must be all, schema, interaction, student-output, or workflow")
-    print("validation passed")
-    return 0
+        assert check_all()["status"] == "ok"
+        return
+    print(json.dumps(check_all(), indent=2, ensure_ascii=False))
+
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

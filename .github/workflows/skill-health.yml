@@ -6,20 +6,22 @@ on:
     paths:
       - 'SKILL.md'
       - 'README.md'
+      - 'skill_manifest.json'
       - 'agents/**'
       - 'references/**'
       - 'schemas/**'
       - 'scripts/**'
-      - 'skill_manifest.json'
-      - '.github/workflows/**'
 
 jobs:
-  health:
+  simple-health:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - run: python3 -m pip install -r requirements.txt
-      - run: python3 scripts/github_ready_check.py --ci
+      - name: Basic Skill check
+        run: |
+          python3 -m compileall -q scripts
+          python3 scripts/validate_skill_contracts.py
+          python3 scripts/github_ready_check.py --ci

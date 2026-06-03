@@ -1,73 +1,60 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
-import tempfile
 from pathlib import Path
 from typing import Any
 
-
-def normalise(text: str) -> str:
-    return re.sub(r"\s+", " ", text.strip())
+EXAM_WORDS = ["define", "state", "list", "explain", "compare", "evaluate", "discuss", "calculate", "interpret", "which", "essay"]
 
 
-def exam_notes_source_scopes(source_scan: dict[str, Any]) -> dict[str, str]:
-    return {
-        str(decision.get("source_id")): str(decision.get("evidence_scope"))
-        for decision in source_scan.get("source_decisions", [])
-        if decision.get("route") == "exam_prep_notes"
-    }
+def exam_signal_score(text: str) -> int:
+    lower = (text or "").lower()
+    return sum(lower.count(word) for word in EXAM_WORDS)
 
 
-def fragment_allowed_for_notes(frag: dict[str, Any], scopes: dict[str, str]) -> bool:
-    source_id = str(frag.get("source_id") or "")
-    if scopes:
-        return scopes.get(source_id) == "factual_course_content"
-    return str(frag.get("role") or "") in {"lecture_slides", "lecture_notes", "official_course_notes", "practical_material", "data_problem_material", "extra_reading"}
-
-
-def build_index(source_scan: dict[str, Any], route: str = "exam_prep_notes") -> dict[str, Any]:
-    rows = []
-    scopes = exam_notes_source_scopes(source_scan)
+def build_index(source_scan: dict[str, Any] | None, route: str = "exam_prep_notes") -> dict[str, Any]:
+    source_scan = source_scan or {"documents": [], "fragments": []}
+    docs = {doc.get("id"): doc for doc in source_scan.get("documents", [])}
+    indexed = []
     for frag in source_scan.get("fragments", []):
-        if route == "exam_prep_notes" and not fragment_allowed_for_notes(frag, scopes):
-            continue
-        text = normalise(str(frag.get("text", "")))
-        if not text:
-            continue
-        digest = hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
-        rows.append({
-            "fragment_id": frag.get("id") or digest,
+        source = docs.get(frag.get("source_id"), {})
+        text = str(frag.get("text") or "")
+        indexed.append({
+            "id": frag.get("id"),
             "source_id": frag.get("source_id"),
-            "role": frag.get("role"),
-            "evidence_scope": scopes.get(str(frag.get("source_id") or ""), frag.get("evidence_scope")),
-            "hash": digest,
-            "terms": sorted(set(re.findall(r"[A-Za-z][A-Za-z0-9_-]{3,}", text.lower())))[:30],
+            "source_name": frag.get("source_name") or source.get("name"),
+            "category": frag.get("category") or source.get("category") or "other_material",
+            "locator": frag.get("locator"),
             "text": text,
+            "exam_signal_score": exam_signal_score(text),
+            "preview": re.sub(r"\s+", " ", text)[:220],
         })
-    return {"fragments": rows, "coverage_units": [{"fragment_id": r["fragment_id"], "role": r["role"]} for r in rows]}
-
-
-def self_test() -> int:
-    scan = {
-        "source_decisions": [
-            {"source_id": "S1", "route": "exam_prep_notes", "evidence_scope": "factual_course_content"},
-            {"source_id": "S2", "route": "exam_prep_notes", "evidence_scope": "style_only"},
-        ],
-        "fragments": [
-            {"id": "F1", "source_id": "S1", "role": "lecture_notes", "text": "Mechanism explains graph interpretation."},
-            {"id": "F2", "source_id": "S2", "role": "previous_generated_output", "text": "Do not treat this old output as facts."},
-        ],
+    indexed.sort(key=lambda item: item["exam_signal_score"], reverse=True)
+    return {
+        "schema_version": 2,
+        "route": route,
+        "fragment_count": len(indexed),
+        "fragments": indexed,
     }
+
+
+def load_scan(path: str | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def self_test() -> None:
+    scan = {"documents": [{"id": "S1", "name": "notes", "category": "knowledge_material"}], "fragments": [{"id": "F1", "source_id": "S1", "text": "Explain the mechanism."}]}
     out = build_index(scan)
-    assert len(out["fragments"]) == 1 and out["fragments"][0]["source_id"] == "S1"
-    print("build_fragment_index self-test passed")
-    return 0
+    assert out["fragment_count"] == 1
+    assert out["fragments"][0]["exam_signal_score"] >= 1
 
 
-def main() -> int:
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-scan")
     parser.add_argument("--route", default="exam_prep_notes")
@@ -75,17 +62,15 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
-        return self_test()
-    if not args.source_scan:
-        parser.error("--source-scan is required")
-    data = json.loads(Path(args.source_scan).read_text(encoding="utf-8"))
-    out = build_index(data, args.route)
-    text = json.dumps(out, indent=2)
+        self_test()
+        return
+    result = build_index(load_scan(args.source_scan), args.route)
+    text = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")
     else:
         print(text)
-    return 0
+
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

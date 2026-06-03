@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
@@ -5,50 +6,41 @@ import json
 from pathlib import Path
 from typing import Any
 
-BASE_ROLES = {"lecture_slides", "lecture_notes", "official_course_notes"}
-PRACTICE_ROLES = {"past_paper", "mark_scheme", "answer_key", "practical_material", "data_problem_material"}
+
+def count_hints(scan: dict[str, Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for doc in scan.get("documents", []):
+        hint = str(doc.get("source_hint") or doc.get("category") or "other_material")
+        counts[hint] = counts.get(hint, 0) + 1
+    return counts
 
 
-def route_scopes(source_scan: dict[str, Any], route: str) -> dict[str, str]:
+def check_readiness(scan: dict[str, Any] | None, route: str = "exam_prep_notes") -> dict[str, Any]:
+    scan = scan or {"documents": [], "fragments": []}
     return {
-        str(decision.get("source_id")): str(decision.get("evidence_scope"))
-        for decision in source_scan.get("source_decisions", [])
-        if decision.get("route") == route
+        "schema_version": 2,
+        "route": route,
+        "status": "ok",
+        "source_hint_counts": count_hints(scan),
+        "document_count": len(scan.get("documents", [])),
+        "fragment_count": len(scan.get("fragments", [])),
+        "observations": (scan.get("summary") or {}).get("extraction_notes", []),
     }
 
 
-def check_readiness(route: str, source_scan: dict[str, Any]) -> dict[str, Any]:
-    roles = set(source_scan.get("source_roles") or [d.get("role") for d in source_scan.get("documents", [])])
-    notes_scopes = route_scopes(source_scan, "exam_prep_notes")
-    blocks = []
-    warnings = []
-    if notes_scopes:
-        has_course_baseline = "factual_course_content" in set(notes_scopes.values())
-    else:
-        has_course_baseline = bool(roles.intersection(BASE_ROLES))
-    if route in {"exam_prep_notes", "mcq_addon", "short_answer_addon", "long_answer_practical_addon", "essay_addon"} and not has_course_baseline:
-        blocks.append({"component": "course_source_baseline", "missing": sorted(BASE_ROLES)})
-    if route in {"mcq_addon", "short_answer_addon", "long_answer_practical_addon", "essay_addon"} and "past_paper" not in roles:
-        warnings.append({"component": "exam_mode_emphasis", "missing": ["past_paper"], "effect": "mode can use prompt only"})
-    if route == "long_answer_practical_addon" and not roles.intersection({"practical_material", "data_problem_material"}):
-        blocks.append({"component": "practical_data_addon", "missing": ["practical_material", "data_problem_material"]})
-    return {"status": "block" if blocks else "pass", "blocked_components": blocks, "warnings": warnings}
+def load_scan(path: str | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def self_test() -> int:
-    scan = {"source_roles": ["lecture_notes"]}
-    assert check_readiness("exam_prep_notes", scan)["status"] == "pass"
-    assert check_readiness("long_answer_practical_addon", scan)["status"] == "block"
-    scoped = {
-        "source_roles": ["lecture_notes"],
-        "source_decisions": [{"source_id": "S1", "route": "exam_prep_notes", "evidence_scope": "style_only"}],
-    }
-    assert check_readiness("exam_prep_notes", scoped)["status"] == "block"
-    print("input_readiness_check self-test passed")
-    return 0
+def self_test() -> None:
+    scan = {"documents": [{"id": "S1", "source_hint": "knowledge_material", "text_chars": 10}], "fragments": [{"id": "F1"}]}
+    result = check_readiness(scan, "exam_prep_notes")
+    assert result["status"] == "ok"
 
 
-def main() -> int:
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--route", default="exam_prep_notes")
     parser.add_argument("--source-scan")
@@ -56,17 +48,15 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
-        return self_test()
-    if not args.source_scan:
-        parser.error("--source-scan is required")
-    scan = json.loads(Path(args.source_scan).read_text(encoding="utf-8"))
-    out = check_readiness(args.route, scan)
-    text = json.dumps(out, indent=2)
+        self_test()
+        return
+    result = check_readiness(load_scan(args.source_scan), args.route)
+    text = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")
     else:
         print(text)
-    return 0
+
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

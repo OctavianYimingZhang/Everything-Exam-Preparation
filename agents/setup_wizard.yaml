@@ -1,26 +1,36 @@
 setup_wizard:
-  required:
+  prompts:
     - source_files
     - requested_output
-  optional:
     - exam_mode
-    - ordering
     - output_depth
-    - evidence_policy
-    - visual_policy
-    - render_mode_preference
     - output_format
-  source_roles:
-    - lecture_slides
-    - lecture_notes
-    - official_course_notes
-    - practical_material
-    - data_problem_material
-    - past_paper
-    - mark_scheme
-    - answer_key
-    - example_answer
-    - user_draft
-    - style_reference
-    - extra_reading
-    - source_visual
+    - topic_focus
+  source_hints:
+    knowledge_material:
+      examples:
+        - lecture_slides
+        - lecture_notes
+        - official_course_notes
+        - practical_handout
+    practice_material:
+      examples:
+        - past_paper
+        - practice_questions
+        - problem_sheet
+        - mcq_bank
+        - essay_prompts
+    marking_material:
+      examples:
+        - mark_scheme
+        - answer_key
+        - solution_set
+    style_reference:
+      examples:
+        - example_answer
+        - model_answer
+        - preferred_essay_style
+    other_material:
+      examples:
+        - mixed_file
+        - ambiguous_file

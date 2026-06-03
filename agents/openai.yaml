@@ -2,11 +2,16 @@ name: Everything Exam Preparation
 entrypoint: SKILL.md
 default_route: exam_prep_notes
 default_output: Exam_Preparation_Notes.docx
-source_policy:
-  use_supplied_sources_only: true
-  preserve_source_roles: true
-  report_unsupported_gaps: true
+source_categories:
+  - knowledge_material
+  - practice_material
+  - marking_material
+  - style_reference
+  - other_material
 student_surface:
-  expose_internal_qa: false
-  expose_source_maps: false
-  expose_prediction_traces: false
+  goal: direct exam preparation for students
+  modes:
+    - MCQ
+    - Short Answer
+    - Long Answer
+    - Essay

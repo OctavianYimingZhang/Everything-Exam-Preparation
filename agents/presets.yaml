@@ -1,17 +1,39 @@
 presets:
   exam_prep_notes:
     output: Exam_Preparation_Notes.docx
-    options:
-      ordering: [exam_emphasis_first, source_order]
-      visual_policy: [auto_source_visuals, user_requested_text_only]
-      render_modes: [kp_list, compact_table, mechanism_chain, image_plus_kp_list, paragraph]
+    actions:
+      - source_inventory
+      - fragment_index
+      - course_knowledge_map
+      - exam_habit_analysis
+      - exam_prep_notes
   exam_mode_diagnosis:
     output: chat_report
-  mcq_addon:
-    requires: exam_prep_notes
-  short_answer_addon:
-    requires: exam_prep_notes
-  long_answer_practical_addon:
-    requires: exam_prep_notes
-  essay_addon:
-    requires: exam_prep_notes
+    actions:
+      - source_inventory
+      - exam_mode_diagnosis
+  mcq_preparation:
+    output: Exam_Preparation_Notes.docx
+    actions:
+      - exam_prep_notes
+      - mcq_exam_habits
+      - mcq_notes_enrichment
+  short_answer_preparation:
+    output: Exam_Preparation_Notes.docx
+    actions:
+      - exam_prep_notes
+      - definition_and_mark_point_highlights
+      - explain_answer_examples
+  long_answer_preparation:
+    output: Exam_Preparation_Notes.docx
+    actions:
+      - exam_prep_notes
+      - practice_question_walkthroughs
+      - example_answers
+  essay_preparation:
+    output: Exam_Preparation_Notes.docx
+    actions:
+      - exam_prep_notes
+      - exam_ready_paragraphs
+      - module_covering_essay_questions
+      - example_essays

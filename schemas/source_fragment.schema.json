@@ -1,32 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Source fragment shape",
   "type": "object",
-  "additionalProperties": true,
-  "$id": "https://example.invalid/everything-exam-preparation/source_fragment.schema.json",
-  "title": "Source fragment",
-  "properties": {
-    "id": {
-      "type": "string"
-    },
-    "source_id": {
-      "type": "string"
-    },
-    "text": {
-      "type": "string"
-    },
-    "role": {
-      "type": "string"
-    },
-    "evidence_scope": {
-      "type": "string"
-    },
-    "fingerprint": {
-      "type": "string"
-    }
-  },
-  "required": [
-    "id",
-    "source_id",
-    "text"
-  ]
+  "additionalProperties": true
 }

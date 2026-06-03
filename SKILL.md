@@ -1,98 +1,94 @@
 ---
 name: everything-exam-preparation
-description: Source-bound exam preparation workflow for lecture material, practical material, past papers, and exam-mode add-ons.
+description: Simple student-facing exam preparation workflow for notes, lecture slides, practice material, past papers, MCQ, short answer, long answer, and essay exams.
 ---
 
 # Everything Exam Preparation
 
-This Skill turns supplied study and practice material into student-facing exam preparation outputs.
+This Skill helps students prepare for exams from uploaded course material and practice material.
 
-## Purpose
+## Core job
 
-1. Analyse Lecture Slides, Lecture Notes, official course notes, practical material, past papers, answer keys, exemplars, feedback, and verified extra reading supplied by the user.
-2. Build `Exam_Preparation_Notes.docx` as the default Exam Preparation Notes artifact.
-3. Choose the correct render mode for each knowledge block: compact list, compact table, mechanism chain, source image plus key points, or short paragraph.
-4. Identify exam mode from past papers or the user's prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
-5. Generate only the add-on content required by the detected or requested exam mode.
+Students provide two kinds of material:
 
-## Non-goals
+- Knowledge material: lecture slides, lecture notes, official notes, module handbooks, reading notes, practical handouts.
+- Practice material: past papers, practice questions, problem sheets, MCQs, short-answer questions, essay prompts, mark schemes, answer keys, example answers.
 
-This Skill is not:
+The Skill should:
 
-- a slide archive converter;
-- a fixed-length summariser;
-- an exact prediction engine;
-- a remembered-example system;
-- a style-copying system.
+1. Work out what the course teaches.
+2. Work out how the course is examined.
+3. Connect the knowledge material to the practice material.
+4. Produce `Exam_Preparation_Notes.docx` as the default preparation notes.
+5. Add mode-specific preparation when the exam format is MCQ, short answer, long answer, or essay.
 
-Use only the sources supplied by the user unless the user explicitly permits verified academic lookup. Preserve source boundaries between course material, past papers, practical material, extra reading, examples, and style references. Treat unsupported points as gaps.
+## Simple workflow
 
-## Canonical protocols
+1. Read the supplied files and classify each file as knowledge material, practice material, marking material, style/reference material, or other material.
+2. Extract readable text and available embedded media when practical.
+3. Build a simple fragment index so the assistant can find course topics, repeated exam topics, command words, mark values, and recurring question patterns.
+4. Diagnose the exam mode from the prompt and practice material.
+5. Generate student-facing preparation notes and the relevant exam-mode preparation.
 
-Load only the protocol required for the requested function.
-
-| Function | Canonical file |
-|---|---|
-| Source intake, source roles, authority, extraction, evidence boundaries | `references/input_and_evidence_protocol.md` |
-| Default Exam Preparation Notes | `references/exam_prep_notes_protocol.md` |
-| Exam mode detection and MCQ/Short Answer/Long Answer/Practical/Data add-ons | `references/exam_mode_and_addons_protocol.md` |
-| Essay Exam Prep and Example Essay add-on | `references/essay_exam_prep_protocol.md` |
-| Student-facing prose quality | `references/language_quality_contract.md` |
-| Run control, lineage, reuse, QA/release quality | `references/runtime_quality_protocol.md` |
-
-No other reference file is authoritative.
-
-## Route table
+## Routes
 
 | User request | Route | Output |
 |---|---|---|
-| revise, make notes, general exam preparation, go through lectures | `exam_prep_notes` | `Exam_Preparation_Notes.docx` |
-| source-order or lecture-order notes | `exam_prep_notes` with `ordering=source_order` | `Exam_Preparation_Notes.docx` |
-| identify exam format only | `exam_mode_diagnosis` | chat/report diagnosis |
-| MCQ / SBA preparation | `exam_prep_notes` + `mcq_addon` | notes plus MCQ add-on |
-| Short Answer preparation | `exam_prep_notes` + `short_answer_addon` | notes plus short-answer add-on |
-| Long Answer / Practical / Data / Problem preparation | `exam_prep_notes` + `long_answer_practical_addon` | notes plus methods/data/problem add-on |
-| Essay exam preparation / Example Essays / model essays | `exam_prep_notes` + `essay_addon` | notes plus essay-specific outputs |
-| source inventory / lint / release check | `source_inventory_only`, `audit_lint_only`, or `github_ready_qa` | inventory or QA result |
+| make notes, revise, prepare this course, go through lectures | `exam_prep_notes` | `Exam_Preparation_Notes.docx` |
+| identify exam format, how is this course examined | `exam_mode_diagnosis` | chat or JSON diagnosis |
+| MCQ, SBA, multiple choice | `mcq_preparation` | notes plus MCQ preparation |
+| short answer, SAQ, definitions, state/list questions | `short_answer_preparation` | notes plus short-answer preparation |
+| long answer, problem, data, practical, past-paper walkthrough | `long_answer_preparation` | notes plus worked question preparation |
+| essay, in-campus essay, example essay, model essay | `essay_preparation` | notes plus essay questions and example essays |
 
-Past papers shape exam mode, emphasis, and answer operations only. They do not replace the course-source baseline.
+## Exam preparation behaviour
 
-Run-control manifests are internal QA artifacts. They may support reproducibility and release checks, but they must not appear in student-facing prose and must not make the notes sound like object, action, or link records.
+### Base notes
 
-## Workflow invariants
+Create notes that explain the course in the way a student should revise it:
 
-Every run has five separate phases:
+- what each topic means;
+- why it matters;
+- how mechanisms, methods, calculations, graphs, assays, comparisons, or arguments work;
+- which topics recur in practice material;
+- how knowledge is likely to be used in answers.
 
-1. Source inventory.
-2. Route-specific source decision.
-3. Evidence bundle and visual candidate construction.
-4. Output plan and block visual placement.
-5. Rendering and QA.
+### MCQ preparation
 
-A later phase must not silently redo an earlier phase. Any source used for factual notes must have `exam_prep_notes` evidence scope that permits factual course content.
+For frequently tested knowledge, add:
 
-Every notes block must state `listability_reason`. If a source block is listable because it is a source list, criteria set, taxonomy/contrast, short-answer mark point set, definition group, or past-paper list question, the plan must use `kp_list`, `compact_table`, or `image_plus_kp_list`. It must not be rendered as a paragraph unless `listability_reason=not_listable`.
+- how the point is tested in MCQ/SBA questions;
+- how to apply the knowledge when choosing an option;
+- plausible statements that look correct but are wrong;
+- distinctions that prevent common distractor mistakes.
 
-Bullet points must be structured answer units with `label` and `explanation`; short labels without explanation are invalid. Compact tables must be structured with `headers` and `rows`, not free-form arrays. Source visual candidates must remain candidates until a notes block selects them; candidates must not carry fake placement.
+### Short-answer preparation
 
-`exam_prep_notes` must not read student-answer, teacher-feedback, marking-gap, or practice-marking objects. A future `practice_marking` route may reuse source inventory and lecture or knowledge-point mapping, but it must not call the notes renderer or mutate the notes plan contract.
+For short-answer material, add:
 
-Run-control objects are internal QA only. They must not shape student-facing prose.
+- definitions worth memorising;
+- answer points that can be written as separate marks;
+- explain-style moves that connect cause, mechanism, result, and significance;
+- short examples showing how to turn notes into answer sentences.
 
-## Student-facing output rules
+### Long-answer preparation
 
-`Exam_Preparation_Notes.docx` must be source-backed, readable, visually efficient, and proportional to the source pack. It must explain what each concept is, why it matters, how the mechanism, method, calculation, graph, assay, or comparison works, and what limitation or interpretation follows.
+For long-answer, practical, data, or problem questions, add:
 
-Use fewer words where possible, but do not collapse explanations into labels. Expand high-frequency, high-value, or difficult exam content. Compress weakly tested or peripheral material.
+- detailed walkthroughs of representative past-paper or practice questions;
+- example answers;
+- explanation of which course knowledge each answer uses;
+- method, data, graph, calculation, control, limitation, and interpretation steps where relevant.
 
-Use source images only when they improve explanation efficiency. Keep images size-controlled.
+### Essay preparation
 
-Student-facing output must not expose source maps, confidence bands, evidence scores, internal manifests, QA flags, extraction notes, source-route narration, AI-process text, prediction traces, or planning scaffolds.
+For essay or in-campus essay exams, add:
 
-## Execution boundary
+- exam-ready essay-style English explanations inside the notes;
+- broad essay questions that can cover common modules;
+- example essay plans and example essays;
+- paragraph-level reasoning that links topic, evidence, explanation, counterpoint, and conclusion.
 
-Run the minimum route that satisfies the user request. If required source material is missing, report the missing source class and block only conclusions that depend on it.
+## Output style
 
-Examples are style or layout evidence only. They never supply factual course claims or direct predictions for a new target.
-
-Prediction anchor: predicted essay theme means theme-level preparation scope, not exact future wording.
+Write directly for a student preparing for an exam. Prefer clear headings, compact explanations, useful tables, worked examples, and exam-ready paragraphs. Keep the workflow simple and focused on helping the student study and answer questions.

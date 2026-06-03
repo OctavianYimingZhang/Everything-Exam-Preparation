@@ -1,23 +1,18 @@
-# Exam mode and add-ons protocol
+# Exam mode and preparation add-ons
 
-All add-ons start from the Exam Preparation Notes baseline. Past papers shape mode and emphasis only.
+## Mode signals
 
-## Detection signals
+- MCQ: option letters, single best answer, multiple choice, true/false style statements.
+- Short Answer: define, state, list, outline, short mark values, separate mark points.
+- Long Answer: explain, compare, evaluate, discuss, practical/data/problem questions, higher mark values.
+- Essay: essay prompts, critically discuss, to what extent, argument-led questions, in-campus essay language.
+- Mixed: more than one mode appears strongly.
 
-- MCQ: option patterns, single-best-answer wording, stems with alternatives, answer grids.
-- Short Answer: low-mark command verbs, concise answer forms, keyword marking points.
-- Long Answer: extended reasoning, compare/evaluate/explain commands, higher-mark responses.
-- Practical/Data/Problem: data tables, graphs, methods, calculations, controls, limitations, problem stems.
-- Essay: broad prompts, critical evaluation, readings, thesis/argument structure.
+## Add-ons
 
-## Add-on content
-
-| Mode | Extra content |
+| Mode | Preparation content |
 |---|---|
-| MCQ | distractor traps, definition contrasts, mechanism checkpoints, common false statements |
-| Short Answer | keyword answer skeletons, marking-point bullets, concise worked examples |
-| Long Answer | paragraph plans, compare/evaluate structures, explanation chains |
-| Practical/Data/Problem | method steps, readout interpretation, graph/table interpretation, controls, limitations, calculation templates |
-| Essay | thesis options, argument map, evidence blocks, counterargument handling, Example Essay generation route |
-
-Never output exact future question wording. A predicted essay theme is a theme-level preparation scope, not exact future wording.
+| MCQ | examiner preferences, tested distinctions, application guidance, plausible wrong statements |
+| Short Answer | definitions, mark-point structures, explain-style examples |
+| Long Answer | question walkthroughs, example answers, knowledge-to-answer mapping |
+| Essay | exam-ready paragraphs, broad module-covering questions, example essay plans and essays |

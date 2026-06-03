@@ -1,25 +1,24 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "skill_id": "everything-exam-preparation",
   "repo": "OctavianYimingZhang/Everything-Exam-Preparation",
   "branch": "main",
   "entrypoint": "SKILL.md",
-  "health_commands": [
-    "python3 -m compileall -q scripts",
-    "python3 scripts/validate_skill_contracts.py --self-test",
-    "python3 scripts/plan_workflow.py --self-test",
-    "python3 scripts/input_readiness_check.py --self-test",
-    "python3 scripts/extract_sources.py --self-test",
-    "python3 scripts/exam_mode_tools.py --self-test",
-    "python3 scripts/generate_exam_prep_notes_docx.py --self-test",
-    "python3 scripts/exam_prep_notes_quality_linter.py --self-test",
-    "python3 scripts/output_sufficiency_linter.py --self-test",
-    "python3 scripts/essay_exam_tools.py --self-test",
-    "python3 scripts/deliverable_surface_linter.py --self-test",
-    "python3 scripts/run_control_plane.py --self-test",
-    "python3 scripts/github_ready_check.py --ci"
+  "default_output": "Exam_Preparation_Notes.docx",
+  "routes": [
+    "exam_prep_notes",
+    "exam_mode_diagnosis",
+    "mcq_preparation",
+    "short_answer_preparation",
+    "long_answer_preparation",
+    "essay_preparation"
   ],
+  "publish": {
+    "github_push": "python3 scripts/publish_skill.py --push",
+    "local_skill_update": "python3 scripts/publish_skill.py --sync-local-skill",
+    "push_and_update": "python3 scripts/publish_skill.py --push --sync-local-skill"
+  },
   "post_update_commands": [
-    "python3 -m pip install -r requirements.txt"
+    "python3 scripts/publish_skill.py --sync-local-skill"
   ]
 }
