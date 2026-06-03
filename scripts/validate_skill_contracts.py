@@ -137,6 +137,21 @@ def check_workflow() -> None:
         fail("workflow planner does not schedule run_control_plane")
 
 
+def check_notes_rendering_contract() -> None:
+    notes_schema = json.dumps(load_json(ROOT / "schemas/exam_prep_notes_plan.schema.json"))
+    for mode in ["kp_list", "compact_table", "mechanism_chain", "image_plus_kp_list", "paragraph"]:
+        if mode not in notes_schema:
+            fail(f"notes plan schema missing render mode: {mode}")
+    renderer = (ROOT / "scripts/generate_exam_prep_notes_docx.py").read_text(encoding="utf-8")
+    for token in ["visual_bytes", "word/media/", "image_plus_kp_list", "compact_table"]:
+        if token not in renderer:
+            fail(f"notes renderer missing visual/render support: {token}")
+    linter = (ROOT / "scripts/exam_prep_notes_quality_linter.py").read_text(encoding="utf-8")
+    for token in ["FORBIDDEN_SURFACE_PATTERNS", "forbidden_internal_surface_templates", "generic_colon_label_overuse"]:
+        if token not in linter:
+            fail(f"notes quality linter missing surface-template guard: {token}")
+
+
 def check_release_guards() -> None:
     guard = (ROOT / "scripts/github_ready_check.py").read_text(encoding="utf-8")
     missing = sorted(term for term in REQUIRED_RELEASE_GUARD_TERMS if term not in guard)
@@ -155,6 +170,7 @@ def run_all() -> None:
     check_interaction()
     check_student_output()
     check_workflow()
+    check_notes_rendering_contract()
     check_release_guards()
 
 

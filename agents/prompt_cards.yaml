@@ -1,7 +1,7 @@
 prompt_cards:
   - id: exam_prep_notes
     title: Exam Preparation Notes
-    purpose: Build Exam_Preparation_Notes.docx from supplied course and practice sources.
+    purpose: Build Exam_Preparation_Notes.docx using source-backed render modes and concise explanation.
     route: exam_prep_notes
   - id: exam_mode_diagnosis
     title: Exam Mode Diagnosis

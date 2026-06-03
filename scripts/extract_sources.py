@@ -67,7 +67,7 @@ def extract_pptx_text(path: Path) -> tuple[str, list[dict[str, Any]]]:
                 raw = zf.read(name).decode("utf-8", errors="ignore")
                 chunks.extend(re.findall(r"<a:t>(.*?)</a:t>", raw))
             if name.startswith("ppt/media/"):
-                visuals.append({"source_path": str(path), "media_name": name, "role": "source_visual"})
+                visuals.append({"source_path": str(path), "media_name": name, "caption": Path(name).stem.replace("_", " "), "role": "source_visual"})
         return html.unescape("\n".join(chunks)), visuals
 
 
@@ -120,9 +120,10 @@ def build_scan(paths: list[Path]) -> dict[str, Any]:
     fragments = [frag for doc in docs for frag in fragment_text(doc)]
     visuals: list[dict[str, Any]] = []
     for doc in docs:
-        for visual in doc.visuals:
+        for idx, visual in enumerate(doc.visuals, start=1):
             item = dict(visual)
             item["source_id"] = doc.id
+            item["id"] = f"{doc.id}_V{idx}"
             visuals.append(item)
     return {
         "documents": [{"id": d.id, "path": d.path, "role": d.role, "readable": d.readable} for d in docs],

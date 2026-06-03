@@ -8,6 +8,7 @@ setup_wizard:
     - output_depth
     - evidence_policy
     - visual_policy
+    - render_mode_preference
     - output_format
   source_roles:
     - lecture_slides

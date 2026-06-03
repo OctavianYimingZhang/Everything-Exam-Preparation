@@ -10,6 +10,31 @@ from pathlib import Path
 from typing import Any
 
 FILLER = ["it is important to note", "this means that", "in conclusion", "the source states", "the course frames", "the lecture material"]
+FORBIDDEN_SURFACE_PATTERNS = [
+    r"\bThe central relationship is that\b",
+    r"because it changes how development evidence is selected, interpreted or used",
+    r"\bBoundary note\s*:",
+    r"\bThe main limitation is this\b",
+    r"\bMethod/readout\s*:",
+    r"\bThe method readout is this\b",
+    r"\bDiagnostic pattern\s*:",
+    r"\bThe graph-data interpretation is this\b",
+    r"\bWorked example\s*:\s*The calculation step is this\b",
+    r"This worked calculation illustrates how the numeric output changes interpretation",
+    r"This example illustrates the module boundary",
+    r"These named terms illustrate how the same principle changes the development decision",
+    r"The consequence matters because it changes the next development decision",
+    r"Treat each listed item as a separate evidence check",
+    r"Link each item to efficacy, safety, pharmacokinetics, formulation, quality or authorisation",
+]
+GENERIC_LABELS = [
+    "comparison",
+    "example",
+    "boundary note",
+    "method/readout",
+    "diagnostic pattern",
+    "worked example",
+]
 PRACTICAL_TERMS = ["method", "control", "limitation", "calculate", "graph", "table", "readout"]
 
 
@@ -31,6 +56,19 @@ def lint_text(text: str, plan: dict[str, Any] | None = None) -> dict[str, Any]:
     filler_hits = [phrase for phrase in FILLER if phrase in text.lower()]
     if filler_hits:
         failures.append({"check": "filler_phrases", "phrases": filler_hits})
+    surface_hits = []
+    for pattern in FORBIDDEN_SURFACE_PATTERNS:
+        hits = re.findall(pattern, text, flags=re.I)
+        if hits:
+            surface_hits.append({"pattern": pattern, "count": len(hits)})
+    if surface_hits:
+        failures.append({"check": "forbidden_internal_surface_templates", "patterns": surface_hits})
+    label_hits = []
+    for label in GENERIC_LABELS:
+        label_hits.extend(re.findall(rf"(?im)^\s*{re.escape(label)}\s*:", text))
+    word_count = len(re.findall(r"\w+", text))
+    if len(label_hits) > max(4, word_count // 700):
+        failures.append({"check": "generic_colon_label_overuse", "count": len(label_hits)})
     heading_like = [p for p in paragraphs if len(p.split()) <= 8 and not p.startswith("- ")]
     explanatory = [p for p in paragraphs if len(p.split()) > 12]
     if heading_like and len(heading_like) > max(4, len(explanatory) * 2):
@@ -49,6 +87,12 @@ def self_test() -> int:
     assert result["status"] == "pass"
     bad = lint_text("Heading\n" + "word " * 160)
     assert bad["status"] == "fail"
+    templated = lint_text(
+        "The central relationship is that EC50 matters because it changes how development evidence is selected, interpreted or used.\n"
+        "Boundary note: The main limitation is this: do not overinterpret."
+    )
+    assert templated["status"] == "fail"
+    assert any(f["check"] == "forbidden_internal_surface_templates" for f in templated["failures"])
     print("exam_prep_notes_quality_linter self-test passed")
     return 0
 

@@ -15,16 +15,81 @@
       ]
     },
     "topics": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/notes_block"
+      }
     },
     "add_on_sections": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/notes_block"
+      }
     },
     "visuals": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "$ref": "visual_aid_spec.schema.json"
+      }
     }
   },
   "required": [
     "title"
-  ]
+  ],
+  "$defs": {
+    "notes_block": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "heading": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "concept": {
+          "type": "string"
+        },
+        "render_mode": {
+          "enum": [
+            "kp_list",
+            "compact_table",
+            "mechanism_chain",
+            "image_plus_kp_list",
+            "paragraph"
+          ]
+        },
+        "explanation": {
+          "type": "string"
+        },
+        "bullets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "table_rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "chain": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "visuals": {
+          "type": "array",
+          "items": {
+            "$ref": "visual_aid_spec.schema.json"
+          }
+        }
+      }
+    }
+  }
 }

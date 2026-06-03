@@ -3,7 +3,8 @@ presets:
     output: Exam_Preparation_Notes.docx
     options:
       ordering: [exam_emphasis_first, source_order]
-      visual_policy: [use_source_visuals_when_helpful, text_only]
+      visual_policy: [embed_source_visuals_when_explanatory, text_only]
+      render_modes: [kp_list, compact_table, mechanism_chain, image_plus_kp_list, paragraph]
   exam_mode_diagnosis:
     output: chat_report
   mcq_addon:

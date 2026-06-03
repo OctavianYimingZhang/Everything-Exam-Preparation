@@ -10,8 +10,8 @@ This Skill turns supplied study and practice material into student-facing exam p
 ## Purpose
 
 1. Analyse Lecture Slides, Lecture Notes, official course notes, practical material, past papers, answer keys, exemplars, feedback, and verified extra reading supplied by the user.
-2. Build an internal run control manifest that records source objects, fragments, actions, output artifacts, lineage links, validation errors, and reuse decisions.
-3. Build `Exam_Preparation_Notes.docx` as the default Exam Preparation Notes artifact.
+2. Build `Exam_Preparation_Notes.docx` as the default Exam Preparation Notes artifact.
+3. Choose the correct render mode for each knowledge block: compact list, compact table, mechanism chain, source image plus key points, or short paragraph.
 4. Identify exam mode from past papers or the user's prompt: MCQ, Short Answer, Long Answer, Practical/Data/Problem, or Essay.
 5. Generate only the add-on content required by the detected or requested exam mode.
 
@@ -57,7 +57,7 @@ No other reference file is authoritative.
 
 Past papers shape exam mode, emphasis, and answer operations only. They do not replace the course-source baseline.
 
-Every route that reads source material should schedule `run_control_plane` after source intake or fragment indexing so reusable work, lineage, and validation failures are explicit before student-facing generation.
+Run-control manifests are internal QA artifacts. They may support reproducibility and release checks, but they must not appear in student-facing prose and must not make the notes sound like object, action, or link records.
 
 ## Student-facing output rules
 

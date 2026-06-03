@@ -21,7 +21,10 @@
       "type": "array"
     },
     "visual_source_references": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "$ref": "visual_aid_spec.schema.json"
+      }
     }
   }
 }

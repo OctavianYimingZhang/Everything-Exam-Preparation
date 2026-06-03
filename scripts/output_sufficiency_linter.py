@@ -10,16 +10,18 @@ from pathlib import Path
 from typing import Any
 
 
-def read_output(path: Path) -> str:
+def read_output(path: Path) -> tuple[str, int]:
     if path.suffix.lower() == ".docx":
         with zipfile.ZipFile(path) as zf:
             raw = zf.read("word/document.xml").decode("utf-8", errors="ignore")
-        return html.unescape("\n".join(re.findall(r"<w:t[^>]*>(.*?)</w:t>", raw)))
-    return path.read_text(encoding="utf-8", errors="ignore")
+            media_count = sum(1 for name in zf.namelist() if name.startswith("word/media/"))
+        return html.unescape("\n".join(re.findall(r"<w:t[^>]*>(.*?)</w:t>", raw))), media_count
+    return path.read_text(encoding="utf-8", errors="ignore"), 0
 
 
-def lint(route: str, source_scan: dict[str, Any], output_text: str) -> dict[str, Any]:
+def lint(route: str, source_scan: dict[str, Any], output_text: str, media_count: int = 0) -> dict[str, Any]:
     failures = []
+    warnings = []
     fragments = source_scan.get("fragments", [])
     roles = set(source_scan.get("source_roles") or [f.get("role") for f in fragments])
     words = len(re.findall(r"\w+", output_text))
@@ -37,7 +39,9 @@ def lint(route: str, source_scan: dict[str, Any], output_text: str) -> dict[str,
         failures.append({"check": "copied_source_text", "count": copied})
     if roles.intersection({"practical_material", "data_problem_material"}) and not re.search(r"method|control|calculation|graph|table|limitation", output_text, flags=re.I):
         failures.append({"check": "practice_material_missing"})
-    return {"status": "fail" if failures else "pass", "failures": failures}
+    if source_scan.get("visual_source_references") and media_count == 0:
+        warnings.append({"check": "source_visuals_not_embedded", "count": len(source_scan.get("visual_source_references", []))})
+    return {"status": "fail" if failures else "pass", "failures": failures, "warnings": warnings}
 
 
 def self_test() -> int:
@@ -59,7 +63,8 @@ def main() -> int:
     if not args.source_scan or not args.output:
         parser.error("--source-scan and --output are required")
     scan = json.loads(Path(args.source_scan).read_text(encoding="utf-8"))
-    result = lint(args.route, scan, read_output(Path(args.output)))
+    output_text, media_count = read_output(Path(args.output))
+    result = lint(args.route, scan, output_text, media_count)
     print(json.dumps(result, indent=2))
     return 1 if result["status"] == "fail" else 0
 

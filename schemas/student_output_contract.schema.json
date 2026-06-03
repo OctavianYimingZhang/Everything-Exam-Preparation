@@ -17,6 +17,12 @@
     "forbidden_surface_markers": {
       "type": "array"
     },
+    "forbidden_surface_templates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "formatting": {
       "type": "object"
     },

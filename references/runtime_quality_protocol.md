@@ -8,7 +8,7 @@ Run consolidated self-tests for contracts, routing, intake, mode detection, note
 
 ## Run control
 
-Each run should be representable as a control manifest with:
+Run control is an internal QA and reproducibility tool, not a student-output planning style. Each run should be representable as a control manifest with:
 
 - stable source document and source fragment object IDs;
 - workflow action records for planned or executed route steps;

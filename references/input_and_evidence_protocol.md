@@ -37,3 +37,5 @@ Each readable source document and extracted fragment should keep a stable ID and
 ## Visual source handling
 
 Source visuals may be used when they explain a mechanism, method, graph, workflow, structure, or comparison faster than text. Decorative images are not evidence. A visual never overrides text evidence. If a resized image would be unreadable, replace it with a concise redraw, table, or description.
+
+Extracted PPT media should retain enough locator metadata for rendering: `source_id`, `source_path`, `media_name`, role, and optional caption. Generated schematic images are allowed only as explanatory redraws from already-supported claims; they are not independent factual evidence.

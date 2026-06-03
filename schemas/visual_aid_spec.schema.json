@@ -11,12 +11,30 @@
     "path": {
       "type": "string"
     },
+    "image_path": {
+      "type": "string"
+    },
+    "source_path": {
+      "type": "string"
+    },
+    "media_name": {
+      "type": "string"
+    },
+    "visual_kind": {
+      "enum": [
+        "source_image",
+        "generated_schematic"
+      ]
+    },
     "caption": {
       "type": "string"
     },
     "max_width_inches": {
       "type": "number",
       "maximum": 3.8
+    },
+    "height_inches": {
+      "type": "number"
     }
   }
 }
