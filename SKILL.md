@@ -65,8 +65,8 @@ Every run has five separate phases:
 
 1. Source inventory.
 2. Route-specific source decision.
-3. Evidence bundle construction.
-4. Output plan construction.
+3. Evidence bundle and visual candidate construction.
+4. Output plan and block visual placement.
 5. Rendering and QA.
 
 A later phase must not silently redo an earlier phase. Any source used for factual notes must have `exam_prep_notes` evidence scope that permits factual course content.

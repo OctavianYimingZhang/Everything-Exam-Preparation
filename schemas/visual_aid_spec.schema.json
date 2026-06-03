@@ -32,7 +32,9 @@
     },
     "visual_kind": {
       "enum": [
-        "source_image",
+        "source_embedded_image",
+        "source_slide_snapshot",
+        "source_table_redraw",
         "generated_schematic"
       ]
     },
@@ -63,7 +65,8 @@
         }
       },
       "required": [
-        "after_block_id"
+        "after_block_id",
+        "max_width_inches"
       ]
     },
     "max_width_inches": {
@@ -76,6 +79,7 @@
   },
   "required": [
     "visual_id",
+    "source_id",
     "visual_kind",
     "caption",
     "use_reason",

@@ -14,6 +14,7 @@ Each section contains ordered blocks. Each block must include:
 - `source_ids`
 - content matching the selected render mode
 - optional `visual_ids` only when a source or generated visual is attached to that block
+- `visual_decisions` with candidate, selected, and text-only status for the run
 
 Do not generate a generic introduction unless it directly improves revision.
 
@@ -49,7 +50,7 @@ Each knowledge block must choose exactly one render mode.
 | render_mode | Use when | Student-facing form |
 |---|---|---|
 | `kp_list` | The source or exam asks for named points, criteria, uses, causes, features, examples, advantages, limitations, steps, or `describe/list TWO/THREE/N` answers. | Compact bullets. Each bullet has a label plus one short explanatory clause. |
-| `compact_table` | The content is a comparison, distinction, parameter set, assay type set, phase set, response type set, or definition group. | A short table or table-like rows. Keep cells short. |
+| `compact_table` | The content is a comparison, distinction, parameter set, assay type set, phase set, response type set, or definition group. | A real DOCX table. Keep cells short. |
 | `mechanism_chain` | The content is causal or sequential and loses meaning if split into isolated facts. | Arrow chain or short ordered bullets. |
 | `image_plus_kp_list` | A source slide, figure, graph, or table explains faster than text, and key points can be listed beside or below it. | Small source image plus compact bullets. |
 | `paragraph` | The content needs integrated explanation, evaluation, or caveat handling. | Short paragraph, usually under 90 words. |
@@ -106,7 +107,9 @@ Use source slide images only if they explain faster than text. Do not use decora
 
 Visuals are block-level only. A visual may appear only when a block explicitly references it through `visual_ids` and the visual placement points back to that block. The renderer must not append all images to a final `Visual aids` section, insert images without block ownership, use generic captions such as `Visual aid for ...`, or silently convert a missing image into caption-only text.
 
-A visual is required only when a block chooses `image_plus_kp_list`. If source visuals exist but no visual is selected, the plan must record a concise `visual_decisions.skip_reason` rather than dumping arbitrary images into the document.
+The default visual policy is `auto_source_visuals`. `user_requested_text_only` is valid only when the user explicitly asks for text-only or no images. If source visual candidates exist under `auto_source_visuals`, the plan must either select block-owned visuals or record structured rejection reasons for every candidate.
+
+A visual is required only when a block chooses `image_plus_kp_list`. Blocks using other render modes must not carry `visual_ids`. This prevents uncontrolled auxiliary images from entering the notes.
 
 ## Forbidden legacy plan behaviour
 

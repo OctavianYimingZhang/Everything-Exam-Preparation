@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import Any
 
 ROUTES = {
-    "exam_prep_notes": ["source_inventory", "route_source_decision", "evidence_bundle", "fragment_index", "run_control_plane", "exam_prep_notes_plan", "exam_prep_notes_generation", "notes_quality_gate", "deliverable_surface_gate"],
-    "exam_mode_diagnosis": ["source_inventory", "route_source_decision", "run_control_plane", "exam_mode_diagnosis"],
-    "mcq_addon": ["exam_prep_notes", "exam_mode_diagnosis", "run_control_plane", "mcq_addon"],
-    "short_answer_addon": ["exam_prep_notes", "exam_mode_diagnosis", "run_control_plane", "short_answer_addon"],
-    "long_answer_practical_addon": ["exam_prep_notes", "exam_mode_diagnosis", "run_control_plane", "long_answer_practical_addon"],
-    "essay_addon": ["exam_prep_notes", "exam_mode_diagnosis", "run_control_plane", "essay_addon"],
-    "source_inventory_only": ["source_inventory", "run_control_plane"],
+    "exam_prep_notes": ["source_inventory", "route_source_decision", "evidence_bundle", "fragment_index", "visual_candidate_index", "exam_prep_notes_plan", "block_visual_placement", "exam_prep_notes_generation", "notes_quality_gate", "deliverable_surface_gate"],
+    "exam_mode_diagnosis": ["source_inventory", "route_source_decision", "exam_mode_diagnosis"],
+    "mcq_addon": ["exam_prep_notes", "exam_mode_diagnosis", "mcq_addon"],
+    "short_answer_addon": ["exam_prep_notes", "exam_mode_diagnosis", "short_answer_addon"],
+    "long_answer_practical_addon": ["exam_prep_notes", "exam_mode_diagnosis", "long_answer_practical_addon"],
+    "essay_addon": ["exam_prep_notes", "exam_mode_diagnosis", "essay_addon"],
+    "source_inventory_only": ["source_inventory"],
     "audit_lint_only": ["run_control_plane", "release_lint"],
     "github_ready_qa": ["run_control_plane", "github_ready_check"],
 }
@@ -59,8 +59,11 @@ def self_test() -> int:
     assert plan("make notes")["route"] == "exam_prep_notes"
     note_actions = [a["id"] for a in plan("make notes")["actions"]]
     assert "route_source_decision" in note_actions
-    assert "run_control_plane" in note_actions
+    assert "visual_candidate_index" in note_actions
+    assert "block_visual_placement" in note_actions
+    assert "run_control_plane" not in note_actions
     assert "practice_marking" not in json.dumps(plan("make notes"))
+    assert "run_control_plane" in [a["id"] for a in plan("github ready qa")["actions"]]
     assert plan("make lecture-order notes")["ordering"] == "source_order"
     assert plan("MCQ prep")["route"] == "mcq_addon"
     assert plan("essay exam preparation")["route"] == "essay_addon"

@@ -17,8 +17,8 @@
     },
     "visual_policy": {
       "enum": [
-        "block_level_only",
-        "text_only_with_skip_reason"
+        "auto_source_visuals",
+        "user_requested_text_only"
       ]
     },
     "source_decision_ids": {
@@ -37,10 +37,46 @@
             "type": "string"
           }
         },
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "selected_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "user_requested_text_only": {
+          "type": "boolean"
+        },
+        "rejected_visuals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "visual_id": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 8
+              }
+            },
+            "required": [
+              "visual_id",
+              "reason"
+            ]
+          }
+        },
         "skip_reason": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "candidate_count",
+        "selected_count",
+        "user_requested_text_only"
+      ]
     },
     "visuals": {
       "type": "array",
@@ -60,6 +96,7 @@
     "title",
     "ordering",
     "visual_policy",
+    "visual_decisions",
     "sections"
   ],
   "$defs": {
@@ -116,6 +153,12 @@
           "items": {
             "type": "string"
           }
+        },
+        "evidence_scope": {
+          "enum": [
+            "factual_course_content",
+            "exam_emphasis"
+          ]
         },
         "paragraph": {
           "type": "string"

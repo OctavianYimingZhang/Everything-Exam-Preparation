@@ -203,10 +203,10 @@ def build_scan(paths: list[Path]) -> dict[str, Any]:
             item["source_id"] = doc.id
             item["id"] = f"{doc.id}_V{idx}"
             item["visual_id"] = f"{doc.id}_V{idx}"
-            item.setdefault("visual_kind", "source_image")
+            item.setdefault("visual_kind", "source_embedded_image")
             item.setdefault("caption", f"Source figure candidate {doc.id}.{idx}")
             item.setdefault("use_reason", "Candidate source visual; a notes block must select it before rendering.")
-            item.setdefault("placement", {"after_block_id": "unassigned_source_candidate"})
+            item.setdefault("placement", {"after_block_id": "unassigned_source_candidate", "max_width_inches": 3.2})
             item.setdefault("is_decorative", False)
             visuals.append(item)
     return {

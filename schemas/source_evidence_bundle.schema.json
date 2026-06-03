@@ -3,7 +3,7 @@
   "$id": "https://example.invalid/everything-exam-preparation/source_evidence_bundle.schema.json",
   "title": "Source evidence bundle",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "properties": {
     "documents": {
       "type": "array",
@@ -31,6 +31,12 @@
     },
     "unsupported_gaps": {
       "type": "array"
+    },
+    "source_roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "visual_source_references": {
       "type": "array",

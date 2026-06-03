@@ -76,6 +76,39 @@ def drawing(rid: str, caption: str, index: int, width_inches: float, height_inch
 </w:drawing></w:r></w:p>"""
 
 
+def table_cell_xml(text: Any) -> str:
+    return (
+        "<w:tc>"
+        '<w:tcPr><w:tcW w:w="2400" w:type="dxa"/></w:tcPr>'
+        '<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:line="360" w:lineRule="auto"/></w:pPr>'
+        '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:color w:val="000000"/></w:rPr>'
+        f"<w:t>{xml_escape(text)}</w:t></w:r></w:p>"
+        "</w:tc>"
+    )
+
+
+def table_xml(rows: list[Any]) -> str:
+    row_parts = []
+    for row in rows[:28]:
+        cells = row if isinstance(row, list) else [row]
+        row_parts.append("<w:tr>" + "".join(table_cell_xml(cell) for cell in cells[:8]) + "</w:tr>")
+    return (
+        "<w:tbl>"
+        "<w:tblPr>"
+        "<w:tblBorders>"
+        '<w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        "</w:tblBorders>"
+        "</w:tblPr>"
+        + "".join(row_parts)
+        + "</w:tbl>"
+    )
+
+
 def visual_id(visual: dict[str, Any]) -> str:
     return str(visual.get("visual_id") or visual.get("id") or "")
 
@@ -145,6 +178,8 @@ def build_body_and_media(blocks: list[Any]) -> tuple[str, list[tuple[str, str, b
                 f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{name}"/>'
             )
             image_index += 1
+        elif isinstance(block, dict) and block.get("kind") == "table":
+            body_parts.append(table_xml(block.get("rows") or []))
         else:
             text, style, align = block
             body_parts.append(paragraph(text, style, align))
@@ -189,7 +224,38 @@ def plan_visuals(plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return visuals
 
 
-def validate_plan_contract(plan: dict[str, Any]) -> list[str]:
+def source_decision_scopes(source_scan: dict[str, Any] | None) -> dict[str, str]:
+    if not source_scan:
+        return {}
+    return {
+        str(decision.get("source_id")): str(decision.get("evidence_scope"))
+        for decision in source_scan.get("source_decisions", [])
+        if decision.get("route") == "exam_prep_notes"
+    }
+
+
+def allowed_source_scope_for_block(block: dict[str, Any]) -> set[str]:
+    if block.get("evidence_scope") == "exam_emphasis":
+        return {"exam_emphasis"}
+    return {"factual_course_content"}
+
+
+def validate_source_scopes(block: dict[str, Any], scopes: dict[str, str], failures: list[str]) -> None:
+    if not scopes:
+        return
+    allowed = allowed_source_scope_for_block(block)
+    block_id = str(block.get("block_id") or "unknown")
+    for source_id in block.get("source_ids", []) or []:
+        scope = scopes.get(str(source_id))
+        if not scope:
+            failures.append(f"source_without_route_decision:{block_id}:{source_id}")
+        elif scope == "needs_confirmation":
+            failures.append(f"unconfirmed_source_in_notes:{block_id}:{source_id}")
+        elif scope not in allowed:
+            failures.append(f"source_scope_not_allowed:{block_id}:{source_id}:{scope}")
+
+
+def validate_plan_contract(plan: dict[str, Any], source_scan: dict[str, Any] | None = None) -> list[str]:
     failures: list[str] = []
     legacy = sorted(LEGACY_TOP_LEVEL_KEYS.intersection(plan))
     if legacy:
@@ -197,10 +263,31 @@ def validate_plan_contract(plan: dict[str, Any]) -> list[str]:
     for key in ["title", "ordering", "visual_policy", "sections"]:
         if key not in plan:
             failures.append(f"missing_required:{key}")
-    if plan.get("visual_policy") not in {"block_level_only", "text_only_with_skip_reason"}:
+    if plan.get("visual_policy") not in {"auto_source_visuals", "user_requested_text_only"}:
         failures.append("invalid_visual_policy")
+    visual_decisions = plan.get("visual_decisions") or {}
+    for key in ["candidate_count", "selected_count", "user_requested_text_only"]:
+        if key not in visual_decisions:
+            failures.append(f"visual_decisions_missing:{key}")
+    selected_visual_ids = visual_decisions.get("selected_visual_ids") or []
+    candidate_count = int(visual_decisions.get("candidate_count") or 0)
+    selected_count = int(visual_decisions.get("selected_count") or 0)
+    rejected_visuals = visual_decisions.get("rejected_visuals") or []
+    if selected_count != len(selected_visual_ids):
+        failures.append("selected_visual_count_mismatch")
+    if plan.get("visual_policy") == "auto_source_visuals":
+        if visual_decisions.get("user_requested_text_only"):
+            failures.append("auto_visuals_marked_text_only")
+        if candidate_count > 0 and selected_count == 0 and len(rejected_visuals) < candidate_count:
+            failures.append("auto_visual_candidates_unresolved")
+    if plan.get("visual_policy") == "user_requested_text_only":
+        if not visual_decisions.get("user_requested_text_only"):
+            failures.append("text_only_without_user_request")
+        if selected_count or plan.get("visuals"):
+            failures.append("text_only_plan_has_visuals")
 
     visual_map = plan_visuals(plan)
+    source_scopes = source_decision_scopes(source_scan)
     block_ids: set[str] = set()
     referenced_visuals: set[str] = set()
     visual_references: dict[str, set[str]] = {}
@@ -238,6 +325,7 @@ def validate_plan_contract(plan: dict[str, Any]) -> list[str]:
                 failures.append(f"block_missing_heading:{block_id or section_index}")
             if not block.get("source_ids"):
                 failures.append(f"block_missing_source_ids:{block_id or section_index}")
+            validate_source_scopes(block, source_scopes, failures)
             if mode == "paragraph" and not block.get("paragraph"):
                 failures.append(f"paragraph_missing_text:{block_id}")
             if mode == "kp_list" and not block.get("points"):
@@ -248,6 +336,8 @@ def validate_plan_contract(plan: dict[str, Any]) -> list[str]:
                 failures.append(f"mechanism_chain_missing_chain:{block_id}")
             if mode == "image_plus_kp_list" and (not block.get("visual_ids") or not block.get("points")):
                 failures.append(f"image_plus_kp_list_missing_visual_or_points:{block_id}")
+            if mode != "image_plus_kp_list" and block.get("visual_ids"):
+                failures.append(f"visual_ids_require_image_plus_kp_list:{block_id}")
             for vid in block.get("visual_ids", []) or []:
                 vid_text = str(vid)
                 referenced_visuals.add(vid_text)
@@ -272,10 +362,6 @@ def validate_plan_contract(plan: dict[str, Any]) -> list[str]:
     unreferenced = sorted(set(visual_map) - referenced_visuals)
     if unreferenced:
         failures.append(f"unreferenced_visuals:{','.join(unreferenced)}")
-    if plan.get("visual_policy") == "text_only_with_skip_reason" and visual_map:
-        failures.append("text_only_plan_has_visuals")
-    if plan.get("visual_policy") == "text_only_with_skip_reason" and not (plan.get("visual_decisions") or {}).get("skip_reason"):
-        failures.append("text_only_plan_missing_skip_reason")
     return failures
 
 
@@ -293,13 +379,11 @@ def add_points(blocks: list[Any], points: list[Any], limit: int = 16) -> None:
 
 
 def add_table(blocks: list[Any], rows: list[Any]) -> None:
-    for row in rows[:28]:
-        cells = row if isinstance(row, list) else [row]
-        blocks.append((" | ".join(str(cell) for cell in cells), "Normal", "both"))
+    blocks.append({"kind": "table", "rows": rows})
 
 
-def build_docx_blocks(plan: dict[str, Any]) -> list[Any]:
-    failures = validate_plan_contract(plan)
+def build_docx_blocks(plan: dict[str, Any], source_scan: dict[str, Any] | None = None) -> list[Any]:
+    failures = validate_plan_contract(plan, source_scan)
     if failures:
         raise ValueError("invalid_exam_prep_notes_plan:" + ";".join(failures))
 
@@ -318,19 +402,16 @@ def build_docx_blocks(plan: dict[str, Any]) -> list[Any]:
                 add_points(blocks, block.get("points", []), 12)
             elif mode == "kp_list":
                 add_points(blocks, block.get("points", []))
-                blocks.extend(render_visuals_for_block(block, visual_map))
             elif mode == "compact_table":
                 add_table(blocks, block.get("table", []))
-                blocks.extend(render_visuals_for_block(block, visual_map))
             elif mode == "mechanism_chain":
                 blocks.append((" -> ".join(str(step) for step in block.get("chain", [])), "Normal", "both"))
-                blocks.extend(render_visuals_for_block(block, visual_map))
     return blocks
 
 
-def generate(plan: dict[str, Any], output_dir: Path) -> Path:
+def generate(plan: dict[str, Any], output_dir: Path, source_scan: dict[str, Any] | None = None) -> Path:
     out = output_dir / OUTPUT_NAME
-    write_minimal_docx(out, build_docx_blocks(plan))
+    write_minimal_docx(out, build_docx_blocks(plan, source_scan))
     return out
 
 
@@ -338,13 +419,14 @@ def sample_strict_plan(image_path: Path) -> dict[str, Any]:
     return {
         "title": "Exam Preparation Notes",
         "ordering": "exam_emphasis_first",
-        "visual_policy": "block_level_only",
-        "visual_decisions": {"selected_visual_ids": ["V1"]},
+        "visual_policy": "auto_source_visuals",
+        "visual_decisions": {"candidate_count": 1, "selected_count": 1, "user_requested_text_only": False, "selected_visual_ids": ["V1"]},
         "visuals": [
             {
                 "visual_id": "V1",
+                "source_id": "SRC1",
                 "asset_path": str(image_path),
-                "visual_kind": "source_image",
+                "visual_kind": "source_embedded_image",
                 "caption": "Reaction curve showing early rate estimation",
                 "use_reason": "The graph explains why the initial slope is used before substrate depletion.",
                 "placement": {"after_block_id": "B1", "max_width_inches": 1.0, "height_inches": 1.0},
@@ -364,6 +446,13 @@ def sample_strict_plan(image_path: Path) -> dict[str, Any]:
                         "paragraph": "Initial slope estimates early reaction rate before substrate depletion.",
                         "points": ["Axes define the measured readout.", "A later plateau can reflect substrate depletion rather than initial velocity."],
                         "visual_ids": ["V1"],
+                    },
+                    {
+                        "block_id": "B2",
+                        "heading": "Rate readout table",
+                        "render_mode": "compact_table",
+                        "source_ids": ["SRC1"],
+                        "table": [["Feature", "Exam use"], ["Initial slope", "Estimate early rate before depletion"]],
                     }
                 ],
             }
@@ -381,7 +470,13 @@ def self_test() -> int:
             doc = zf.read("word/document.xml").decode("utf-8", errors="ignore")
             assert "word/document.xml" in zf.namelist()
             assert any(name.startswith("word/media/") for name in zf.namelist())
+            assert "<w:drawing>" in doc
+            assert "<w:tbl>" in doc
             assert "Visual aids" not in doc
+        factual_scan = {"source_decisions": [{"source_id": "SRC1", "route": "exam_prep_notes", "evidence_scope": "factual_course_content"}]}
+        assert not validate_plan_contract(sample_strict_plan(image_path), factual_scan)
+        style_scan = {"source_decisions": [{"source_id": "SRC1", "route": "exam_prep_notes", "evidence_scope": "style_only"}]}
+        assert "source_scope_not_allowed" in ";".join(validate_plan_contract(sample_strict_plan(image_path), style_scan))
         try:
             generate({"title": "Exam Preparation Notes", "topics": ["legacy"]}, Path(td))
         except ValueError as exc:
@@ -394,6 +489,19 @@ def self_test() -> int:
         mismatch_plan = sample_strict_plan(image_path)
         mismatch_plan["visuals"][0]["placement"]["after_block_id"] = "B2"
         assert "visual_placement_mismatch" in ";".join(validate_plan_contract(mismatch_plan))
+        text_only = sample_strict_plan(image_path)
+        text_only["visual_policy"] = "user_requested_text_only"
+        text_only["visual_decisions"] = {"candidate_count": 1, "selected_count": 0, "user_requested_text_only": False}
+        text_only["visuals"] = []
+        text_only["sections"][0]["blocks"][0]["render_mode"] = "kp_list"
+        text_only["sections"][0]["blocks"][0].pop("visual_ids")
+        assert "text_only_without_user_request" in ";".join(validate_plan_contract(text_only))
+        unresolved = sample_strict_plan(image_path)
+        unresolved["visual_decisions"] = {"candidate_count": 1, "selected_count": 0, "user_requested_text_only": False}
+        unresolved["visuals"] = []
+        unresolved["sections"][0]["blocks"][0]["render_mode"] = "kp_list"
+        unresolved["sections"][0]["blocks"][0].pop("visual_ids")
+        assert "auto_visual_candidates_unresolved" in ";".join(validate_plan_contract(unresolved))
     print("generate_exam_prep_notes_docx self-test passed")
     return 0
 
@@ -401,6 +509,7 @@ def self_test() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--plan")
+    parser.add_argument("--source-scan")
     parser.add_argument("--out", default=".")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
@@ -409,7 +518,8 @@ def main() -> int:
     if not args.plan:
         parser.error("--plan is required")
     plan = json.loads(Path(args.plan).read_text(encoding="utf-8"))
-    path = generate(plan, Path(args.out))
+    source_scan = json.loads(Path(args.source_scan).read_text(encoding="utf-8")) if args.source_scan else None
+    path = generate(plan, Path(args.out), source_scan)
     print(path)
     return 0
 

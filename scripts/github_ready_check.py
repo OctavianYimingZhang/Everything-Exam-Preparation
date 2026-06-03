@@ -90,12 +90,29 @@ READABILITY_SUFFIXES = {".md", ".py", ".json", ".yml", ".yaml"}
 LOCAL_OUTPUT_SUFFIXES = {".docx", ".pptx", ".pdf", ".xlsx", ".zip"}
 
 
+def tracked_repo_files() -> set[str]:
+    result = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    if result.returncode != 0:
+        return set()
+    return {item for item in result.stdout.decode("utf-8", errors="ignore").split("\0") if item}
+
+
+def ignored_by_git(path: Path) -> bool:
+    rel = path.relative_to(ROOT).as_posix()
+    result = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT)
+    return result.returncode == 0
+
+
 def iter_repo_files():
+    tracked = tracked_repo_files()
     for path in ROOT.rglob("*"):
         if not path.is_file():
             continue
         rel = path.relative_to(ROOT)
         if ".git" in rel.parts or "__pycache__" in rel.parts:
+            continue
+        rel_text = rel.as_posix()
+        if rel_text not in tracked and ignored_by_git(path):
             continue
         yield path
 

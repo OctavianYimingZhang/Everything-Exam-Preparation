@@ -17,7 +17,7 @@ Run control is an internal QA and reproducibility tool, not a student-output pla
 - validation errors for missing objects, invalid links, duplicate object IDs, or unsupported link shapes;
 - reuse decisions based on object fingerprints from a previous manifest.
 
-The control manifest is an internal artifact. Student-facing DOCX or chat output must not expose object IDs, lineage links, reuse decisions, validation internals, source maps, or gate records.
+The control manifest is an internal artifact. Student-facing DOCX or chat output must not expose object IDs, lineage links, reuse decisions, validation internals, source maps, or gate records. It is not scheduled inside the default `exam_prep_notes` route; it belongs to audit, release, and reproducibility checks.
 
 Use `scripts/run_control_plane.py` to build or lint the manifest from existing `source_scan`, fragment index, and workflow plan JSON. If the manifest status is `fail`, block release until the invalid links or duplicate objects are corrected.
 

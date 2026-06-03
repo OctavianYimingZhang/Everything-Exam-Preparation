@@ -14,6 +14,8 @@ EXPECTED = {
 }
 INTERNAL_SUFFIXES = {".json", ".jsonl", ".log", ".tmp"}
 INTERNAL_MARKERS = ["qa flag", "source map", "confidence band", "internal manifest", "extraction note", "ai process"]
+
+
 def stale_term(*parts: str) -> str:
     return "".join(parts)
 
@@ -27,7 +29,7 @@ FORBIDDEN_PUBLIC_SURFACES = [
 ]
 
 
-def docx_text_and_xml(path: Path) -> tuple[str, str, str, int]:
+def docx_text_and_xml(path: Path) -> tuple[str, str, str, int, int, int]:
     with zipfile.ZipFile(path) as zf:
         names = set(zf.namelist())
         if "word/document.xml" not in names:
@@ -35,9 +37,20 @@ def docx_text_and_xml(path: Path) -> tuple[str, str, str, int]:
         doc = zf.read("word/document.xml").decode("utf-8", errors="ignore")
         styles = zf.read("word/styles.xml").decode("utf-8", errors="ignore") if "word/styles.xml" in names else ""
         media_count = sum(1 for name in names if name.startswith("word/media/"))
+        drawing_count = doc.count("<w:drawing>")
+        table_count = doc.count("<w:tbl>")
     chunks = re.findall(r"<w:t[^>]*>(.*?)</w:t>", doc)
     text = html.unescape("\n".join(chunks) if chunks else re.sub(r"<[^>]+>", " ", doc))
-    return text, doc, styles, media_count
+    return text, doc, styles, media_count, drawing_count, table_count
+
+
+def plan_blocks(plan: dict | None) -> list[dict]:
+    if not plan:
+        return []
+    blocks = []
+    for section in plan.get("sections", []) or []:
+        blocks.extend(block for block in section.get("blocks", []) or [] if isinstance(block, dict))
+    return blocks
 
 
 def planned_visual_count(plan: dict | None) -> int:
@@ -47,10 +60,34 @@ def planned_visual_count(plan: dict | None) -> int:
     return max(len(selected), len(plan.get("visuals") or []))
 
 
+def planned_table_count(plan: dict | None) -> int:
+    return sum(1 for block in plan_blocks(plan) if block.get("render_mode") == "compact_table")
+
+
+def planned_image_block_count(plan: dict | None) -> int:
+    return sum(1 for block in plan_blocks(plan) if block.get("render_mode") == "image_plus_kp_list")
+
+
+def load_internal_plan(path: Path) -> dict | None:
+    plan_path = path / "internal" / "Exam_Preparation_Notes.plan.json"
+    if not plan_path.exists():
+        return None
+    return json.loads(plan_path.read_text(encoding="utf-8"))
+
+
 def lint(route: str, path: Path, plan: dict | None = None) -> dict:
     failures = []
     expected = EXPECTED.get(route)
     if path.is_dir():
+        if route == "exam_prep_notes":
+            internal_plan = path / "internal" / "Exam_Preparation_Notes.plan.json"
+            internal_scan = path / "internal" / "source_scan.json"
+            if not internal_plan.exists():
+                failures.append({"check": "internal_plan_json_missing", "expected": "internal/Exam_Preparation_Notes.plan.json"})
+            if not internal_scan.exists():
+                failures.append({"check": "internal_source_scan_missing", "expected": "internal/source_scan.json"})
+            if plan is None and internal_plan.exists():
+                plan = load_internal_plan(path)
         if expected:
             docx_path = path / expected
             if not docx_path.exists():
@@ -67,7 +104,7 @@ def lint(route: str, path: Path, plan: dict | None = None) -> dict:
             failures.append({"check": "unexpected_docx_name", "expected": expected, "actual": path.name})
     if docx_path and docx_path.exists():
         try:
-            text, doc, styles, media_count = docx_text_and_xml(docx_path)
+            text, doc, styles, media_count, drawing_count, table_count = docx_text_and_xml(docx_path)
             if "Arial" not in styles and "Arial" not in doc:
                 failures.append({"check": "font_not_arial"})
             if 'w:top="1417"' not in doc:
@@ -89,6 +126,19 @@ def lint(route: str, path: Path, plan: dict | None = None) -> dict:
             expected_visuals = planned_visual_count(plan)
             if expected_visuals and media_count < expected_visuals:
                 failures.append({"check": "planned_visuals_missing_from_docx", "planned": expected_visuals, "embedded": media_count})
+            if planned_image_block_count(plan) and (media_count == 0 or drawing_count == 0):
+                failures.append({"check": "planned_image_blocks_missing_docx_images", "image_blocks": planned_image_block_count(plan), "media": media_count, "drawings": drawing_count})
+            expected_tables = planned_table_count(plan)
+            if expected_tables and table_count < expected_tables:
+                failures.append({"check": "planned_tables_missing_from_docx", "planned": expected_tables, "embedded": table_count})
+            visual_decisions = (plan or {}).get("visual_decisions") or {}
+            if (
+                (plan or {}).get("visual_policy") == "auto_source_visuals"
+                and int(visual_decisions.get("candidate_count") or 0) > 0
+                and int(visual_decisions.get("selected_count") or 0) == 0
+                and not visual_decisions.get("rejected_visuals")
+            ):
+                failures.append({"check": "auto_source_visuals_no_selection"})
         except Exception as exc:
             failures.append({"check": "docx_openability", "error": type(exc).__name__})
     return {"status": "fail" if failures else "pass", "failures": failures}
@@ -101,6 +151,10 @@ def self_test() -> int:
         image_path.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\xcf\xc0P\x0f\x00\x05\x83\x02\x7f\x9756W\x00\x00\x00\x00IEND\xaeB`\x82")
         plan = sample_strict_plan(image_path)
         generate(plan, Path(td))
+        internal = Path(td) / "internal"
+        internal.mkdir()
+        (internal / "Exam_Preparation_Notes.plan.json").write_text(json.dumps(plan), encoding="utf-8")
+        (internal / "source_scan.json").write_text(json.dumps({"source_decisions": []}), encoding="utf-8")
         assert lint("exam_prep_notes", Path(td), plan)["status"] == "pass"
         bad = Path(td) / "Exam_Preparation_Notes_bad.docx"
         write_minimal_docx(bad, [("Exam Preparation Notes", "Title", "center"), ("Visual aids", "Heading1", "left")])
