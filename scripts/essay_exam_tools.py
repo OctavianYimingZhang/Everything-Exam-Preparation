@@ -23,9 +23,48 @@ def scan_text(source_scan: dict[str, Any] | None) -> str:
     return "\n".join(str(frag.get("text", "")) for frag in source_scan.get("fragments", []))
 
 
-def build_essay_pack(question: str | None = None, readings: str | None = None, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
+def load_json(path: str | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def extra_reading_topics(extra_reading: dict[str, Any] | None) -> list[str]:
+    if not extra_reading:
+        return []
+    topics = []
+    for item in extra_reading.get("topic_enrichment", []):
+        topic = item.get("lecture_topic")
+        if topic:
+            topics.append(str(topic))
+    if not topics:
+        for item in extra_reading.get("lecture_topics", []):
+            topics.append(str(item.get("topic") if isinstance(item, dict) else item))
+    return topics
+
+
+def extra_reading_slots(extra_reading: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if not extra_reading:
+        return []
+    essay = extra_reading.get("essay_enrichment", {})
+    return essay.get("paragraph_slots", []) or []
+
+
+def build_essay_pack(
+    question: str | None = None,
+    readings: str | None = None,
+    source_scan: dict[str, Any] | None = None,
+    extra_reading: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     text = "\n".join(part for part in [readings or "", scan_text(source_scan)] if part)
     topics = frequent_topics(text)
+    extra_topics = extra_reading_topics(extra_reading)
+    combined_topics = []
+    for topic in topics + extra_topics:
+        if topic and topic not in combined_topics:
+            combined_topics.append(topic)
+    topics = combined_topics or ["core module theme"]
+
     essay_questions = []
     for topic in topics[:4]:
         essay_questions.append({
@@ -33,20 +72,33 @@ def build_essay_pack(question: str | None = None, readings: str | None = None, s
             "question": question or f"Discuss how {topic} can be used to explain a major issue in this module.",
             "coverage_use": "Broad question for practising argument structure across the module.",
         })
+
+    slots = extra_reading_slots(extra_reading)
     paragraphs = []
-    for topic in topics[:4]:
+    for idx, topic in enumerate(topics[:4]):
+        slot = slots[idx] if idx < len(slots) else {}
+        extra_detail = slot.get("extra_reading_detail") or "Use Extra Reading to add molecular, mechanism, or experimental evidence where it strengthens the paragraph."
         paragraphs.append({
             "topic": topic,
-            "paragraph": f"A strong exam paragraph on {topic} should begin with a direct claim, explain the relevant course mechanism or argument, then link the explanation back to the wording of the question.",
+            "paragraph": f"A strong exam paragraph on {topic} should begin with a direct claim, explain the relevant lecture mechanism, add extra reading evidence, analyse why that evidence strengthens the argument, and link back to the question.",
+            "extra_reading_slot": {
+                "blend": "15-30%",
+                "role": slot.get("paragraph_role", "extra reading evidence and analysis"),
+                "detail": extra_detail,
+            },
         })
+
     return {
         "schema_version": 2,
         "essay_questions": essay_questions,
-        "thesis_options": [f"The strongest answer should treat {topics[0]} as a central organising idea."],
+        "thesis_options": [f"The strongest answer should treat {topics[0]} as a central organising idea and use Extra Reading to deepen the mechanism or evidence."],
         "exam_ready_paragraphs": paragraphs,
+        "extra_reading_blend": "15-30%",
+        "extra_reading_paragraph_slots": slots,
         "example_essay_plan": {
             "introduction": "Define the argument and answer the question directly.",
             "body": [p["topic"] for p in paragraphs],
+            "extra_reading_use": "Place Extra Reading in selected body paragraphs as mechanism depth, molecular evidence, experimental support, counterargument, or evaluation.",
             "conclusion": "Return to the question and state the final judgement.",
         },
     }
@@ -63,15 +115,10 @@ def lint_language(text: str) -> dict[str, Any]:
     return {"status": "ok" if not suggestions else "suggestions", "suggestions": suggestions}
 
 
-def load_scan(path: str | None) -> dict[str, Any] | None:
-    if not path:
-        return None
-    return json.loads(Path(path).read_text(encoding="utf-8"))
-
-
 def self_test() -> None:
-    pack = build_essay_pack(readings="enzyme enzyme potency efficacy argument")
+    pack = build_essay_pack(readings="enzyme enzyme potency efficacy argument", extra_reading={"essay_enrichment": {"paragraph_slots": [{"topic": "enzyme", "extra_reading_detail": "primary research evidence"}]}})
     assert pack["essay_questions"]
+    assert pack["extra_reading_blend"] == "15-30%"
     assert lint_language("short")["suggestions"]
 
 
@@ -82,6 +129,7 @@ def main() -> None:
     parser.add_argument("--input")
     parser.add_argument("--output")
     parser.add_argument("--source-scan")
+    parser.add_argument("--extra-reading")
     parser.add_argument("--out")
     parser.add_argument("--question")
     parser.add_argument("--readings")
@@ -95,7 +143,7 @@ def main() -> None:
         result = lint_language(text)
     else:
         readings = args.readings or (Path(args.input).read_text(encoding="utf-8", errors="ignore") if args.input else "")
-        result = build_essay_pack(args.question, readings, load_scan(args.source_scan))
+        result = build_essay_pack(args.question, readings, load_json(args.source_scan), load_json(args.extra_reading))
     rendered = json.dumps(result, indent=2, ensure_ascii=False)
     target = args.output or args.out
     if target:

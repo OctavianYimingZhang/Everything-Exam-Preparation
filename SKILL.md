@@ -1,15 +1,15 @@
 ---
 name: everything-exam-preparation
-description: Simple student-facing exam preparation workflow for notes, lecture slides, practice material, past papers, MCQ, short answer, long answer, and essay exams.
+description: Simple student-facing exam preparation workflow for notes, lecture slides, practice material, past papers, extra reading, MCQ, short answer, long answer, and essay exams.
 ---
 
 # Everything Exam Preparation
 
-This Skill helps students prepare for exams from uploaded course material and practice material.
+This Skill helps students prepare for exams from uploaded course material, practice material, and Extra Reading.
 
 ## Core job
 
-Students provide knowledge material and practice material. The Skill reads the material, works out what the course teaches, works out how the course is examined, connects the two, and produces student-facing exam preparation output.
+Students provide knowledge material, practice material, and optionally Extra Reading Books or Academic Papers. The Skill reads the material, works out what the course teaches, works out how the course is examined, enriches lecture content with extra reading where useful, connects the material to exam answers, and produces student-facing exam preparation output.
 
 The default output is:
 
@@ -21,10 +21,22 @@ Exam_Preparation_Notes.docx
 
 1. Read the supplied files.
 2. Build a simple fragment index from readable content.
-3. Diagnose the exam mode from the prompt and practice material.
-4. Generate preparation notes in the target language style.
-5. Render the notes in the target output format style.
-6. Add MCQ, short-answer, long-answer, practical/data/problem, or essay preparation when relevant.
+3. Discover Extra Reading from uploaded Books, uploaded Academic Papers, lecture-slide reading mentions, lecture-slide source mentions, and academic-paper search queries.
+4. Match Extra Reading to lecture topics.
+5. Diagnose the exam mode from the prompt and practice material.
+6. Generate preparation notes in the target language style.
+7. Render the notes in the target output format style.
+8. Add MCQ, short-answer, long-answer, practical/data/problem, or essay preparation when relevant.
+
+## Extra Reading workflow
+
+Use `references/extra_reading_workflow.md` for the Extra Reading workflow.
+
+Books add textbook background, molecular explanation, mechanism explanation, pathway context, and conceptual background.
+
+Academic Papers add molecular mechanisms, experimental evidence, recent research context, method detail, primary findings, and support for conclusions.
+
+Example Essays use an Extra Reading blend of 15%-30% through paragraph slots that add mechanism depth, molecular evidence, experimental evidence, counterargument, or evaluation.
 
 ## Output language style
 
@@ -38,7 +50,7 @@ Mode-specific writing:
 - Short Answer: definition, mark points, explain sentence, example answer.
 - Long Answer: question demand, relevant knowledge, answer structure, example answer, why the answer works.
 - Practical/Data/Problem: method aim, readout, control, calculation or interpretation, limitation, exam conclusion.
-- Essay: claim, explanation, course detail, analysis, link back to the question.
+- Essay: claim, explanation, course detail, Extra Reading evidence, analysis, link back to the question.
 
 ## Output format style
 
@@ -52,8 +64,9 @@ Recommended section order:
 2. Exam Pattern and Examiner Habits.
 3. High-Yield Topics.
 4. Topic-by-Topic Exam Preparation Notes.
-5. Mode-specific preparation.
-6. Final Revision Checklist when useful.
+5. Extra Reading Evidence.
+6. Mode-specific preparation.
+7. Final Revision Checklist when useful.
 
 ## Routes
 

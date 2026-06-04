@@ -8,42 +8,37 @@ from typing import Any
 
 PRIMARY_OUTPUT = "Exam_Preparation_Notes.docx"
 
+BASE_ACTIONS = [
+    "source_inventory",
+    "fragment_index",
+    "extra_reading_discovery",
+    "extra_reading_topic_matching",
+    "course_knowledge_map",
+    "extra_reading_notes_enrichment",
+]
+
 ROUTES: dict[str, list[str]] = {
-    "exam_prep_notes": [
-        "source_inventory",
-        "fragment_index",
-        "course_knowledge_map",
+    "exam_prep_notes": BASE_ACTIONS + [
         "exam_habit_analysis_if_practice_material_exists",
         "exam_prep_notes",
     ],
     "exam_mode_diagnosis": ["source_inventory", "exam_mode_diagnosis"],
-    "mcq_preparation": [
-        "source_inventory",
-        "fragment_index",
-        "course_knowledge_map",
+    "mcq_preparation": BASE_ACTIONS + [
         "mcq_exam_habit_analysis",
         "mcq_notes_enrichment",
     ],
-    "short_answer_preparation": [
-        "source_inventory",
-        "fragment_index",
-        "course_knowledge_map",
+    "short_answer_preparation": BASE_ACTIONS + [
         "short_answer_habit_analysis",
         "definition_and_mark_point_highlights",
         "explain_answer_examples",
     ],
-    "long_answer_preparation": [
-        "source_inventory",
-        "fragment_index",
-        "course_knowledge_map",
+    "long_answer_preparation": BASE_ACTIONS + [
         "practice_question_walkthroughs",
         "example_answers",
     ],
-    "essay_preparation": [
-        "source_inventory",
-        "fragment_index",
-        "course_knowledge_map",
+    "essay_preparation": BASE_ACTIONS + [
         "exam_ready_essay_paragraphs",
+        "extra_reading_essay_enrichment",
         "module_covering_essay_questions",
         "example_essays",
     ],
@@ -75,7 +70,7 @@ def source_summary(source_scan: dict[str, Any] | None) -> dict[str, Any]:
         return {"document_count": 0, "fragment_count": 0, "categories": {}}
     cats: dict[str, int] = {}
     for doc in source_scan.get("documents", []):
-        cat = str(doc.get("category") or "other_material")
+        cat = str(doc.get("source_hint") or doc.get("category") or "other_material")
         cats[cat] = cats.get(cat, 0) + 1
     return {
         "document_count": len(source_scan.get("documents", [])),
@@ -97,6 +92,7 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
         "notes": [
             "Use knowledge material to explain the course.",
             "Use practice material to identify repeated topics, command words, question types, and answer habits.",
+            "Use Extra Reading to add molecular detail, mechanism explanation, experimental evidence, and essay depth.",
             "Connect knowledge to likely answer use in the selected exam mode.",
         ],
     }
@@ -112,9 +108,9 @@ def self_test() -> None:
     assert detect_route("make MCQ notes") == "mcq_preparation"
     assert detect_route("short answer definitions") == "short_answer_preparation"
     assert detect_route("give essay plans") == "essay_preparation"
-    out = plan("prepare this course", {"documents": [{"category": "knowledge_material"}], "fragments": [1, 2]})
+    out = plan("prepare this course", {"documents": [{"source_hint": "knowledge_material"}], "fragments": [1, 2]})
     assert out["route"] == "exam_prep_notes"
-    assert out["source_summary"]["fragment_count"] == 2
+    assert any(action["id"] == "extra_reading_discovery" for action in out["actions"])
 
 
 def main() -> None:

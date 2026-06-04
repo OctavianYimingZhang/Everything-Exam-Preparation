@@ -6,6 +6,7 @@ setup_wizard:
     - output_depth
     - output_format
     - topic_focus
+    - extra_reading_focus
   source_hints:
     knowledge_material:
       examples:
@@ -30,6 +31,19 @@ setup_wizard:
         - example_answer
         - model_answer
         - preferred_essay_style
+    extra_reading_book:
+      examples:
+        - textbook
+        - book_chapter
+        - recommended_reading_book
+        - publisher_chapter_extract
+    extra_reading_paper:
+      examples:
+        - academic_paper
+        - journal_article
+        - primary_research
+        - recent_research
+        - doi_or_pmid_paper
     other_material:
       examples:
         - mixed_file

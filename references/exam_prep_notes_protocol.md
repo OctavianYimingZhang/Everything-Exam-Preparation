@@ -27,8 +27,9 @@ Use this order when the material supports it:
 3. Exam Pattern and Examiner Habits.
 4. High-Yield Topics.
 5. Topic-by-Topic Exam Preparation Notes.
-6. MCQ Preparation, Short-Answer Preparation, Long-Answer Preparation, or Essay Preparation as relevant.
-7. Final Revision Checklist when useful.
+6. Extra Reading Evidence.
+7. MCQ Preparation, Short-Answer Preparation, Long-Answer Preparation, or Essay Preparation as relevant.
+8. Final Revision Checklist when useful.
 
 ## Section types
 
@@ -78,6 +79,25 @@ Exam use: [...]
 Common question style: [...]
 Example answer move: [...]
 ```
+
+### Extra Reading Evidence
+
+Use this section inside relevant topic notes:
+
+```text
+Core lecture point: [...]
+Extra reading depth: [...]
+Molecular/mechanism evidence: [...]
+Experimental support: [...]
+Exam use: [...]
+```
+
+Use a table when several books or papers support the same lecture topic.
+
+Suggested columns:
+
+| Lecture topic | Extra reading source | What it adds | How to use it in an answer |
+|---|---|---|---|
 
 ## Mode-specific sections
 
@@ -140,6 +160,7 @@ Module theme: [...]
 Broad essay question: [...]
 Thesis options: [...]
 Paragraph plan: [...]
+Extra reading paragraph slots: [...]
 Example essay paragraph: [...]
 ```
 
@@ -153,6 +174,7 @@ The DOCX renderer accepts flexible JSON. Useful top-level fields include:
   "course_overview": "...",
   "exam_habit_analysis": [...],
   "high_yield_topics": [...],
+  "extra_reading_evidence": [...],
   "sections": [...],
   "mcq_preparation": [...],
   "short_answer_preparation": [...],
@@ -161,4 +183,4 @@ The DOCX renderer accepts flexible JSON. Useful top-level fields include:
 }
 ```
 
-Section blocks can use plain text, dictionaries, points, tables, and worked examples. The renderer formats the content into a student-facing DOCX using the style above.
+Section blocks can use plain text, dictionaries, points, tables, worked examples, and extra-reading enrichment records. The renderer formats the content into a student-facing DOCX using the style above.

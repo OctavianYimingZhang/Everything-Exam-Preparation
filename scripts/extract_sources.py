@@ -14,19 +14,45 @@ from typing import Any
 TEXT_SUFFIXES = {".txt", ".md", ".json", ".yaml", ".yml", ".csv"}
 MEDIA_PREFIXES = {".docx": "word/media/", ".pptx": "ppt/media/"}
 
-SOURCE_HINT_KEYWORDS = [
-    ("marking_material", ["mark scheme", "markscheme", "answer key", "answers", "solution", "solutions", "examiner feedback"]),
-    ("practice_material", ["past paper", "practice", "question paper", "exam paper", "mcq", "sba", "short answer", "essay", "problem sheet", "calculate"]),
-    ("style_reference", ["model answer", "example answer", "style", "sample essay"]),
-    ("knowledge_material", ["lecture", "slides", "notes", "module", "handbook", "practical", "lab", "seminar", "reading"]),
-]
+MARKING_KEYWORDS = ["mark scheme", "markscheme", "answer key", "answers", "solution", "solutions", "examiner feedback"]
+PRACTICE_KEYWORDS = ["past paper", "practice", "question paper", "exam paper", "mcq", "sba", "short answer", "essay", "problem sheet", "calculate"]
+STYLE_KEYWORDS = ["model answer", "example answer", "style", "sample essay"]
+BOOK_KEYWORDS = ["textbook", "book", "chapter", "edition", "publisher", "recommended reading", "further reading"]
+PAPER_KEYWORDS = ["doi", "pmid", "journal", "abstract", "methods", "results", "et al", "primary research", "recent research"]
+KNOWLEDGE_KEYWORDS = ["lecture", "slides", "notes", "module", "handbook", "practical", "lab", "seminar", "reading"]
+AUTHOR_YEAR_RE = re.compile(r"\b[A-Z][A-Za-z\-]+\s+et\s+al\.?\s*\(?\d{4}\)?|\b[A-Z][A-Za-z\-]+\s*\(\d{4}\)")
+DOI_RE = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Za-z0-9]+")
+PMID_RE = re.compile(r"\bPMID\s*:?\s*\d+", re.I)
+
+
+def has_any(text: str, keywords: list[str]) -> bool:
+    return any(keyword in text for keyword in keywords)
 
 
 def classify_source(path: str | Path, text: str = "") -> str:
-    haystack = (Path(path).name + "\n" + (text or "")[:4000]).lower().replace("_", " ").replace("-", " ")
-    for hint, keywords in SOURCE_HINT_KEYWORDS:
-        if any(keyword in haystack for keyword in keywords):
-            return hint
+    name = Path(path).name.lower().replace("_", " ").replace("-", " ")
+    sample = (text or "")[:6000].lower().replace("_", " ").replace("-", " ")
+    haystack = name + "\n" + sample
+    lecture_named = any(word in name for word in ["lecture", "slides", "notes", "module"])
+
+    if DOI_RE.search(text or "") or PMID_RE.search(text or "") or AUTHOR_YEAR_RE.search(text or ""):
+        return "extra_reading_paper"
+    if has_any(name, ["paper", "article", "journal", "doi", "pmid"]):
+        return "extra_reading_paper"
+    if has_any(sample, PAPER_KEYWORDS) and not lecture_named:
+        return "extra_reading_paper"
+    if has_any(name, ["textbook", "book", "chapter"]):
+        return "extra_reading_book"
+    if has_any(sample, BOOK_KEYWORDS) and not lecture_named:
+        return "extra_reading_book"
+    if has_any(haystack, MARKING_KEYWORDS):
+        return "marking_material"
+    if has_any(haystack, PRACTICE_KEYWORDS):
+        return "practice_material"
+    if has_any(haystack, STYLE_KEYWORDS):
+        return "style_reference"
+    if has_any(haystack, KNOWLEDGE_KEYWORDS):
+        return "knowledge_material"
     return "other_material"
 
 
@@ -191,11 +217,14 @@ def self_test() -> None:
     with tempfile.TemporaryDirectory() as td:
         p1 = Path(td) / "Lecture_1_notes.md"
         p2 = Path(td) / "Past_Paper_MCQ.txt"
+        p3 = Path(td) / "Academic_Paper.txt"
         p1.write_text("Lecture notes on enzymes and dose response.", encoding="utf-8")
         p2.write_text("1. Which statement is correct? A) One B) Two", encoding="utf-8")
-        scan = build_scan([str(p1), str(p2)], asset_dir=str(Path(td) / "assets"))
-        assert scan["summary"]["source_count"] == 2
+        p3.write_text("Abstract Methods Results DOI 10.1000/test", encoding="utf-8")
+        scan = build_scan([str(p1), str(p2), str(p3)], asset_dir=str(Path(td) / "assets"))
+        assert scan["summary"]["source_count"] == 3
         assert scan["fragments"]
+        assert any(doc["source_hint"] == "extra_reading_paper" for doc in scan["documents"])
 
 
 def main() -> None:

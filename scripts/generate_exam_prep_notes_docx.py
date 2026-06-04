@@ -18,6 +18,7 @@ SECTION_ORDER = [
     ("course_knowledge_map", "Course Knowledge Map"),
     ("exam_habit_analysis", "Exam Pattern and Examiner Habits"),
     ("high_yield_topics", "High-Yield Topics"),
+    ("extra_reading_evidence", "Extra Reading Evidence"),
     ("mcq_preparation", "MCQ Preparation"),
     ("short_answer_preparation", "Short-Answer Preparation"),
     ("long_answer_preparation", "Long-Answer Preparation"),

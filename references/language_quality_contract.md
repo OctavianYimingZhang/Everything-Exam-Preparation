@@ -24,6 +24,28 @@ Example style:
 Receptor potency describes how much drug is needed to produce a response. In exam questions, potency is usually tested by comparing EC50 values: a lower EC50 means less drug is needed to reach the same level of effect. This matters because a drug can be potent without being more effective if its maximum effect is lower.
 ```
 
+## Extra Reading style
+
+Use Extra Reading after the core lecture explanation. The writing should make the lecture point deeper, more molecular, more mechanistic, or better supported by experimental evidence.
+
+Use this pattern:
+
+1. Core lecture point.
+2. Extra reading depth.
+3. Molecular or mechanism evidence.
+4. Experimental support.
+5. Exam use.
+
+Example style:
+
+```text
+Core lecture point: GPCR activation changes intracellular signalling through second messengers.
+Extra reading depth: The textbook explanation adds the receptor-level sequence: ligand binding stabilises an active receptor conformation, which promotes G-protein exchange of GDP for GTP.
+Molecular/mechanism evidence: This mechanism explains why different ligands can produce different signalling strengths at the same receptor.
+Experimental support: A primary research paper can be used here to show how signalling output is measured through cAMP, calcium, phosphorylation, or reporter assays.
+Exam use: In an essay or long-answer question, use this detail to move from naming the receptor to explaining how receptor activation produces a measurable cellular response.
+```
+
 ## High-yield topic style
 
 When a topic appears repeatedly in practice material, write with more exam application:
@@ -129,15 +151,16 @@ Use this paragraph shape:
 1. Claim.
 2. Explanation.
 3. Course detail.
-4. Analysis.
-5. Link back to the question.
+4. Extra Reading evidence when available.
+5. Analysis.
+6. Link back to the question.
 
 Example style:
 
 ```text
-A strong answer can argue that the module theme is important because it changes both the interpretation of evidence and the practical decision that follows. The key point is not simply that the concept exists, but that it determines which comparison is meaningful. This allows the paragraph to move from description into analysis, because the student can explain why one answer is stronger than another in the context of the question.
+A strong answer can argue that the module theme is important because it changes both the interpretation of evidence and the practical decision that follows. The lecture material gives the core mechanism, while Extra Reading can add molecular evidence or experimental support. This allows the paragraph to move from description into analysis, because the student can explain why one answer is stronger than another in the context of the question.
 ```
 
 ## Example use
 
-Use examples to show how knowledge becomes an answer. A good example should make one answer move clearer: definition, comparison, mechanism, graph interpretation, calculation, counterargument, or conclusion.
+Use examples to show how knowledge becomes an answer. A good example should make one answer move clearer: definition, comparison, mechanism, graph interpretation, calculation, counterargument, evidence support, or conclusion.
