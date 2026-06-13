@@ -313,6 +313,26 @@ def add_text(blocks: list[Any], text: Any, bullet: bool = False) -> None:
     blocks.append((prefix + str(text), "Normal", "both"))
 
 
+def inline_text(value: Any) -> str:
+    if value in (None, "", [], {}):
+        return ""
+    if isinstance(value, dict):
+        label = value.get("label") or value.get("heading") or value.get("term")
+        explanation = value.get("explanation") or value.get("text") or value.get("definition")
+        exam_use = value.get("exam_use")
+        parts = []
+        if label:
+            parts.append(str(label))
+        if explanation:
+            parts.append(str(explanation))
+        if exam_use:
+            parts.append(f"Exam use: {exam_use}")
+        return " - ".join(parts) if parts else json.dumps(value, ensure_ascii=False)
+    if isinstance(value, list):
+        return "; ".join(item for item in (inline_text(item) for item in value) if item)
+    return str(value)
+
+
 def render_block(blocks: list[Any], block: dict[str, Any]) -> None:
     heading = block.get("heading") or block.get("title")
     if heading:
@@ -333,7 +353,9 @@ def render_block(blocks: list[Any], block: dict[str, Any]) -> None:
     elif mode == "mechanism_chain":
         steps = block.get("steps") or block.get("chain") or block.get("points") or []
         for idx, step in enumerate(steps, 1):
-            add_text(blocks, f"{idx}. {step}")
+            rendered_step = inline_text(step)
+            if rendered_step:
+                add_text(blocks, f"{idx}. {rendered_step}")
     else:
         add_text(blocks, block.get("text") or block.get("paragraph") or block.get("content") or block.get("explanation"))
 
@@ -430,6 +452,14 @@ def self_test() -> None:
                         "symbols": ["ρ is charge density.", "J is current density."],
                         "use": "Use it to test whether a current field changes charge density.",
                     },
+                    {
+                        "render_mode": "mechanism_chain",
+                        "heading": "Carrier creation",
+                        "steps": [
+                            {"label": "Substitute impurity", "text": "A higher-valence atom replaces a lattice atom."},
+                            {"label": "Create mobile carrier", "text": "Thermal excitation promotes the weakly bound carrier."},
+                        ],
+                    },
                 ],
             }
         ],
@@ -443,6 +473,8 @@ def self_test() -> None:
             assert "∂ρ/∂t + ∇ · J = 0" in raw
             assert "partial" not in raw
             assert "Coverage Calibration" not in raw
+            assert "{'label'" not in raw
+            assert "Substitute impurity - A higher-valence atom replaces a lattice atom." in raw
         generated = generate({"title": "Charge Conservation Notes", "sections": [{"heading": "Meaning", "blocks": ["Charge is locally conserved."]}]}, td)
         assert generated.name == "Charge_Conservation_Notes.docx"
 
