@@ -1,29 +1,28 @@
 # Everything Exam Preparation
 
-Simple exam preparation Skill for uploaded course content, practice material, and Extra Reading.
+Signal-driven exam preparation Skill for uploaded course content, practice material, and Extra Reading.
 
-## Default output
+## Output naming
 
-```text
-Exam_Preparation_Notes.docx
-```
+The default output type is DOCX notes. If the user requests filenames or a multi-file output set, follow that request. Otherwise generate clear DOCX filenames from the source, course, prompt, or note title.
 
 ## What it does
 
-1. Reads notes, lecture slides, practical material, past papers, practice questions, mark schemes, answer keys, example answers, Books, Academic Papers, and other useful course files.
-2. Uses rough source hints to understand what the files contain.
+1. Reads supplied course files, practice material, mark schemes, examples, Extra Reading, and other useful files.
+2. Uses rough source hints as provenance labels.
 3. Builds a fragment index from readable content.
-4. Discovers Extra Reading from uploaded files, lecture-slide mentions, and academic-paper search queries.
-5. Matches Extra Reading to lecture topics.
-6. Diagnoses the exam mode from the prompt and practice material.
-7. Produces exam preparation notes and mode-specific preparation for MCQ, short answer, long answer, practical/data/problem, or essay exams.
+4. Extracts open knowledge signals and groups connected signals into knowledge units.
+5. Calibrates Notes coverage from the knowledge units and required explanation.
+6. Discovers Extra Reading from uploaded files, source mentions, and academic-paper search queries.
+7. Matches Extra Reading to course knowledge units.
+8. Diagnoses the exam mode from the prompt and practice material.
+9. Produces knowledge-only teaching notes and mode-specific preparation for MCQ, short answer, long answer, practical/data/problem, or essay exams.
+
+Student-facing Notes explain knowledge. They do not expose source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, or other workflow internals.
 
 ## Extra Reading
 
-Extra Reading Material has two main forms:
-
-- Books: textbooks and book chapters used to add background, molecular explanation, mechanism explanation, pathway context, and conceptual background.
-- Academic Papers: journal articles, primary research, recent research, DOI/PMID papers, and lecture-mentioned references used to add molecular mechanisms, experimental evidence, method detail, research context, and support for conclusions.
+Extra Reading can include any academically useful source that strengthens a knowledge unit, including textbook-like background, chapters, journal articles, primary research, DOI/PMID sources, lecture-mentioned references, method detail, mechanism evidence, and research context.
 
 Workflow utility:
 
@@ -38,8 +37,7 @@ Expected Extra Reading output shape:
 ```json
 {
   "schema_version": 2,
-  "book_mentions": [],
-  "paper_mentions": [],
+  "extra_reading_sources": [],
   "lecture_topics": [],
   "search_queries": [],
   "topic_enrichment": [],
@@ -50,16 +48,36 @@ Expected Extra Reading output shape:
 }
 ```
 
-## Current style focus
+## Current output focus
 
-This version focuses on output language style and output format style.
+This version focuses on signal-driven coverage, teaching depth, formula visibility, output language style, and output format style.
 
-### 1. Output language style
+### 1. Coverage calibration
 
-`references/language_quality_contract.md` defines how the notes should sound:
+`references/input_and_evidence_protocol.md` defines open knowledge signals. `references/exam_prep_notes_protocol.md` defines how those signals become a coverage map before Notes are written. Coverage planning is internal; the final document contains only knowledge explanations.
+
+Coverage is driven by:
+
+- knowledge units;
+- concepts and definitions;
+- mechanisms and causal chains;
+- methods, assays, controls, and readouts;
+- comparisons;
+- calculations and data interpretation;
+- evidence and Extra Reading;
+- application and exam-answer use.
+
+Examples are used only when they clarify knowledge or answer use.
+
+### 2. Teaching depth and formula visibility
+
+`references/exam_prep_notes_protocol.md` defines how the notes should teach:
 
 - strong tutor voice;
 - direct course explanation;
+- concept identity, mechanism, method, calculation, assumptions, interpretation, and exam use;
+- visible formulas using Word equation/OMML where possible;
+- readable Unicode mathematical fallback when equation conversion is unavailable;
 - exam application after each important concept;
 - Extra Reading depth after relevant lecture explanation;
 - MCQ reasoning with plausible wrong statements;
@@ -68,11 +86,11 @@ This version focuses on output language style and output format style.
 - practical/data interpretation;
 - exam-ready essay paragraphs with 15%-30% Extra Reading content when generating Example Essays.
 
-### 2. Output format style
+### 3. Output format style
 
 `references/exam_prep_notes_protocol.md` defines how the notes should be structured:
 
-- `Exam_Preparation_Notes.docx`;
+- DOCX notes with filenames requested by the user or generated from context;
 - Arial;
 - 2.5 cm margins;
 - 1.5 line spacing;
@@ -80,7 +98,7 @@ This version focuses on output language style and output format style.
 - left-aligned headings;
 - justified body text;
 - compact tables;
-- clear sections for course overview, exam pattern, high-yield topics, topic notes, Extra Reading Evidence, and mode-specific preparation.
+- clear knowledge sections that teach the material without workflow or process sections.
 
 ## Routes
 

@@ -1,19 +1,18 @@
 # Extra Reading Workflow
 
-Extra Reading adds book and academic paper material to exam preparation notes and example essays.
+Extra Reading adds academically useful external depth to exam preparation notes and example essays.
 
-## Source hints
+## Extra Reading Source Signals
 
-Use two extra reading hints:
+Use extra reading signals as provenance labels only. They help locate useful enrichment; they do not define a closed source taxonomy or decide notes depth.
 
-- `extra_reading_book`: textbooks, book chapters, publisher book extracts, recommended reading chapters.
-- `extra_reading_paper`: academic papers, primary research, recent research, journal articles, papers with DOI/PMID, abstract/methods/results format.
+Common signals include textbook-like background, book chapters, recommended reading, academic papers, primary research, recent research, journal articles, DOI/PMID references, abstract/methods/results format, figure sources, author-year citations, and reference-list text.
 
-## Book workflow
+## Uploaded Extra Reading
 
-Use uploaded Books when the user provides them.
+Use uploaded Extra Reading when the user provides it and the material adds academic value to a knowledge unit.
 
-When no obvious uploaded Book is present, scan lecture material for book mentions near phrases such as:
+When uploaded material is not enough, scan source fragments and knowledge-unit evidence for extra reading mentions near phrases such as:
 
 ```text
 Extra reading recommendation
@@ -27,28 +26,24 @@ Book
 Chapter
 ```
 
-Create book mention records:
+Create mention records when a source is identifiable:
 
 ```json
 {
-  "kind": "book",
+  "kind": "extra_reading_source",
   "title": "...",
-  "author_or_editor": "...",
-  "chapter_or_section": "...",
+  "authors_or_editors": "...",
+  "source_detail": "...",
   "mentioned_in": "...",
   "linked_lecture_topics": ["..."]
 }
 ```
 
-Use book material to deepen lecture notes with textbook background, molecular explanation, mechanism explanation, pathway context, and conceptual background.
+Use extra reading material to deepen course notes with background, molecular explanation, mechanism explanation, pathway context, conceptual background, method detail, evidence, and evaluation.
 
-## Academic Paper workflow
+## Academic Search
 
-Use uploaded Academic Papers when the user provides them.
-
-Then scan lecture material for paper mentions, including DOI, PMID, author-year citation, journal reference, reference list entry, figure source caption, and Source/Sources/References sections.
-
-Then generate online academic search queries from lecture topics, mechanisms, diseases, pathways, molecules, assays, experimental methods, and lecture claims.
+Generate online academic search queries from course topics, mechanisms, diseases, pathways, molecules, assays, experimental methods, source-backed claims, cited sources, and knowledge-unit gaps.
 
 Search query patterns:
 
@@ -59,27 +54,27 @@ Search query patterns:
 [disease/topic] [mechanism] academic paper
 ```
 
-Create paper mention records:
+Create source records with the fields that can be verified:
 
 ```json
 {
-  "kind": "academic_paper",
+  "kind": "extra_reading_source",
   "title": "...",
   "authors": "...",
   "year": "...",
-  "journal": "...",
-  "doi_or_url": "...",
+  "source": "...",
+  "identifier_or_url": "...",
   "evidence_type": "...",
   "linked_lecture_topics": ["..."],
   "use_in_notes": "..."
 }
 ```
 
-Use paper material to add molecular mechanisms, primary findings, experimental evidence, figures, methods, and support for conclusions.
+Use academic search results to add molecular mechanisms, primary findings, experimental evidence, figures, methods, limitations, and support for conclusions when they directly strengthen a knowledge unit.
 
-## Lecture-topic matching
+## Knowledge-unit matching
 
-Build lecture topics from lecture fragments and match extra reading records to those topics.
+Build topics from knowledge signals and source fragments, then match extra reading records to those topics.
 
 Topic enrichment records use this shape:
 
@@ -87,8 +82,8 @@ Topic enrichment records use this shape:
 {
   "lecture_topic": "...",
   "core_lecture_explanation": "...",
-  "book_enrichment": ["..."],
-  "paper_enrichment": ["..."],
+  "background_enrichment": ["..."],
+  "evidence_enrichment": ["..."],
   "molecular_or_mechanism_detail": ["..."],
   "experimental_evidence_support": ["..."],
   "exam_use": "..."
@@ -100,7 +95,7 @@ Topic enrichment records use this shape:
 Add Extra Reading inside relevant topic notes with this pattern:
 
 ```text
-Core lecture point: [...]
+Core course point: [...]
 Extra reading depth: [...]
 Molecular/mechanism evidence: [...]
 Experimental support: [...]
@@ -125,8 +120,8 @@ Generate Example Essays with an extra-reading blend field and paragraph slots:
 Essay paragraph pattern:
 
 ```text
-Claim from lecture topic.
-Explanation of the lecture mechanism.
+Claim from course topic.
+Explanation of the course mechanism.
 Extra reading evidence from book or paper.
 Analysis of why the evidence strengthens the argument.
 Link back to the essay question.

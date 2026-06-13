@@ -1,15 +1,42 @@
 name: Everything Exam Preparation
 entrypoint: SKILL.md
 default_route: exam_prep_notes
-default_output: Exam_Preparation_Notes.docx
-source_categories:
-  - knowledge_material
-  - practice_material
-  - marking_material
-  - style_reference
-  - other_material
+default_output: docx_notes
+output_name_policy: user-requested filename first; otherwise generate a clear DOCX filename from the source, course, prompt, or note title
+source_hints:
+  use: open provenance labels
+  coverage_driver: knowledge_signals
+  policy: infer useful source hints from content when they help routing; calibrate public notes coverage from knowledge signals and knowledge units
+  examples:
+  - course-facing knowledge source
+  - practice or question source
+  - answer or marking source
+  - style or example-answer source
+  - extra reading source
+  - mixed or unclear source
+coverage_calibration:
+  unit_basis: connected knowledge signals
+  signal_examples:
+    - topic_boundary
+    - learning_objective
+    - definition
+    - mechanism
+    - method
+    - comparison
+    - calculation
+    - data_interpretation
+    - evidence
+    - application
+    - explanatory_example
 student_surface:
-  goal: direct exam preparation for students
+  goal: knowledge-only teaching notes for students
+  forbidden_public_content:
+    - source intake narration
+    - extraction notes
+    - coverage calibration narration
+    - workflow or QA narration
+    - subagent narration
+  formula_policy: visible formulas with Word equation or readable Unicode math
   modes:
     - MCQ
     - Short Answer

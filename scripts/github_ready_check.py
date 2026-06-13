@@ -3,9 +3,66 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+TEXT_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".json", ".toml", ".txt"}
+SKIP_PARTS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", "outputs"}
+PROHIBITED_EXACT_NAME = "_".join(["Exam", "Preparation", "Notes"]) + ".docx"
+PROHIBITED_RENDERER_CONSTANT = "OUTPUT" + "_NAME ="
+
+
+def tracked_files() -> list[Path]:
+    proc = subprocess.run(["git", "ls-files"], cwd=ROOT, text=True, capture_output=True)
+    if proc.returncode == 0:
+        return [ROOT / line for line in proc.stdout.splitlines() if line.strip()]
+    return [path for path in ROOT.rglob("*") if path.is_file()]
+
+
+def source_file(path: Path) -> bool:
+    rel = path.relative_to(ROOT)
+    if any(part in SKIP_PARTS for part in rel.parts):
+        return False
+    return path.suffix in TEXT_SUFFIXES or path.name.endswith(".schema.json")
+
+
+def read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return ""
+
+
+def cjk_locations() -> list[str]:
+    out: list[str] = []
+    pattern = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+    for path in tracked_files():
+        if not source_file(path):
+            continue
+        for line_no, line in enumerate(read_text(path).splitlines(), 1):
+            if pattern.search(line):
+                out.append(f"{path.relative_to(ROOT)}:{line_no}")
+                break
+    return out
+
+
+def prohibited_filename_locations() -> list[str]:
+    out: list[str] = []
+    for path in tracked_files():
+        if not source_file(path):
+            continue
+        for line_no, line in enumerate(read_text(path).splitlines(), 1):
+            if PROHIBITED_EXACT_NAME in line or PROHIBITED_RENDERER_CONSTANT in line:
+                out.append(f"{path.relative_to(ROOT)}:{line_no}")
+    return out
+
+
+def missing_terms(path: str, terms: list[str]) -> list[str]:
+    text = read_text(ROOT / path)
+    return [term for term in terms if term not in text]
 
 
 def check() -> dict[str, object]:
@@ -19,9 +76,23 @@ def check() -> dict[str, object]:
         ".github/workflows/ci.yml",
         ".github/workflows/skill-health.yml",
     ]
+    missing_files = [name for name in files if not (ROOT / name).exists()]
+    terms = {
+        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "exact filename"]),
+        "references/exam_prep_notes_protocol.md": missing_terms("references/exam_prep_notes_protocol.md", ["Formula Visibility", "formula_block", "workflow"]),
+        "scripts/generate_exam_prep_notes_docx.py": missing_terms("scripts/generate_exam_prep_notes_docx.py", ["def output_path", "def visible_formula", "safe_docx_name"]),
+    }
+    terms = {name: missing for name, missing in terms.items() if missing}
+    failures = {
+        "missing_files": missing_files,
+        "missing_terms": terms,
+        "non_english_cjk_locations": cjk_locations(),
+        "fixed_filename_locations": prohibited_filename_locations(),
+    }
     return {
-        "status": "ok" if all((ROOT / name).exists() for name in files) else "check_files",
+        "status": "ok" if not any(failures.values()) else "error",
         "files": {name: (ROOT / name).exists() for name in files},
+        "failures": failures,
     }
 
 
@@ -29,7 +100,10 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ci", action="store_true")
     parser.parse_args()
-    print(json.dumps(check(), indent=2, ensure_ascii=False))
+    result = check()
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    if result["status"] != "ok":
+        sys.exit(1)
 
 
 if __name__ == "__main__":

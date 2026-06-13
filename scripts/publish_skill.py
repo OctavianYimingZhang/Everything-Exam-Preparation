@@ -39,8 +39,10 @@ def ignore(_: str, names: list[str]) -> set[str]:
 def sync_local_skill(destination: Path, dry_run: bool) -> dict[str, Any]:
     if dry_run:
         return {"destination": str(destination), "status": "planned"}
-    destination.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(ROOT, destination, dirs_exist_ok=True, ignore=ignore)
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(ROOT, destination, ignore=ignore)
     return {"destination": str(destination), "status": "ok"}
 
 
@@ -52,6 +54,7 @@ def basic_status() -> dict[str, Any]:
         "entrypoint_exists": (ROOT / "SKILL.md").exists(),
         "manifest_exists": manifest_path.exists(),
         "default_output": manifest.get("default_output"),
+        "output_name_policy": manifest.get("output_name_policy"),
     }
 
 

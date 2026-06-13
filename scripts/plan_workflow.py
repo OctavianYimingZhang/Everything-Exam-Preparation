@@ -6,11 +6,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-PRIMARY_OUTPUT = "Exam_Preparation_Notes.docx"
-
 BASE_ACTIONS = [
     "source_inventory",
     "fragment_index",
+    "coverage_calibration",
     "extra_reading_discovery",
     "extra_reading_topic_matching",
     "course_knowledge_map",
@@ -46,7 +45,7 @@ ROUTES: dict[str, list[str]] = {
 
 ROUTE_OUTPUTS = {
     "exam_mode_diagnosis": ["chat_report"],
-    "essay_preparation": [PRIMARY_OUTPUT, "Example_Essay.docx"],
+    "essay_preparation": ["docx_notes", "example_essay_docx"],
 }
 
 
@@ -67,30 +66,51 @@ def detect_route(prompt: str) -> str:
 
 def source_summary(source_scan: dict[str, Any] | None) -> dict[str, Any]:
     if not source_scan:
-        return {"document_count": 0, "fragment_count": 0, "categories": {}}
+        return {"document_count": 0, "fragment_count": 0, "source_hints": {}, "coverage_profile": {}}
     cats: dict[str, int] = {}
+    signal_counts: dict[str, int] = {}
+    role_counts: dict[str, int] = {}
+    unit_candidates = 0
     for doc in source_scan.get("documents", []):
         cat = str(doc.get("source_hint") or doc.get("category") or "other_material")
         cats[cat] = cats.get(cat, 0) + 1
+        for signal in doc.get("knowledge_signals", []) or []:
+            signal_counts[signal] = signal_counts.get(signal, 0) + 1
+        for role in doc.get("knowledge_roles", []) or []:
+            role_counts[role] = role_counts.get(role, 0) + 1
+        unit_candidates += len(doc.get("knowledge_unit_candidates", []) or [])
+    for frag in source_scan.get("fragments", []):
+        for signal in frag.get("knowledge_signals", []) or []:
+            signal_counts[signal] = signal_counts.get(signal, 0) + 1
+        for role in frag.get("knowledge_roles", []) or []:
+            role_counts[role] = role_counts.get(role, 0) + 1
+        unit_candidates += len(frag.get("knowledge_unit_candidates", []) or [])
     return {
         "document_count": len(source_scan.get("documents", [])),
         "fragment_count": len(source_scan.get("fragments", [])),
-        "categories": cats,
+        "source_hints": cats,
+        "coverage_profile": {
+            "knowledge_signal_counts": signal_counts,
+            "knowledge_role_counts": role_counts,
+            "knowledge_unit_candidate_count": unit_candidates,
+        },
     }
 
 
 def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
     route = detect_route(prompt)
     actions = [{"id": action, "purpose": action.replace("_", " ")} for action in ROUTES[route]]
-    outputs = ROUTE_OUTPUTS.get(route, [PRIMARY_OUTPUT])
+    outputs = ROUTE_OUTPUTS.get(route, ["docx_notes"])
     return {
         "schema_version": 2,
         "route": route,
         "outputs": outputs,
+        "output_name_policy": "Use user-requested filenames when supplied; otherwise generate a clear DOCX filename from the source, course, prompt, or note title.",
         "actions": actions,
         "source_summary": source_summary(source_scan),
         "notes": [
-            "Use knowledge material to explain the course.",
+            "Use source hints as rough provenance labels.",
+            "Use coverage calibration to map knowledge signals into knowledge units before writing notes.",
             "Use practice material to identify repeated topics, command words, question types, and answer habits.",
             "Use Extra Reading to add molecular detail, mechanism explanation, experimental evidence, and essay depth.",
             "Connect knowledge to likely answer use in the selected exam mode.",
@@ -108,9 +128,11 @@ def self_test() -> None:
     assert detect_route("make MCQ notes") == "mcq_preparation"
     assert detect_route("short answer definitions") == "short_answer_preparation"
     assert detect_route("give essay plans") == "essay_preparation"
-    out = plan("prepare this course", {"documents": [{"source_hint": "knowledge_material"}], "fragments": [1, 2]})
+    out = plan("prepare this course", {"documents": [{"source_hint": "knowledge_material", "knowledge_signals": ["definition"]}], "fragments": [{"knowledge_signals": ["mechanism"], "knowledge_roles": ["mechanism"]}]})
     assert out["route"] == "exam_prep_notes"
+    assert any(action["id"] == "coverage_calibration" for action in out["actions"])
     assert any(action["id"] == "extra_reading_discovery" for action in out["actions"])
+    assert out["source_summary"]["coverage_profile"]["knowledge_signal_counts"]["mechanism"] == 1
 
 
 def main() -> None:

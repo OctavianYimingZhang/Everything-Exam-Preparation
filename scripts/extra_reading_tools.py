@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-BOOK_HEADINGS = [
+BACKGROUND_SOURCE_MARKERS = [
     "extra reading recommendation",
     "recommended reading",
     "further reading",
@@ -19,7 +19,7 @@ BOOK_HEADINGS = [
     "book",
     "chapter",
 ]
-PAPER_HEADINGS = ["doi", "pmid", "journal", "reference", "references", "source", "sources"]
+RESEARCH_SOURCE_MARKERS = ["doi", "pmid", "journal", "reference", "references", "source", "sources"]
 STOPWORDS = {
     "lecture", "module", "course", "student", "question", "answer", "material", "using", "these", "those", "there", "their",
     "which", "about", "should", "would", "could", "because", "chapter", "source", "references", "reading", "abstract",
@@ -44,6 +44,28 @@ def fragment_text(scan: dict[str, Any], hints: set[str] | None = None) -> str:
         if hints is None or hint in hints:
             parts.append(str(frag.get("text") or ""))
     return "\n".join(parts)
+
+
+def course_signal_text(scan: dict[str, Any]) -> str:
+    signal_roles = {
+        "concept",
+        "mechanism",
+        "method",
+        "comparison",
+        "calculation",
+        "data_interpretation",
+        "evidence",
+        "exam_application",
+        "dense_academic_content",
+        "coverage_target",
+    }
+    parts = []
+    for frag in scan.get("fragments", []):
+        roles = set(frag.get("knowledge_roles", []) or [])
+        signals = set(frag.get("knowledge_signals", []) or [])
+        if roles & signal_roles or signals:
+            parts.append(str(frag.get("text") or ""))
+    return "\n".join(parts) or fragment_text(scan)
 
 
 def words(text: str) -> list[str]:
@@ -79,7 +101,7 @@ def document_lookup(scan: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {str(doc.get("id")): doc for doc in scan.get("documents", [])}
 
 
-def extract_book_mentions(scan: dict[str, Any], lecture_topics: list[str]) -> list[dict[str, Any]]:
+def extract_background_mentions(scan: dict[str, Any], lecture_topics: list[str]) -> list[dict[str, Any]]:
     mentions: list[dict[str, Any]] = []
     docs = document_lookup(scan)
     for frag in scan.get("fragments", []):
@@ -87,23 +109,25 @@ def extract_book_mentions(scan: dict[str, Any], lecture_topics: list[str]) -> li
         hint = str(frag.get("source_hint") or frag.get("category") or "")
         source = docs.get(str(frag.get("source_id")), {})
         lower = text.lower()
-        if hint == "extra_reading_book":
+        if hint == "extra_reading_source" and any(marker in lower for marker in BACKGROUND_SOURCE_MARKERS):
             mentions.append({
-                "kind": "book",
-                "title": source.get("name") or frag.get("source_name") or "Uploaded book material",
-                "author_or_editor": "",
-                "chapter_or_section": "",
+                "kind": "extra_reading_source",
+                "source_signal": "background_or_textbook_like",
+                "title": source.get("name") or frag.get("source_name") or "Uploaded extra reading material",
+                "authors_or_editors": "",
+                "source_detail": nearby_snippet(text, "chapter") if "chapter" in lower else "",
                 "mentioned_in": f"{frag.get('source_name')} {frag.get('locator')}",
                 "linked_lecture_topics": topic_overlap(text, lecture_topics),
                 "snippet": re.sub(r"\s+", " ", text)[:350],
             })
             continue
-        if hint == "knowledge_material" and any(marker in lower for marker in BOOK_HEADINGS):
+        if any(marker in lower for marker in BACKGROUND_SOURCE_MARKERS):
             mentions.append({
-                "kind": "book",
+                "kind": "extra_reading_source",
+                "source_signal": "background_or_textbook_like",
                 "title": nearby_snippet(text, "book") if "book" in lower else nearby_snippet(text, "reading"),
-                "author_or_editor": "",
-                "chapter_or_section": nearby_snippet(text, "chapter") if "chapter" in lower else "",
+                "authors_or_editors": "",
+                "source_detail": nearby_snippet(text, "chapter") if "chapter" in lower else "",
                 "mentioned_in": f"{frag.get('source_name')} {frag.get('locator')}",
                 "linked_lecture_topics": topic_overlap(text, lecture_topics),
                 "snippet": re.sub(r"\s+", " ", text)[:350],
@@ -122,7 +146,7 @@ def infer_evidence_type(text: str) -> str:
     return "research"
 
 
-def extract_paper_mentions(scan: dict[str, Any], lecture_topics: list[str]) -> list[dict[str, Any]]:
+def extract_research_mentions(scan: dict[str, Any], lecture_topics: list[str]) -> list[dict[str, Any]]:
     mentions: list[dict[str, Any]] = []
     docs = document_lookup(scan)
     for frag in scan.get("fragments", []):
@@ -133,27 +157,45 @@ def extract_paper_mentions(scan: dict[str, Any], lecture_topics: list[str]) -> l
         doi = DOI_RE.search(text)
         pmid = PMID_RE.search(text)
         author_year = AUTHOR_YEAR_RE.search(text)
-        has_paper_marker = doi or pmid or author_year or any(marker in lower for marker in PAPER_HEADINGS)
-        if hint == "extra_reading_paper" or (hint == "knowledge_material" and has_paper_marker):
+        has_research_marker = doi or pmid or author_year or any(marker in lower for marker in RESEARCH_SOURCE_MARKERS)
+        if has_research_marker:
             year = YEAR_RE.search(text)
             mentions.append({
-                "kind": "academic_paper",
-                "title": source.get("name") if hint == "extra_reading_paper" else nearby_snippet(text, "doi") if doi else nearby_snippet(text, "reference"),
-                "authors": author_year.group(0) if author_year else "",
+                "kind": "extra_reading_source",
+                "source_signal": infer_evidence_type(text),
+                "title": source.get("name") if hint == "extra_reading_source" else nearby_snippet(text, "doi") if doi else nearby_snippet(text, "reference"),
+                "authors_or_editors": author_year.group(0) if author_year else "",
                 "year": year.group(0) if year else "",
-                "journal": nearby_snippet(text, "journal") if "journal" in lower else "",
-                "doi_or_url": doi.group(0) if doi else pmid.group(0) if pmid else "",
+                "source_detail": nearby_snippet(text, "journal") if "journal" in lower else "",
+                "identifier_or_url": doi.group(0) if doi else pmid.group(0) if pmid else "",
                 "evidence_type": infer_evidence_type(text),
                 "linked_lecture_topics": topic_overlap(text, lecture_topics),
-                "use_in_notes": "Add mechanism detail, molecular evidence, experimental evidence, or research support to the linked topic.",
+                "use_in_notes": "Add mechanism detail, molecular evidence, experimental evidence, method support, or research support to the linked topic.",
                 "mentioned_in": f"{frag.get('source_name')} {frag.get('locator')}",
                 "snippet": re.sub(r"\s+", " ", text)[:350],
             })
     return mentions
 
 
+def merge_extra_reading_sources(*source_groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    sources: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for group in source_groups:
+        for item in group:
+            key = (
+                str(item.get("title", "")),
+                str(item.get("identifier_or_url", "")),
+                str(item.get("mentioned_in", "")),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            sources.append(item)
+    return sources
+
+
 def lecture_topics(scan: dict[str, Any], limit: int = 12) -> list[dict[str, Any]]:
-    text = fragment_text(scan, {"knowledge_material"}) or fragment_text(scan)
+    text = course_signal_text(scan)
     topics = frequent_topics(text, limit)
     return [{"topic": topic, "search_seed": topic} for topic in topics]
 
@@ -173,10 +215,11 @@ def generate_queries(topics: list[dict[str, Any]] | list[str], limit: int = 20) 
 def discover(scan: dict[str, Any]) -> dict[str, Any]:
     topics = lecture_topics(scan)
     topic_names = [item["topic"] for item in topics]
+    background_sources = extract_background_mentions(scan, topic_names)
+    research_sources = extract_research_mentions(scan, topic_names)
     return {
         "schema_version": 2,
-        "book_mentions": extract_book_mentions(scan, topic_names),
-        "paper_mentions": extract_paper_mentions(scan, topic_names),
+        "extra_reading_sources": merge_extra_reading_sources(background_sources, research_sources),
         "lecture_topics": topics,
         "search_queries": generate_queries(topics),
     }
@@ -186,15 +229,16 @@ def topic_enrichment(discovery: dict[str, Any]) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     topics = [item["topic"] if isinstance(item, dict) else str(item) for item in discovery.get("lecture_topics", [])]
     for topic in topics:
-        book_hits = [m for m in discovery.get("book_mentions", []) if topic in m.get("linked_lecture_topics", [])]
-        paper_hits = [m for m in discovery.get("paper_mentions", []) if topic in m.get("linked_lecture_topics", [])]
+        source_hits = [m for m in discovery.get("extra_reading_sources", []) if topic in m.get("linked_lecture_topics", [])]
+        evidence_hits = [m for m in source_hits if m.get("evidence_type") or m.get("identifier_or_url")]
         records.append({
             "lecture_topic": topic,
             "core_lecture_explanation": f"Explain the lecture material on {topic} in exam-focused language.",
-            "book_enrichment": [m.get("snippet") or m.get("title") for m in book_hits],
-            "paper_enrichment": [m.get("snippet") or m.get("title") for m in paper_hits],
-            "molecular_or_mechanism_detail": [f"Use extra reading to add molecular or mechanism detail for {topic}."] if book_hits or paper_hits else [],
-            "experimental_evidence_support": [m.get("use_in_notes", "Use the paper as experimental evidence support.") for m in paper_hits],
+            "extra_reading_enrichment": [m.get("snippet") or m.get("title") for m in source_hits],
+            "background_enrichment": [m.get("snippet") or m.get("title") for m in source_hits if m.get("source_signal") == "background_or_textbook_like"],
+            "evidence_enrichment": [m.get("snippet") or m.get("title") for m in evidence_hits],
+            "molecular_or_mechanism_detail": [f"Use extra reading to add molecular or mechanism detail for {topic}."] if source_hits else [],
+            "experimental_evidence_support": [m.get("use_in_notes", "Use the source as evidence support.") for m in evidence_hits],
             "exam_use": f"Use the enriched {topic} material to improve explanations, essay paragraphs, and answer depth.",
         })
     return records
@@ -204,7 +248,7 @@ def essay_enrichment(enrichment: list[dict[str, Any]]) -> dict[str, Any]:
     slots = []
     for item in enrichment[:6]:
         topic = item.get("lecture_topic", "topic")
-        detail = " ".join((item.get("book_enrichment") or item.get("paper_enrichment") or item.get("molecular_or_mechanism_detail") or [""])[:1])
+        detail = " ".join((item.get("extra_reading_enrichment") or item.get("molecular_or_mechanism_detail") or [""])[:1])
         slots.append({
             "topic": topic,
             "paragraph_role": "extra reading evidence and analysis",
@@ -218,8 +262,7 @@ def enrich(discovery: dict[str, Any]) -> dict[str, Any]:
     mapped = topic_enrichment(discovery)
     return {
         "schema_version": 2,
-        "book_mentions": discovery.get("book_mentions", []),
-        "paper_mentions": discovery.get("paper_mentions", []),
+        "extra_reading_sources": discovery.get("extra_reading_sources", []),
         "lecture_topics": discovery.get("lecture_topics", []),
         "search_queries": discovery.get("search_queries", []),
         "topic_enrichment": mapped,
@@ -250,8 +293,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.self_test:
         sample = {
-            "documents": [{"id": "S1", "name": "Lecture 1", "source_hint": "knowledge_material"}],
-            "fragments": [{"source_id": "S1", "source_name": "Lecture 1", "source_hint": "knowledge_material", "locator": "chunk 1", "text": "Recommended reading: Molecular Biology textbook Chapter 2. DOI 10.1000/test shows receptor mechanism results."}],
+            "documents": [{"id": "S1", "name": "Source 1", "source_hint": "knowledge_material"}],
+            "fragments": [{"source_id": "S1", "source_name": "Source 1", "source_hint": "knowledge_material", "locator": "chunk 1", "knowledge_signals": ["mechanism", "evidence"], "knowledge_roles": ["mechanism", "evidence"], "text": "Recommended reading: Molecular Biology textbook Chapter 2. DOI 10.1000/test shows receptor mechanism results."}],
         }
         out = enrich(discover(sample))
         assert out["search_queries"]

@@ -8,43 +8,24 @@ setup_wizard:
     - topic_focus
     - extra_reading_focus
   source_hints:
-    knowledge_material:
-      examples:
-        - lecture_slides
-        - lecture_notes
-        - official_course_notes
-        - practical_handout
-    practice_material:
-      examples:
-        - past_paper
-        - practice_questions
-        - problem_sheet
-        - mcq_bank
-        - essay_prompts
-    marking_material:
-      examples:
-        - mark_scheme
-        - answer_key
-        - solution_set
-    style_reference:
-      examples:
-        - example_answer
-        - model_answer
-        - preferred_essay_style
-    extra_reading_book:
-      examples:
-        - textbook
-        - book_chapter
-        - recommended_reading_book
-        - publisher_chapter_extract
-    extra_reading_paper:
-      examples:
-        - academic_paper
-        - journal_article
-        - primary_research
-        - recent_research
-        - doi_or_pmid_paper
-    other_material:
-      examples:
-        - mixed_file
-        - ambiguous_file
+    purpose: open provenance labels only
+    policy: infer useful source hints from file content when they help routing; calibrate notes length, depth, and coverage from knowledge signals and knowledge units
+  output:
+    type: docx_notes
+    naming: user_requested_or_generated_from_context
+    student_surface: knowledge_only_teaching_notes
+    formula_policy: visible_formula_blocks
+  coverage_calibration:
+    basis: open knowledge signals
+    signals:
+      - topic_boundary
+      - learning_objective
+      - definition
+      - mechanism
+      - method
+      - comparison
+      - calculation
+      - data_interpretation
+      - evidence
+      - application
+      - explanatory_example

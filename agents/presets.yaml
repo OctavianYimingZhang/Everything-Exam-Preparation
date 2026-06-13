@@ -1,9 +1,13 @@
 presets:
   exam_prep_notes:
-    output: Exam_Preparation_Notes.docx
+    output: docx_notes
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: knowledge_only_teaching_notes
+    formula_policy: visible_formula_blocks
     actions:
       - source_inventory
       - fragment_index
+      - coverage_calibration
       - course_knowledge_map
       - exam_habit_analysis
       - exam_prep_notes
@@ -13,26 +17,50 @@ presets:
       - source_inventory
       - exam_mode_diagnosis
   mcq_preparation:
-    output: Exam_Preparation_Notes.docx
+    output: docx_notes
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: knowledge_only_teaching_notes
+    formula_policy: visible_formula_blocks
     actions:
+      - source_inventory
+      - fragment_index
+      - coverage_calibration
       - exam_prep_notes
       - mcq_exam_habits
       - mcq_notes_enrichment
   short_answer_preparation:
-    output: Exam_Preparation_Notes.docx
+    output: docx_notes
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: knowledge_only_teaching_notes
+    formula_policy: visible_formula_blocks
     actions:
+      - source_inventory
+      - fragment_index
+      - coverage_calibration
       - exam_prep_notes
       - definition_and_mark_point_highlights
       - explain_answer_examples
   long_answer_preparation:
-    output: Exam_Preparation_Notes.docx
+    output: docx_notes
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: knowledge_only_teaching_notes
+    formula_policy: visible_formula_blocks
     actions:
+      - source_inventory
+      - fragment_index
+      - coverage_calibration
       - exam_prep_notes
       - practice_question_walkthroughs
       - example_answers
   essay_preparation:
-    output: Exam_Preparation_Notes.docx
+    output: docx_notes
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: knowledge_only_teaching_notes
+    formula_policy: visible_formula_blocks
     actions:
+      - source_inventory
+      - fragment_index
+      - coverage_calibration
       - exam_prep_notes
       - exam_ready_paragraphs
       - module_covering_essay_questions

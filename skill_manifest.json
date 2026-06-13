@@ -4,7 +4,8 @@
   "repo": "OctavianYimingZhang/Everything-Exam-Preparation",
   "branch": "main",
   "entrypoint": "SKILL.md",
-  "default_output": "Exam_Preparation_Notes.docx",
+  "default_output": "docx_notes",
+  "output_name_policy": "user_requested_or_generated_from_context",
   "routes": [
     "exam_prep_notes",
     "exam_mode_diagnosis",
