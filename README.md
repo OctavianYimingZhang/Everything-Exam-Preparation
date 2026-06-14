@@ -16,7 +16,8 @@ The default output type is DOCX notes. If the user requests filenames or a multi
 6. Discovers Extra Reading from uploaded files, source mentions, and academic-paper search queries.
 7. Matches Extra Reading to course knowledge units.
 8. Diagnoses the exam mode from the prompt and practice material.
-9. Produces knowledge-only teaching notes and mode-specific preparation for MCQ, short answer, long answer, practical/data/problem, or essay exams.
+9. Produces explanation-only teaching Notes and separate Exam Type Related add-ons for MCQ, short answer, long answer, practical/data/problem, or essay exams.
+10. When Past Paper or question-containing Practical Materials are supplied, produces a separate question-based Exam Type Related DOCX alongside Notes.
 
 Student-facing Notes explain knowledge. They do not expose source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, or other workflow internals.
 
@@ -50,7 +51,7 @@ Expected Extra Reading output shape:
 
 ## Current output focus
 
-This version focuses on signal-driven coverage, teaching depth, formula visibility, output language style, and output format style.
+This version focuses on signal-driven coverage, teaching depth, domain-neutral formula visibility, academic source visuals, output language style, and output format style.
 
 ### 1. Coverage calibration
 
@@ -65,9 +66,10 @@ Coverage is driven by:
 - comparisons;
 - calculations and data interpretation;
 - evidence and Extra Reading;
-- application and exam-answer use.
+- conceptual applications and interpretation use.
+- source visuals when they clarify a concept, mechanism, method, formula, graph, table, pathway, scheme, or data interpretation.
 
-Examples are used only when they clarify knowledge or answer use.
+Examples are used when they clarify knowledge, mechanism, method, calculation, interpretation, or conceptual application.
 
 ### 2. Teaching depth and formula visibility
 
@@ -75,16 +77,13 @@ Examples are used only when they clarify knowledge or answer use.
 
 - strong tutor voice;
 - direct course explanation;
-- concept identity, mechanism, method, calculation, assumptions, interpretation, and exam use;
+- concept identity, mechanism, method, calculation, assumptions, interpretation, and conceptual application;
 - visible formulas using Word equation/OMML where possible;
 - readable Unicode mathematical fallback when equation conversion is unavailable;
-- exam application after each important concept;
+- domain-neutral formula normalization for mathematics, physics, chemistry, biological science, and coding-adjacent technical material;
+- academically useful PDF page-visible visuals and embedded DOCX/PPTX media when they strengthen a knowledge unit;
 - Extra Reading depth after relevant lecture explanation;
-- MCQ reasoning with plausible wrong statements;
-- short-answer definitions, mark points, explain sentences, and example answers;
-- long-answer walkthroughs;
-- practical/data interpretation;
-- exam-ready essay paragraphs with 15%-30% Extra Reading content when generating Example Essays.
+- separate Exam Type Related add-ons for MCQ, short answer, long answer, practical/data/problem, and essay preparation.
 
 ### 3. Output format style
 
@@ -98,7 +97,12 @@ Examples are used only when they clarify knowledge or answer use.
 - left-aligned headings;
 - justified body text;
 - compact tables;
+- compact academic captions and source visuals;
 - clear knowledge sections that teach the material without workflow or process sections.
+
+### 4. Separate question-based add-on
+
+`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer questions are arranged by lecture/source order and include high-frequency knowledge points derived from the question material. Long Answer and Practical/Data/Problem outputs contain source questions, example answers, and academic Analysis/Prediction results without workflow narration or study-advice content.
 
 ## Routes
 

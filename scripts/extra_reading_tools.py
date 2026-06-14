@@ -233,13 +233,13 @@ def topic_enrichment(discovery: dict[str, Any]) -> list[dict[str, Any]]:
         evidence_hits = [m for m in source_hits if m.get("evidence_type") or m.get("identifier_or_url")]
         records.append({
             "lecture_topic": topic,
-            "core_lecture_explanation": f"Explain the lecture material on {topic} in exam-focused language.",
+            "core_lecture_explanation": f"Explain the lecture material on {topic} in student-facing teaching language.",
             "extra_reading_enrichment": [m.get("snippet") or m.get("title") for m in source_hits],
             "background_enrichment": [m.get("snippet") or m.get("title") for m in source_hits if m.get("source_signal") == "background_or_textbook_like"],
             "evidence_enrichment": [m.get("snippet") or m.get("title") for m in evidence_hits],
             "molecular_or_mechanism_detail": [f"Use extra reading to add molecular or mechanism detail for {topic}."] if source_hits else [],
             "experimental_evidence_support": [m.get("use_in_notes", "Use the source as evidence support.") for m in evidence_hits],
-            "exam_use": f"Use the enriched {topic} material to improve explanations, essay paragraphs, and answer depth.",
+            "knowledge_use": f"Use the enriched {topic} material to improve conceptual explanation, mechanism depth, and interpretation.",
         })
     return records
 

@@ -9,6 +9,7 @@ from typing import Any
 BASE_ACTIONS = [
     "source_inventory",
     "fragment_index",
+    "practice_material_knowledge_signal_review",
     "coverage_calibration",
     "extra_reading_discovery",
     "extra_reading_topic_matching",
@@ -18,7 +19,6 @@ BASE_ACTIONS = [
 
 ROUTES: dict[str, list[str]] = {
     "exam_prep_notes": BASE_ACTIONS + [
-        "exam_habit_analysis_if_practice_material_exists",
         "exam_prep_notes",
     ],
     "exam_mode_diagnosis": ["source_inventory", "exam_mode_diagnosis"],
@@ -45,7 +45,10 @@ ROUTES: dict[str, list[str]] = {
 
 ROUTE_OUTPUTS = {
     "exam_mode_diagnosis": ["chat_report"],
-    "essay_preparation": ["docx_notes", "example_essay_docx"],
+    "mcq_preparation": ["mcq_exam_type_related_addon"],
+    "short_answer_preparation": ["short_answer_exam_type_related_addon"],
+    "long_answer_preparation": ["long_answer_practical_data_problem_exam_type_related_addon"],
+    "essay_preparation": ["essay_exam_type_related_addon"],
 }
 
 
@@ -89,6 +92,10 @@ def source_summary(source_scan: dict[str, Any] | None) -> dict[str, Any]:
         "document_count": len(source_scan.get("documents", [])),
         "fragment_count": len(source_scan.get("fragments", [])),
         "source_hints": cats,
+        "question_material": {
+            "has_past_paper_questions": any(doc.get("question_signals", {}).get("has_past_paper") for doc in source_scan.get("documents", [])),
+            "has_practical_questions": any(doc.get("question_signals", {}).get("has_practical_questions") for doc in source_scan.get("documents", [])),
+        },
         "coverage_profile": {
             "knowledge_signal_counts": signal_counts,
             "knowledge_role_counts": role_counts,
@@ -97,10 +104,26 @@ def source_summary(source_scan: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
+def question_addon_required(source_scan: dict[str, Any] | None) -> bool:
+    if not source_scan:
+        return False
+    for doc in source_scan.get("documents", []) or []:
+        signals = doc.get("question_signals", {}) or {}
+        if signals.get("has_past_paper") or signals.get("has_practical_questions"):
+            return True
+    return False
+
+
 def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
     route = detect_route(prompt)
     actions = [{"id": action, "purpose": action.replace("_", " ")} for action in ROUTES[route]]
     outputs = ROUTE_OUTPUTS.get(route, ["docx_notes"])
+    if route == "exam_prep_notes" and question_addon_required(source_scan):
+        outputs = ["docx_notes", "exam_type_related_addon_docx"]
+        actions.append({
+            "id": "question_based_exam_type_related_addon",
+            "purpose": "build separate exam type related addon from past paper or question practical material",
+        })
     return {
         "schema_version": 2,
         "route": route,
@@ -111,9 +134,9 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
         "notes": [
             "Use source hints as rough provenance labels.",
             "Use coverage calibration to map knowledge signals into knowledge units before writing notes.",
-            "Use practice material to identify repeated topics, command words, question types, and answer habits.",
+            "Use practice material as knowledge-signal evidence for repeated concepts, methods, calculations, source difficulty, and coverage density.",
             "Use Extra Reading to add molecular detail, mechanism explanation, experimental evidence, and essay depth.",
-            "Connect knowledge to likely answer use in the selected exam mode.",
+            "Keep plain Notes explanation-only; route Past Paper and question Practical material to a separate Exam Type Related DOCX.",
         ],
     }
 
@@ -130,8 +153,31 @@ def self_test() -> None:
     assert detect_route("give essay plans") == "essay_preparation"
     out = plan("prepare this course", {"documents": [{"source_hint": "knowledge_material", "knowledge_signals": ["definition"]}], "fragments": [{"knowledge_signals": ["mechanism"], "knowledge_roles": ["mechanism"]}]})
     assert out["route"] == "exam_prep_notes"
+    assert "exam_habit_analysis_if_practice_material_exists" not in [action["id"] for action in out["actions"]]
+    assert any(action["id"] == "practice_material_knowledge_signal_review" for action in out["actions"])
     assert any(action["id"] == "coverage_calibration" for action in out["actions"])
     assert any(action["id"] == "extra_reading_discovery" for action in out["actions"])
+    assert out["outputs"] == ["docx_notes"]
+    past = plan("prepare this course", {
+        "documents": [{"source_hint": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True}}],
+        "fragments": [{"knowledge_signals": ["calculation"], "knowledge_roles": ["calculation"]}],
+    })
+    assert past["outputs"] == ["docx_notes", "exam_type_related_addon_docx"]
+    assert any(action["id"] == "question_based_exam_type_related_addon" for action in past["actions"])
+    practical_without_questions = plan("prepare this course", {
+        "documents": [{"source_hint": "knowledge_material", "question_signals": {"has_questions": False, "has_practical_questions": False}}],
+        "fragments": [{"knowledge_signals": ["method"], "knowledge_roles": ["method"]}],
+    })
+    assert practical_without_questions["outputs"] == ["docx_notes"]
+    practical_with_questions = plan("prepare this course", {
+        "documents": [{"source_hint": "knowledge_material", "question_signals": {"has_questions": True, "has_practical_questions": True}}],
+        "fragments": [{"knowledge_signals": ["data_interpretation"], "knowledge_roles": ["data_interpretation"]}],
+    })
+    assert practical_with_questions["outputs"] == ["docx_notes", "exam_type_related_addon_docx"]
+    assert plan("make MCQ notes")["outputs"] == ["mcq_exam_type_related_addon"]
+    assert plan("short answer definitions")["outputs"] == ["short_answer_exam_type_related_addon"]
+    assert plan("long answer worked problem")["outputs"] == ["long_answer_practical_data_problem_exam_type_related_addon"]
+    assert plan("essay plans")["outputs"] == ["essay_exam_type_related_addon"]
     assert out["source_summary"]["coverage_profile"]["knowledge_signal_counts"]["mechanism"] == 1
 
 

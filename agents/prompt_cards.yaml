@@ -1,25 +1,25 @@
 prompt_cards:
   - id: exam_prep_notes
     title: Exam Preparation Notes
-    purpose: Build student-facing notes from uploaded course and practice material.
+    purpose: Build explanation-only student-facing Notes from uploaded course and practice material, with a separate add-on when Past Paper or question Practical material is present.
     route: exam_prep_notes
   - id: exam_mode_diagnosis
     title: Exam Mode Diagnosis
     purpose: Identify how the course is examined and what the examiner repeatedly tests.
     route: exam_mode_diagnosis
   - id: mcq_preparation
-    title: MCQ Preparation
-    purpose: Add MCQ application guidance and plausible wrong statements.
+    title: MCQ Exam Type Related Add-on
+    purpose: Build a separate MCQ add-on with lecture-order questions and question-only high-frequency knowledge points.
     route: mcq_preparation
   - id: short_answer_preparation
-    title: Short Answer Preparation
-    purpose: Highlight definitions, mark-point answers, and explain-style answer examples.
+    title: Short Answer Exam Type Related Add-on
+    purpose: Build a separate short-answer add-on with lecture-order questions and concise academic answer forms.
     route: short_answer_preparation
   - id: long_answer_preparation
-    title: Long Answer Preparation
-    purpose: Walk through practice questions and provide example answers.
+    title: Long Answer Exam Type Related Add-on
+    purpose: Build a separate long-answer/practical/data/problem add-on with example answers and academic analysis/prediction results.
     route: long_answer_preparation
   - id: essay_preparation
-    title: Essay Preparation
-    purpose: Build exam-ready essay paragraphs, broad module questions, and example essays.
+    title: Essay Exam Type Related Add-on
+    purpose: Build a separate essay add-on with plans, claims, evidence integration, and example essays.
     route: essay_preparation

@@ -1,6 +1,6 @@
 ---
 name: everything-exam-preparation
-description: Signal-driven exam preparation workflow that produces knowledge-only teaching notes with visible formulas for course material, practice material, extra reading, MCQ, short answer, long answer, practical/data/problem, and essay exams.
+description: Signal-driven exam preparation workflow that produces explanation-only teaching notes with visible formulas, academic source visuals, and separate Exam Type Related add-ons for MCQ, short answer, long answer, practical/data/problem, and essay exams.
 ---
 
 # Everything Exam Preparation
@@ -9,11 +9,13 @@ This Skill helps students prepare for exams from uploaded course material, pract
 
 ## Core job
 
-Students provide course material, practice material, and optionally Extra Reading. The Skill reads the material, extracts open knowledge signals, groups connected signals into knowledge units, calibrates the required explanation for each unit, enriches course content with extra reading where useful, connects the material to exam answers, and produces student-facing exam preparation output.
+Students provide course material, practice material, and optionally Extra Reading. The Skill reads the material, extracts open knowledge signals, groups connected signals into knowledge units, calibrates the required explanation for each unit, enriches course content with extra reading where useful, and produces student-facing exam preparation output.
 
-Student-facing Notes are knowledge-only teaching documents. They explain concepts, mechanisms, methods, calculations, assumptions, interpretations, and exam use. They do not expose source intake, extraction notes, coverage calibration, QA, route planning, subagent narration, or workflow scaffolding.
+Student-facing Notes are explanation-only, knowledge-only teaching notes. They explain concepts, mechanisms, methods, calculations, assumptions, interpretations, conceptual applications, and academically useful source visuals. Exam Type Related preparation is produced as separate add-on output for the relevant route.
 
 If the user requests a filename or file set, follow that request. Otherwise generate a clear DOCX filename from the source, course, prompt, or note title. Do not treat an exact filename as part of the Skill contract.
+
+Default output language is English unless the user explicitly requests another language.
 
 ## Simple workflow
 
@@ -22,10 +24,10 @@ If the user requests a filename or file set, follow that request. Otherwise gene
 3. Calibrate coverage from knowledge signals and knowledge units.
 4. Discover Extra Reading from uploaded sources, source mentions, and academic search queries.
 5. Match Extra Reading to course knowledge units.
-6. Diagnose the exam mode from the prompt and practice material.
-7. Generate knowledge-only teaching notes from the coverage map.
-8. Render visible formulas, tables, and explanations in the target output format style.
-9. Add MCQ, short-answer, long-answer, practical/data/problem, or essay preparation when relevant.
+6. Diagnose the exam mode from the prompt and practice material when the request asks for exam type-related preparation.
+7. Generate explanation-only teaching Notes from the coverage map.
+8. Render visible formulas, tables, academic source visuals, and explanations in the target output format style.
+9. Produce MCQ, short-answer, long-answer, practical/data/problem, or essay preparation as separate Exam Type Related add-ons when the route calls for them or when Past Paper/question Practical material supplies usable question signals.
 
 ## Extra Reading workflow
 
@@ -37,38 +39,37 @@ Example Essays use an Extra Reading blend of 15%-30% through paragraph slots tha
 
 ## Output contract
 
-Use `references/exam_prep_notes_protocol.md` as the canonical coverage, language, formula-visibility, and format guide.
+Use `references/exam_prep_notes_protocol.md` as the canonical coverage, language, formula-visibility, and format guide for Notes output.
 
-Write like a strong tutor preparing a student for an exam. Explain what each topic means, why it matters, how it appears in questions, and how the student can use it in an answer.
+Write like a strong tutor preparing a student for an exam. Explain what each topic means, why it matters, how it works, and how the knowledge is interpreted or applied.
 
-Formula-heavy content must be visible in the final document. Use Word equation/OMML rendering where possible. Use readable Unicode mathematical fallback when equation conversion is unavailable. Do not leave formulas as raw pseudo-code such as `partial`, `sqrt`, `sum_ij`, or `dot` in student-facing output.
+Formula-heavy content must be visible in the final document. Use Word equation/OMML rendering where possible. Use a domain-neutral formula normalization pipeline and readable Unicode mathematical fallback when equation conversion is unavailable.
 
-Render only knowledge content. Do not create public sections for source intake, extraction limits, coverage calibration, example filtering, workflow QA, internal checklists, route decisions, or planning state.
+Render Notes as knowledge explanations with integrated formula, method, calculation, mechanism, comparison, visual, and interpretation support.
 
-Mode-specific writing:
+Exam Type Related add-on writing:
 
-- MCQ: tested point, MCQ wording, correct reasoning, plausible wrong statement, why it is wrong.
-- Short Answer: definition, mark points, explain sentence, example answer.
-- Long Answer: question demand, relevant knowledge, answer structure, example answer, why the answer works.
-- Practical/Data/Problem: method aim, readout, control, calculation or interpretation, limitation, exam conclusion.
+- MCQ: source questions in lecture order, tested point, MCQ wording, correct reasoning, plausible wrong statement, why it is wrong, and high-frequency knowledge points derived from question material.
+- Short Answer: source questions in lecture order, definition, mark points, explain sentence, example answer, and high-frequency knowledge points derived from question material.
+- Long Answer: source question, question demand, relevant knowledge, answer structure, example answer, and academic analysis/prediction result.
+- Practical/Data/Problem: source task, method aim, readout, control, calculation or interpretation, limitation, conclusion, and academic analysis/prediction result.
 - Essay: claim, explanation, course detail, Extra Reading evidence, analysis, link back to the question.
 
-Render DOCX notes with Arial, 2.5 cm margins, 1.5 line spacing, centered main title, left-aligned headings, justified body text, compact tables, centered display formulas, and clear knowledge sections. Filename and file-set choices may follow the user's request or the source pack; do not make exact filenames part of the knowledge-quality contract.
+Render DOCX Notes with Arial, 2.5 cm margins, 1.5 line spacing, centered main title, left-aligned headings, justified body text, compact tables, centered display formulas, academically useful source visuals, and clear knowledge sections. Use restrained academic styling only. Filename and file-set choices may follow the user's request or the source pack; do not make exact filenames part of the knowledge-quality contract.
 
 Recommended section order:
 
-1. Knowledge-unit sections in course order or exam-priority order.
+1. Knowledge-unit sections in course order or knowledge-priority order.
 2. Formula and method explanations inside the relevant knowledge unit.
-3. Mode-specific preparation when relevant.
-4. Extra Reading depth immediately after the course point it strengthens.
+3. Extra Reading depth immediately after the course point it strengthens.
 
 ## Routes
 
 | User request | Route | Output |
 |---|---|---|
-| make notes, revise, prepare this course, go through lectures | `exam_prep_notes` | DOCX notes |
+| make notes, revise, prepare this course, go through lectures | `exam_prep_notes` | DOCX explanation Notes |
 | identify exam format, how is this course examined | `exam_mode_diagnosis` | chat or JSON diagnosis |
-| MCQ, SBA, multiple choice | `mcq_preparation` | notes plus MCQ preparation |
-| short answer, SAQ, definitions, state/list questions | `short_answer_preparation` | notes plus short-answer preparation |
-| long answer, problem, data, practical, past-paper walkthrough | `long_answer_preparation` | notes plus worked question preparation |
-| essay, in-campus essay, example essay, model essay | `essay_preparation` | notes plus essay questions and example essays |
+| MCQ, SBA, multiple choice | `mcq_preparation` | separate MCQ Exam Type Related add-on |
+| short answer, SAQ, definitions, state/list questions | `short_answer_preparation` | separate short-answer Exam Type Related add-on |
+| long answer, problem, data, practical, past-paper walkthrough | `long_answer_preparation` | separate long-answer/practical/data/problem Exam Type Related add-on |
+| essay, in-campus essay, example essay, model essay | `essay_preparation` | separate essay Exam Type Related add-on |

@@ -23,7 +23,8 @@ For each file, record:
 
 - file name, path, source hint, readable character count, extraction notes;
 - text fragments;
-- extracted media when available;
+- extracted media and PDF page-visible visuals when available;
+- question signals for Past Paper and Practical Materials when detectable;
 - `knowledge_signals`, `knowledge_roles`, and `knowledge_unit_candidates` when detectable.
 
 The assistant should inspect fragments directly. Coarse source hints support routing, while knowledge signals drive notes coverage.
@@ -41,8 +42,8 @@ Detect knowledge signals wherever they appear across the supplied material:
 - calculation signal: equations, formulas, rates, dose-response measures, numeric interpretation;
 - data interpretation signal: figures, graphs, tables, trends, readouts, conclusions from data;
 - evidence signal: findings, results, experimental support, DOI/PMID, cited research;
-- application signal: clinical use, case use, exam use, answer use, decision use;
-- explanatory example signal: examples that clarify a concept, mechanism, method, calculation, data interpretation, evidence use, or answer move.
+- application signal: clinical use, case use, disciplinary use, decision use, conceptual application, method selection, or interpretation use;
+- explanatory example signal: examples that clarify a concept, mechanism, method, calculation, data interpretation, evidence use, or reasoning move.
 
 High density is indicated by many signals in a short span, repeated technical terms, stacked learning targets, or compact topic lists. High-density spans should be expanded into explainable notes rather than treated as simple lists.
 
@@ -67,4 +68,6 @@ Extra Reading is used when it adds mechanism depth, molecular detail, experiment
 
 ## Practical Extraction
 
-Text files, Markdown, JSON, YAML, CSV, DOCX, PPTX, and PDF are read when the local runtime can read them. Embedded images from DOCX/PPTX can be exported to an asset folder. Files without automatic text extraction remain listed with an extraction note.
+Text files, Markdown, JSON, YAML, CSV, DOCX, PPTX, and PDF are read when the local runtime can read them. Embedded images from DOCX/PPTX can be exported to an asset folder. PDF page-visible visuals can be rendered into assets when figure, table, diagram, graph, pathway, scheme, or image signals show academic value. Files without automatic text extraction remain listed with an extraction note.
+
+Past Paper and Practical Materials can record `question_signals`. Past Paper signals come from question-paper context plus extractable question wording. Practical question signals come from explicit task, data, calculation, interpretation, or problem wording. These signals route separate Exam Type Related output; Notes still use the same material only as knowledge-signal evidence.

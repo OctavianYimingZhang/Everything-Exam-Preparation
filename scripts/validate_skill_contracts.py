@@ -88,6 +88,9 @@ def check_all() -> dict[str, Any]:
                 "knowledge-only",
                 "visible formulas",
                 "Do not treat an exact filename as part of the Skill contract.",
+                "Default output language is English",
+                "Exam Type Related",
+                "academic source visuals",
             ],
         ),
         "references/exam_prep_notes_protocol.md": require_terms(
@@ -95,8 +98,20 @@ def check_all() -> dict[str, Any]:
             [
                 "knowledge-only teaching notes",
                 "Formula Visibility",
+                "Visual Rendering",
+                "domain-neutral",
                 "formula_block",
+                "image_plus_kp_list",
                 "Loose top-level planning fields are internal.",
+            ],
+        ),
+        "references/exam_mode_and_addons_protocol.md": require_terms(
+            "references/exam_mode_and_addons_protocol.md",
+            [
+                "Exam Type Related",
+                "separate outputs",
+                "Practice material can still inform Notes coverage",
+                "question-based Exam Type Related DOCX",
             ],
         ),
         "references/language_quality_contract.md": require_terms(
@@ -114,6 +129,7 @@ def check_all() -> dict[str, Any]:
                 "def output_path",
                 "safe_docx_name",
                 "formula_block",
+                "image_plus_kp_list",
                 "INTERNAL_PUBLIC_HEADINGS",
             ],
         ),

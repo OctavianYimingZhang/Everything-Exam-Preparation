@@ -9,12 +9,14 @@ setup_wizard:
     - extra_reading_focus
   source_hints:
     purpose: open provenance labels only
-    policy: infer useful source hints from file content when they help routing; calibrate notes length, depth, and coverage from knowledge signals and knowledge units
+    policy: infer useful source hints from file content when they help routing; calibrate notes depth and coverage from knowledge signals, knowledge density, and knowledge units
   output:
     type: docx_notes
+    conditional_addon: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
     naming: user_requested_or_generated_from_context
-    student_surface: knowledge_only_teaching_notes
-    formula_policy: visible_formula_blocks
+    student_surface: explanation_only_notes
+    formula_policy: domain_neutral_visible_formula_blocks
+    visual_policy: academic_pdf_page_visible_visuals
   coverage_calibration:
     basis: open knowledge signals
     signals:

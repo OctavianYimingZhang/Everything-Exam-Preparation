@@ -1,67 +1,66 @@
 presets:
   exam_prep_notes:
     output: docx_notes
+    conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
     output_name_policy: user_requested_or_generated_from_context
-    student_surface: knowledge_only_teaching_notes
-    formula_policy: visible_formula_blocks
+    student_surface: explanation_only_notes
+    formula_policy: domain_neutral_visible_formula_blocks
+    visual_policy: academic_pdf_page_visible_visuals
     actions:
       - source_inventory
       - fragment_index
+      - practice_material_knowledge_signal_review
       - coverage_calibration
       - course_knowledge_map
-      - exam_habit_analysis
       - exam_prep_notes
+      - question_based_exam_type_related_addon_when_triggered
   exam_mode_diagnosis:
     output: chat_report
     actions:
       - source_inventory
       - exam_mode_diagnosis
   mcq_preparation:
-    output: docx_notes
+    output: mcq_exam_type_related_addon
     output_name_policy: user_requested_or_generated_from_context
-    student_surface: knowledge_only_teaching_notes
-    formula_policy: visible_formula_blocks
+    student_surface: exam_type_related_addon
+    formula_policy: domain_neutral_visible_formula_blocks
     actions:
       - source_inventory
       - fragment_index
       - coverage_calibration
-      - exam_prep_notes
       - mcq_exam_habits
       - mcq_notes_enrichment
   short_answer_preparation:
-    output: docx_notes
+    output: short_answer_exam_type_related_addon
     output_name_policy: user_requested_or_generated_from_context
-    student_surface: knowledge_only_teaching_notes
-    formula_policy: visible_formula_blocks
+    student_surface: exam_type_related_addon
+    formula_policy: domain_neutral_visible_formula_blocks
     actions:
       - source_inventory
       - fragment_index
       - coverage_calibration
-      - exam_prep_notes
       - definition_and_mark_point_highlights
       - explain_answer_examples
   long_answer_preparation:
-    output: docx_notes
+    output: long_answer_practical_data_problem_exam_type_related_addon
     output_name_policy: user_requested_or_generated_from_context
-    student_surface: knowledge_only_teaching_notes
-    formula_policy: visible_formula_blocks
+    student_surface: exam_type_related_addon
+    formula_policy: domain_neutral_visible_formula_blocks
     actions:
       - source_inventory
       - fragment_index
       - coverage_calibration
-      - exam_prep_notes
       - practice_question_walkthroughs
       - example_answers
   essay_preparation:
-    output: docx_notes
+    output: essay_exam_type_related_addon
     output_name_policy: user_requested_or_generated_from_context
-    student_surface: knowledge_only_teaching_notes
-    formula_policy: visible_formula_blocks
+    student_surface: exam_type_related_addon
+    formula_policy: domain_neutral_visible_formula_blocks
     actions:
       - source_inventory
       - fragment_index
       - coverage_calibration
-      - exam_prep_notes
       - exam_ready_paragraphs
       - module_covering_essay_questions
       - example_essays

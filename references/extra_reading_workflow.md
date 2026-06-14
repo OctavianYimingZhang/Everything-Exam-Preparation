@@ -4,7 +4,7 @@ Extra Reading adds academically useful external depth to exam preparation notes 
 
 ## Extra Reading Source Signals
 
-Use extra reading signals as provenance labels only. They help locate useful enrichment; they do not define a closed source taxonomy or decide notes depth.
+Use extra reading signals as provenance labels only. They help locate useful enrichment; they do not define a closed source taxonomy or decide Notes depth.
 
 Common signals include textbook-like background, book chapters, recommended reading, academic papers, primary research, recent research, journal articles, DOI/PMID references, abstract/methods/results format, figure sources, author-year citations, and reference-list text.
 
@@ -86,7 +86,7 @@ Topic enrichment records use this shape:
   "evidence_enrichment": ["..."],
   "molecular_or_mechanism_detail": ["..."],
   "experimental_evidence_support": ["..."],
-  "exam_use": "..."
+  "knowledge_use": "..."
 }
 ```
 
@@ -99,12 +99,12 @@ Core course point: [...]
 Extra reading depth: [...]
 Molecular/mechanism evidence: [...]
 Experimental support: [...]
-Exam use: [...]
+Knowledge use: [...]
 ```
 
-Use extra reading in practical/data explanations for method, readout, control, limitation, and interpretation.
+Use Extra Reading in Notes when it improves conceptual explanation, molecular or mechanism detail, method interpretation, readout explanation, control logic, limitation handling, or evidence support.
 
-Use extra reading in MCQ, Short Answer, and Long Answer preparation when it improves explanation, answer depth, mechanism detail, or evidence support.
+Use Extra Reading in Exam Type Related add-ons when it improves MCQ reasoning, short-answer precision, long-answer structure, practical/data/problem interpretation, or essay analysis.
 
 ## Example Essay enrichment
 

@@ -20,6 +20,9 @@ STYLE_KEYWORDS = ["model answer", "example answer", "style", "sample essay"]
 BOOK_KEYWORDS = ["textbook", "book", "chapter", "edition", "publisher", "recommended reading", "further reading"]
 PAPER_KEYWORDS = ["doi", "pmid", "journal", "abstract", "methods", "results", "et al", "primary research", "recent research"]
 KNOWLEDGE_KEYWORDS = ["lecture", "slides", "notes", "module", "handbook", "practical", "lab", "seminar", "reading"]
+VISUAL_KEYWORDS = ["figure", "fig.", "diagram", "graph", "plot", "table", "chart", "pathway", "scheme", "image", "micrograph"]
+QUESTION_KEYWORDS = ["?", "which of the following", "define", "state", "list", "outline", "explain", "compare", "evaluate", "discuss", "calculate", "interpret"]
+PRACTICAL_QUESTION_KEYWORDS = ["question", "task", "data", "problem", "calculate", "interpret", "graph", "table", "readout", "control"]
 AUTHOR_YEAR_RE = re.compile(r"\b[A-Z][A-Za-z\-]+\s+et\s+al\.?\s*\(?\d{4}\)?|\b[A-Z][A-Za-z\-]+\s*\(\d{4}\)")
 DOI_RE = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Za-z0-9]+")
 PMID_RE = re.compile(r"\bPMID\s*:?\s*\d+", re.I)
@@ -64,6 +67,33 @@ ROLE_BY_SIGNAL: dict[str, str] = {
 
 def has_any(text: str, keywords: list[str]) -> bool:
     return any(keyword in text for keyword in keywords)
+
+
+def has_visual_signal(text: str) -> bool:
+    lower = (text or "").lower()
+    return has_any(lower, VISUAL_KEYWORDS)
+
+
+def has_question_signal(text: str) -> bool:
+    lower = (text or "").lower()
+    return has_any(lower, QUESTION_KEYWORDS) or bool(re.search(r"\b(Q\d+|\d+[).]|[a-z][)])\s+", text or "", flags=re.I))
+
+
+def question_signals(path: Path, text: str, source_hint: str) -> dict[str, Any]:
+    name = path.name.lower().replace("_", " ").replace("-", " ")
+    lower = (text or "").lower().replace("_", " ").replace("-", " ")
+    haystack = name + "\n" + lower
+    is_past_paper = has_any(haystack, ["past paper", "question paper", "exam paper"])
+    is_practical = has_any(haystack, ["practical", "lab", "experiment", "worksheet"])
+    has_questions = has_question_signal(text) or (source_hint == "practice_material" and has_question_signal(haystack))
+    has_practical_questions = is_practical and has_questions and has_any(haystack, PRACTICAL_QUESTION_KEYWORDS)
+    matched = [word for word in QUESTION_KEYWORDS if word != "?" and word in lower]
+    return {
+        "has_questions": has_questions,
+        "has_past_paper": is_past_paper and has_questions,
+        "has_practical_questions": has_practical_questions,
+        "matched_question_terms": unique(matched),
+    }
 
 
 def unique(items: list[str]) -> list[str]:
@@ -173,6 +203,18 @@ def read_pdf_text(path: Path) -> tuple[str, list[str]]:
     return "\n".join(pages).strip(), []
 
 
+def pdf_page_texts(path: Path) -> list[str]:
+    try:
+        import fitz  # type: ignore
+    except Exception:
+        return []
+    try:
+        with fitz.open(path) as doc:
+            return [page.get_text("text") or "" for page in doc]
+    except Exception:
+        return []
+
+
 def read_source_text(path: Path) -> tuple[str, list[str]]:
     notes: list[str] = []
     suffix = path.suffix.lower()
@@ -242,6 +284,69 @@ def extract_media(path: Path, source_id: str, asset_dir: Path) -> list[dict[str,
     return visuals
 
 
+def expanded_rect(rect: Any, page_rect: Any, pad: float = 18.0) -> Any:
+    rect = rect + (-pad, -pad, pad, pad)
+    rect.x0 = max(rect.x0, page_rect.x0)
+    rect.y0 = max(rect.y0, page_rect.y0)
+    rect.x1 = min(rect.x1, page_rect.x1)
+    rect.y1 = min(rect.y1, page_rect.y1)
+    return rect
+
+
+def pdf_visual_rects(page: Any) -> list[Any]:
+    try:
+        import fitz  # type: ignore
+        blocks = page.get_text("dict").get("blocks", [])
+        rects = [fitz.Rect(block["bbox"]) for block in blocks if block.get("type") == 1 and block.get("bbox")]
+        return rects
+    except Exception:
+        return []
+
+
+def extract_pdf_page_visuals(path: Path, source_id: str, asset_dir: Path, page_texts: list[str]) -> list[dict[str, Any]]:
+    if path.suffix.lower() != ".pdf" or not any(has_visual_signal(text) for text in page_texts):
+        return []
+    try:
+        import fitz  # type: ignore
+    except Exception:
+        return []
+    visuals: list[dict[str, Any]] = []
+    try:
+        with fitz.open(path) as doc:
+            asset_dir.mkdir(parents=True, exist_ok=True)
+            for page_index, page in enumerate(doc):
+                page_text = page_texts[page_index] if page_index < len(page_texts) else (page.get_text("text") or "")
+                if not has_visual_signal(page_text):
+                    continue
+                rects = pdf_visual_rects(page) or [page.rect]
+                for rect_index, rect in enumerate(rects, 1):
+                    crop = expanded_rect(rect, page.rect)
+                    pix = page.get_pixmap(matrix=fitz.Matrix(1.6, 1.6), clip=crop, alpha=False)
+                    out = asset_dir / f"{source_id}_page{page_index + 1}_visual{rect_index}.png"
+                    pix.save(out)
+                    caption_match = re.search(
+                        r"(?i)\b(fig(?:ure)?\.?\s*\d*|table\s*\d*|diagram|graph|plot|scheme)\b[^\n.]*[.\n]?",
+                        page_text,
+                    )
+                    visuals.append({
+                        "visual_id": f"{source_id}_P{page_index + 1}_V{rect_index}",
+                        "source_id": source_id,
+                        "source_name": path.name,
+                        "asset_path": str(out),
+                        "media_name": out.name,
+                        "page": page_index + 1,
+                        "bbox": [round(crop.x0, 2), round(crop.y0, 2), round(crop.x1, 2), round(crop.y1, 2)],
+                        "locator": f"page {page_index + 1}",
+                        "caption": (caption_match.group(0).strip() if caption_match else ""),
+                        "nearby_text": re.sub(r"\s+", " ", page_text).strip(),
+                        "extraction_method": "pdf_page_visible_render",
+                        "knowledge_signals": knowledge_signals(page_text),
+                    })
+    except Exception:
+        return visuals
+    return visuals
+
+
 def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: str = "embedded_media") -> dict[str, Any]:
     documents: list[dict[str, Any]] = []
     fragments: list[dict[str, Any]] = []
@@ -251,12 +356,14 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
         path = Path(raw)
         source_id = f"S{idx}"
         text, notes = read_source_text(path)
+        page_texts = pdf_page_texts(path) if path.suffix.lower() == ".pdf" else []
         if not text:
             notes = notes + ["no_text_extracted_automatically"]
         hint = classify_source(path, text)
         doc_signals = knowledge_signals(text)
         doc_roles = knowledge_roles(doc_signals)
         doc_units = knowledge_unit_candidates(text)
+        doc_question_signals = question_signals(path, text, hint)
         documents.append({
             "id": source_id,
             "path": str(path),
@@ -267,6 +374,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
             "knowledge_signals": doc_signals,
             "knowledge_roles": doc_roles,
             "knowledge_unit_candidates": doc_units,
+            "question_signals": doc_question_signals,
             "extraction_notes": notes,
         })
         extraction_notes.extend(f"{source_id}:{note}" for note in notes)
@@ -286,6 +394,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
             })
         if visual_mode != "none":
             visuals.extend(extract_media(path, source_id, Path(asset_dir)))
+            visuals.extend(extract_pdf_page_visuals(path, source_id, Path(asset_dir), page_texts))
     hints: dict[str, int] = {}
     signals: dict[str, int] = {}
     roles: dict[str, int] = {}
@@ -304,6 +413,9 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
             "source_count": len(documents),
             "fragment_count": len(fragments),
             "visual_count": len(visuals),
+            "question_source_count": sum(1 for doc in documents if doc.get("question_signals", {}).get("has_questions")),
+            "past_paper_question_source_count": sum(1 for doc in documents if doc.get("question_signals", {}).get("has_past_paper")),
+            "practical_question_source_count": sum(1 for doc in documents if doc.get("question_signals", {}).get("has_practical_questions")),
             "source_hints": hints,
             "knowledge_signals": signals,
             "knowledge_roles": roles,
@@ -318,15 +430,35 @@ def self_test() -> None:
         p1 = Path(td) / "source_a.md"
         p2 = Path(td) / "source_b.txt"
         p3 = Path(td) / "source_c.txt"
+        p4 = Path(td) / "practical_sheet.txt"
         p1.write_text("Learning objectives\nDefine enzyme activity.\nThe mechanism leads to dose response changes.\nCompare treated and control results.", encoding="utf-8")
         p2.write_text("1. Which statement is correct? A) One B) Two", encoding="utf-8")
         p3.write_text("Abstract Methods Results DOI 10.1000/test", encoding="utf-8")
-        scan = build_scan([str(p1), str(p2), str(p3)], asset_dir=str(Path(td) / "assets"))
-        assert scan["summary"]["source_count"] == 3
+        p4.write_text("Practical task: calculate the rate from the graph and interpret the control data.", encoding="utf-8")
+        sources = [str(p1), str(p2), str(p3), str(p4)]
+        try:
+            import fitz  # type: ignore
+            pdf_path = Path(td) / "lecture_visual.pdf"
+            doc = fitz.open()
+            page = doc.new_page()
+            page.insert_text((72, 72), "Figure 1. Reaction pathway diagram")
+            page.draw_rect(fitz.Rect(72, 110, 260, 210), color=(0, 0, 0), fill=(0.9, 0.9, 0.9))
+            doc.save(pdf_path)
+            doc.close()
+            sources.append(str(pdf_path))
+        except Exception:
+            pass
+        scan = build_scan(sources, asset_dir=str(Path(td) / "assets"))
+        assert scan["summary"]["source_count"] == len(sources)
         assert scan["fragments"]
         assert scan["summary"]["knowledge_signals"]
         assert any("mechanism" in frag["knowledge_roles"] for frag in scan["fragments"])
         assert any(doc["source_hint"] == "extra_reading_source" for doc in scan["documents"])
+        assert scan["summary"]["question_source_count"] >= 1
+        assert scan["summary"]["practical_question_source_count"] == 1
+        if any(Path(source).suffix.lower() == ".pdf" for source in sources):
+            assert any(visual.get("extraction_method") == "pdf_page_visible_render" for visual in scan["visuals"])
+            assert any(Path(visual["asset_path"]).exists() for visual in scan["visuals"])
 
 
 def main() -> None:
