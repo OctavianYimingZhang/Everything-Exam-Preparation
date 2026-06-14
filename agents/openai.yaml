@@ -3,6 +3,7 @@ entrypoint: SKILL.md
 default_route: exam_prep_notes
 default_output: docx_notes
 conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
+conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
 output_name_policy: user-requested filename first; otherwise generate a clear DOCX filename from the source, course, prompt, or note title
 source_hints:
   use: open provenance labels
@@ -30,7 +31,7 @@ coverage_calibration:
     - application
     - explanatory_example
 student_surface:
-  goal: explanation-only teaching Notes for students, with academic source visuals and Exam Type Related preparation as separate add-on output
+  goal: explanation-only teaching Notes for students, with academic source visuals, calculation worked examples, and Exam Type Related preparation as separate add-on output
   forbidden_public_content:
     - source intake narration
     - extraction notes
@@ -38,7 +39,8 @@ student_surface:
     - workflow or QA narration
     - subagent narration
   formula_policy: domain-neutral visible formulas with Word equation or readable Unicode math
-  visual_policy: academic PDF page-visible visuals and embedded source media when they strengthen a knowledge unit
+  visual_policy: academic cropped PDF visual-region assets and embedded source media when they strengthen a knowledge unit
+  worked_example_policy: step-by-step calculation examples when they teach a knowledge unit
   modes:
     - MCQ
     - Short Answer

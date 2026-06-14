@@ -18,6 +18,7 @@ MODE_PATTERNS = {
 
 COMMAND_VERBS = ["define", "state", "list", "outline", "describe", "explain", "compare", "evaluate", "discuss", "calculate", "interpret", "justify", "criticise", "critically"]
 STOPWORDS = {"which", "there", "their", "about", "using", "answer", "question", "marks", "following", "explain", "describe", "compare", "evaluate", "discuss", "calculate", "interpret"}
+PRACTICAL_WORKED_WORDS = {"calculate", "derive", "show", "estimate", "prove", "data", "problem", "interpret", "graph", "table", "fit", "plot", "uncertainty", "error", "unit"}
 
 
 def extract_questions(text: str) -> list[str]:
@@ -46,12 +47,18 @@ def command_verbs_in_text(text: str) -> list[str]:
     return [verb for verb in COMMAND_VERBS if re.search(r"\b" + re.escape(verb) + r"\b", lower)]
 
 
-def question_records_from_text(text: str, source_name: str = "input", source_order: int = 0, locator: str = "text") -> list[dict[str, Any]]:
+def has_practical_worked_signal(text: str) -> bool:
+    lower = (text or "").lower()
+    return any(re.search(r"\b" + re.escape(word) + r"\b", lower) for word in PRACTICAL_WORKED_WORDS)
+
+
+def question_records_from_text(text: str, source_name: str = "input", source_order: int = 0, locator: str = "text", source_id: str = "") -> list[dict[str, Any]]:
     records = []
     for idx, question in enumerate(extract_questions(text), 1):
         mode = question_mode(question)
         records.append({
             "source_order": source_order,
+            "source_id": source_id,
             "source_name": source_name,
             "locator": locator,
             "question_order": idx,
@@ -59,6 +66,7 @@ def question_records_from_text(text: str, source_name: str = "input", source_ord
             "question": question,
             "question_demand": command_verbs_in_text(question),
             "knowledge_terms": [item["term"] for item in question_terms([question])],
+            "practical_worked_signal": has_practical_worked_signal(question),
         })
     return records
 
@@ -77,6 +85,7 @@ def question_records_from_scan(scan: dict[str, Any]) -> list[dict[str, Any]]:
             source_name=str(frag.get("source_name") or source.get("name") or "source"),
             source_order=source_order,
             locator=str(frag.get("locator") or ""),
+            source_id=str(frag.get("source_id") or ""),
         ))
     records.sort(key=lambda item: (item["source_order"], item["question_order"]))
     return records
@@ -106,8 +115,98 @@ def long_answer_analysis_predictions(records: list[dict[str, Any]]) -> list[dict
             "locator": record.get("locator"),
             "question_demand": demand,
             "repeated_knowledge_target": terms,
-            "expected_answer_focus": ", ".join(demand + terms[:3]).strip(", "),
+            "expected_answer_focus": ", ".join(demand + terms).strip(", "),
             "example_answer": "Define the central concept, explain the relevant mechanism, method, calculation, or data interpretation, and state the academic conclusion demanded by the question.",
+        })
+    return out
+
+
+def solution_fragments_from_scan(scan: dict[str, Any]) -> list[dict[str, Any]]:
+    docs = {doc.get("id"): doc for doc in scan.get("documents", [])}
+    fragments = []
+    for frag in scan.get("fragments", []):
+        source = docs.get(frag.get("source_id"), {})
+        category = frag.get("category") or source.get("category")
+        signals = source.get("question_signals", {}) or {}
+        if category == "marking_material" or signals.get("has_solution_evidence"):
+            fragments.append(frag)
+    return fragments
+
+
+def term_set(text: str) -> set[str]:
+    return {item["term"] for item in frequent_terms(text)}
+
+
+def solution_match_score(question: str, fragment_text: str) -> int:
+    q_terms = term_set(question)
+    f_terms = term_set(fragment_text)
+    overlap = len(q_terms & f_terms)
+    formula_bonus = len(re.findall(r"=|∝|≈|\btherefore\b|\bhence\b", fragment_text, flags=re.I))
+    return overlap + formula_bonus
+
+
+def match_solution_fragment(record: dict[str, Any], solution_fragments: list[dict[str, Any]]) -> dict[str, Any] | None:
+    scored = []
+    for fragment in solution_fragments:
+        score = solution_match_score(str(record.get("question") or ""), str(fragment.get("text") or ""))
+        same_source = str(record.get("source_name") or "").split(".")[0].lower() in str(fragment.get("source_name") or "").lower()
+        if same_source:
+            score += 1
+        if score > 0:
+            scored.append((score, fragment))
+    if not scored:
+        return None
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return scored[0][1]
+
+
+def solution_steps_from_text(text: str) -> list[str]:
+    steps = []
+    for line in (text or "").splitlines():
+        clean = re.sub(r"\s+", " ", line).strip()
+        if clean and not re.match(r"^PX\d+|^THE UNIVERSITY|^Time Allowed", clean, flags=re.I):
+            steps.append(clean)
+    return steps
+
+
+def practical_worked_records_from_scan(scan: dict[str, Any]) -> list[dict[str, Any]]:
+    docs = {doc.get("id"): doc for doc in scan.get("documents", [])}
+    solution_fragments = solution_fragments_from_scan(scan)
+    out = []
+    for record in question_records_from_scan(scan):
+        source = docs.get(record.get("source_id"), {})
+        if (source.get("category") or source.get("source_hint")) == "marking_material":
+            continue
+        is_practical_source = bool(source.get("question_signals", {}).get("has_practical_worked_questions"))
+        source_name = str(source.get("name") or record.get("source_name") or "").lower()
+        is_practical_source = is_practical_source or any(word in source_name for word in ["practical", "lab", "experiment", "worksheet"])
+        if not (record.get("practical_worked_signal") or is_practical_source):
+            continue
+        matched = match_solution_fragment(record, solution_fragments)
+        steps = solution_steps_from_text(str(matched.get("text") or "")) if matched else [
+            "Identify the given quantities and the target quantity from the question.",
+            "Choose the course relationship that connects the givens to the target.",
+            "Substitute the quantities symbolically before evaluating or simplifying.",
+            "State the final expression or numerical result with units where applicable.",
+        ]
+        out.append({
+            "render_mode": "worked_example",
+            "source_name": record.get("source_name"),
+            "locator": record.get("locator"),
+            "question": record.get("question"),
+            "givens": [],
+            "target": "",
+            "method": "Use the relevant course equation, derivation, data interpretation, or approximation indicated by the question.",
+            "steps": steps,
+            "final_answer": "",
+            "assumptions": [],
+            "unit_check": "",
+            "interpretation": "State what the calculated or derived result means in the context of the practical problem.",
+            "verification": {
+                "status": "solution evidence matched" if matched else "solution evidence not found",
+                "source": matched.get("source_name") if matched else "",
+                "locator": matched.get("locator") if matched else "",
+            },
         })
     return out
 
@@ -158,6 +257,7 @@ def analyze_text(text: str) -> dict[str, Any]:
         "question_groups_by_lecture_order": group_by_source_order(records),
         "question_only_high_frequency_knowledge_points": question_terms(questions),
         "long_answer_analysis_prediction": long_answer_analysis_predictions(records),
+        "practical_worked_solution_questions": [record for record in records if record.get("practical_worked_signal")],
         "examiner_habits": {
             "command_verbs": command_counts(text),
             "mark_values": mark_values(text),
@@ -177,6 +277,35 @@ def build_exam_type_addon(scan: dict[str, Any] | None = None, text: str = "") ->
         "mcq_short_answer_questions": mcq_short,
         "question_only_high_frequency_knowledge_points": question_terms([record["question"] for record in records]),
         "long_answer_practical_data_problem": long_answer_analysis_predictions(records),
+    }
+
+
+def build_practical_worked_solutions(scan: dict[str, Any] | None = None, text: str = "") -> dict[str, Any]:
+    if scan:
+        blocks = practical_worked_records_from_scan(scan)
+    else:
+        blocks = [
+            {
+                "render_mode": "worked_example",
+                "question": record.get("question"),
+                "method": "Use the relevant course equation, derivation, data interpretation, or approximation indicated by the question.",
+                "steps": [
+                    "Identify the given quantities and the target quantity from the question.",
+                    "Choose the course relationship that connects the givens to the target.",
+                    "Substitute the quantities symbolically before evaluating or simplifying.",
+                    "State the final expression or numerical result with units where applicable.",
+                ],
+                "interpretation": "State what the result means in the context of the problem.",
+                "verification": {"status": "solution evidence not found"},
+            }
+            for record in question_records_from_text(text)
+            if record.get("practical_worked_signal")
+        ]
+    return {
+        "schema_version": 2,
+        "document_kind": "practical_worked_solutions_docx",
+        "title": "Detailed Worked Solutions",
+        "sections": [{"heading": "Detailed Worked Solutions", "blocks": blocks}],
     }
 
 
@@ -209,15 +338,32 @@ def self_test() -> None:
     assert result["question_count"] == 3
     assert result["question_only_high_frequency_knowledge_points"]
     assert result["long_answer_analysis_prediction"]
+    assert result["practical_worked_solution_questions"]
     addon = build_exam_type_addon(text=text)
     assert addon["document_kind"] == "exam_type_related_addon"
     assert addon["mcq_short_answer_questions"]
     scan = {
-        "documents": [{"id": "S1", "name": "Lecture 1 Past Paper", "category": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True}}],
-        "fragments": [{"source_id": "S1", "source_name": "Lecture 1 Past Paper", "category": "practice_material", "locator": "chunk 1", "text": text}],
+        "documents": [
+            {"id": "S1", "name": "Lecture 1 Practical", "category": "practice_material", "question_signals": {"has_questions": True, "has_practical_worked_questions": True}},
+            {"id": "S2", "name": "Lecture 1 Practical Solutions", "category": "marking_material", "question_signals": {"has_solution_evidence": True}},
+            {"id": "S3", "name": "Physics Past Paper", "category": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True}},
+        ],
+        "fragments": [
+            {"source_id": "S1", "source_name": "Lecture 1 Practical", "category": "practice_material", "locator": "chunk 1", "text": text},
+            {"source_id": "S2", "source_name": "Lecture 1 Practical Solutions", "category": "marking_material", "locator": "chunk 1", "text": "Use gradient = delta y / delta x. Substitute the data values. Therefore the result has units s-1."},
+            {"source_id": "S3", "source_name": "Physics Past Paper", "category": "practice_material", "locator": "page 1", "text": "1. Calculate the field strength and show the derivation."},
+        ],
     }
     grouped = build_exam_type_addon(scan=scan)["question_groups_by_lecture_order"]
-    assert grouped and grouped[0]["source_name"] == "Lecture 1 Past Paper"
+    assert grouped and grouped[0]["source_name"] == "Lecture 1 Practical"
+    practical = build_practical_worked_solutions(scan=scan)
+    assert practical["document_kind"] == "practical_worked_solutions_docx"
+    assert practical["title"] == "Detailed Worked Solutions"
+    assert practical["sections"][0]["blocks"]
+    assert practical["sections"][0]["blocks"][0]["verification"]["status"] == "solution evidence matched"
+    assert any(block.get("source_name") == "Physics Past Paper" for block in practical["sections"][0]["blocks"])
+    assert "question_only_high_frequency_knowledge_points" not in practical
+    assert "examiner_habits" not in practical
 
 
 def main() -> None:
@@ -236,6 +382,8 @@ def main() -> None:
         result: Any = {"questions": extract_questions(text)}
     elif args.command == "build-addon":
         result = build_exam_type_addon(load_json(args.source_scan) if args.source_scan else None, text)
+    elif args.command == "build-practical-worked-solutions":
+        result = build_practical_worked_solutions(load_json(args.source_scan) if args.source_scan else None, text)
     else:
         result = analyze_text(text)
     rendered = json.dumps(result, indent=2, ensure_ascii=False)

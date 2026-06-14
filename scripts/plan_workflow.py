@@ -35,6 +35,9 @@ ROUTES: dict[str, list[str]] = {
         "practice_question_walkthroughs",
         "example_answers",
     ],
+    "worked_solution_preparation": BASE_ACTIONS + [
+        "answer_only_worked_solutions",
+    ],
     "essay_preparation": BASE_ACTIONS + [
         "exam_ready_essay_paragraphs",
         "extra_reading_essay_enrichment",
@@ -48,6 +51,7 @@ ROUTE_OUTPUTS = {
     "mcq_preparation": ["mcq_exam_type_related_addon"],
     "short_answer_preparation": ["short_answer_exam_type_related_addon"],
     "long_answer_preparation": ["long_answer_practical_data_problem_exam_type_related_addon"],
+    "worked_solution_preparation": ["practical_worked_solutions_docx"],
     "essay_preparation": ["essay_exam_type_related_addon"],
 }
 
@@ -60,7 +64,9 @@ def detect_route(prompt: str) -> str:
         return "mcq_preparation"
     if any(k in p for k in ["short answer", "saq", "definition", "define", "state", "list question"]):
         return "short_answer_preparation"
-    if any(k in p for k in ["long answer", "walkthrough", "worked answer", "practical", "data", "problem", "calculate"]):
+    if any(k in p for k in ["worked answer", "worked solution", "calculate", "derive", "derivation", "estimate", "prove", "proof", "problem"]):
+        return "worked_solution_preparation"
+    if any(k in p for k in ["long answer", "walkthrough", "practical", "data"]):
         return "long_answer_preparation"
     if any(k in p for k in ["exam mode", "exam format", "how is", "diagnose", "identify format"]):
         return "exam_mode_diagnosis"
@@ -95,6 +101,7 @@ def source_summary(source_scan: dict[str, Any] | None) -> dict[str, Any]:
         "question_material": {
             "has_past_paper_questions": any(doc.get("question_signals", {}).get("has_past_paper") for doc in source_scan.get("documents", [])),
             "has_practical_questions": any(doc.get("question_signals", {}).get("has_practical_questions") for doc in source_scan.get("documents", [])),
+            "has_practical_worked_questions": any(doc.get("question_signals", {}).get("has_practical_worked_questions") for doc in source_scan.get("documents", [])),
         },
         "coverage_profile": {
             "knowledge_signal_counts": signal_counts,
@@ -109,9 +116,15 @@ def question_addon_required(source_scan: dict[str, Any] | None) -> bool:
         return False
     for doc in source_scan.get("documents", []) or []:
         signals = doc.get("question_signals", {}) or {}
-        if signals.get("has_past_paper") or signals.get("has_practical_questions"):
+        if (signals.get("has_past_paper") and not signals.get("has_practical_worked_questions")) or (signals.get("has_practical_questions") and not signals.get("has_practical_worked_questions")):
             return True
     return False
+
+
+def practical_worked_required(source_scan: dict[str, Any] | None) -> bool:
+    if not source_scan:
+        return False
+    return any((doc.get("question_signals", {}) or {}).get("has_practical_worked_questions") for doc in source_scan.get("documents", []) or [])
 
 
 def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -123,6 +136,15 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
         actions.append({
             "id": "question_based_exam_type_related_addon",
             "purpose": "build separate exam type related addon from past paper or question practical material",
+        })
+    if route == "exam_prep_notes" and practical_worked_required(source_scan):
+        if outputs == ["docx_notes"]:
+            outputs = ["docx_notes", "practical_worked_solutions_docx"]
+        elif "practical_worked_solutions_docx" not in outputs:
+            outputs.append("practical_worked_solutions_docx")
+        actions.append({
+            "id": "practical_worked_solutions",
+            "purpose": "build detailed worked solutions for practical calculation derivation data or problem questions",
         })
     return {
         "schema_version": 2,
@@ -136,7 +158,8 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
             "Use coverage calibration to map knowledge signals into knowledge units before writing notes.",
             "Use practice material as knowledge-signal evidence for repeated concepts, methods, calculations, source difficulty, and coverage density.",
             "Use Extra Reading to add molecular detail, mechanism explanation, experimental evidence, and essay depth.",
-            "Keep plain Notes explanation-only; route Past Paper and question Practical material to a separate Exam Type Related DOCX.",
+            "Keep plain Notes explanation-only; route Past Paper and non-calculation question Practical material to a separate Exam Type Related DOCX.",
+            "For calculation, derivation, estimate, proof, data, or problem material, build a separate detailed worked-solutions DOCX.",
         ],
     }
 
@@ -174,9 +197,20 @@ def self_test() -> None:
         "fragments": [{"knowledge_signals": ["data_interpretation"], "knowledge_roles": ["data_interpretation"]}],
     })
     assert practical_with_questions["outputs"] == ["docx_notes", "exam_type_related_addon_docx"]
+    practical_worked = plan("prepare this course", {
+        "documents": [{"source_hint": "knowledge_material", "question_signals": {"has_questions": True, "has_practical_questions": True, "has_practical_worked_questions": True}}],
+        "fragments": [{"knowledge_signals": ["calculation"], "knowledge_roles": ["calculation"]}],
+    })
+    assert practical_worked["outputs"] == ["docx_notes", "practical_worked_solutions_docx"]
+    assert any(action["id"] == "practical_worked_solutions" for action in practical_worked["actions"])
+    past_worked = plan("prepare this course", {
+        "documents": [{"source_hint": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True, "has_practical_worked_questions": True}}],
+        "fragments": [{"knowledge_signals": ["calculation"], "knowledge_roles": ["calculation"]}],
+    })
+    assert past_worked["outputs"] == ["docx_notes", "practical_worked_solutions_docx"]
     assert plan("make MCQ notes")["outputs"] == ["mcq_exam_type_related_addon"]
     assert plan("short answer definitions")["outputs"] == ["short_answer_exam_type_related_addon"]
-    assert plan("long answer worked problem")["outputs"] == ["long_answer_practical_data_problem_exam_type_related_addon"]
+    assert plan("long answer worked problem")["outputs"] == ["practical_worked_solutions_docx"]
     assert plan("essay plans")["outputs"] == ["essay_exam_type_related_addon"]
     assert out["source_summary"]["coverage_profile"]["knowledge_signal_counts"]["mechanism"] == 1
 

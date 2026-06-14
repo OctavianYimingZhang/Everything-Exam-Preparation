@@ -23,8 +23,9 @@ For each file, record:
 
 - file name, path, source hint, readable character count, extraction notes;
 - text fragments;
-- extracted media and PDF page-visible visuals when available;
+- extracted media and cropped PDF visual-region assets when available;
 - question signals for Past Paper and Practical Materials when detectable;
+- practical worked-solution signals and solution-evidence signals when detectable;
 - `knowledge_signals`, `knowledge_roles`, and `knowledge_unit_candidates` when detectable.
 
 The assistant should inspect fragments directly. Coarse source hints support routing, while knowledge signals drive notes coverage.
@@ -68,6 +69,6 @@ Extra Reading is used when it adds mechanism depth, molecular detail, experiment
 
 ## Practical Extraction
 
-Text files, Markdown, JSON, YAML, CSV, DOCX, PPTX, and PDF are read when the local runtime can read them. Embedded images from DOCX/PPTX can be exported to an asset folder. PDF page-visible visuals can be rendered into assets when figure, table, diagram, graph, pathway, scheme, or image signals show academic value. Files without automatic text extraction remain listed with an extraction note.
+Text files, Markdown, JSON, YAML, CSV, DOCX, PPTX, and PDF are read when the local runtime can read them. Embedded images from DOCX/PPTX can be exported to an asset folder. PDF figure, table, diagram, graph, pathway, scheme, or image regions can be rendered into cropped assets when those regions show academic value. Page locators can support the written explanation when a reliable local visual crop is not available. Files without automatic text extraction remain listed with an extraction note.
 
-Past Paper and Practical Materials can record `question_signals`. Past Paper signals come from question-paper context plus extractable question wording. Practical question signals come from explicit task, data, calculation, interpretation, or problem wording. These signals route separate Exam Type Related output; Notes still use the same material only as knowledge-signal evidence.
+Past Paper and Practical Materials can record `question_signals`. Past Paper signals come from question-paper context plus extractable question wording. Practical question signals come from explicit task, data, calculation, interpretation, or problem wording. Worked-solution signals come from calculation, derivation, estimate, proof, physics/math problem, data-interpretation, unit, uncertainty, graph, table, or problem wording. Solution-evidence signals come from mark schemes, answer keys, solutions, worked answers, or examiner feedback. These signals route separate Exam Type Related or Math/Physics/Practical Worked Solutions output; Notes still use the same material only as knowledge-signal evidence unless a worked example directly teaches a knowledge unit.

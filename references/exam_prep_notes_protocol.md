@@ -25,7 +25,7 @@ Student-facing Notes may contain:
 - comparison tables when relationships are easier to scan;
 - visible formula blocks with symbol explanations, assumptions, and conceptual use;
 - source visuals when they clarify a concept, mechanism, method, formula, graph, table, pathway, scheme, or data interpretation;
-- worked interpretation or calculation examples when they teach reusable reasoning;
+- worked interpretation or calculation examples with step-by-step academic solutions when they teach reusable reasoning;
 - Extra Reading depth when it strengthens the explanation of a course point.
 
 Student-facing Notes should present the knowledge itself. Workflow artifacts, route planning, source intake narration, coverage calibration narration, QA state, and subagent narration belong to internal work rather than public Notes.
@@ -57,7 +57,7 @@ A knowledge unit is sufficiently explained when the notes answer the relevant qu
 - Interpretation: What does the result mean physically, mathematically, experimentally, clinically, analytically, or computationally?
 - Conceptual application: How does the student use the knowledge to reason about a new case, calculation, diagram, method, or dataset?
 
-Use examples when they teach reusable reasoning. A worked example should show the method path: identify givens, choose the relationship, substitute or reason, interpret the result, and state the conceptual conclusion.
+Use examples when they teach reusable reasoning. A worked example should show the method path: identify givens, state the target, choose the relationship, solve step by step, check units or assumptions where relevant, interpret the result, and state the conceptual conclusion.
 
 ## Formula Visibility
 
@@ -84,7 +84,7 @@ Ambiguous expressions should remain stable and readable rather than being over-c
 
 ## Visual Rendering
 
-PDF page-visible visuals, DOCX/PPTX embedded media, and source visual assets may be included in Notes when they strengthen a knowledge unit. Select visuals by positive academic value:
+PDF visual-region assets, DOCX/PPTX embedded media, and source visual assets may be included in Notes when they strengthen a knowledge unit. Prefer PDF crops that isolate the specific figure, table, diagram, graph, pathway, scheme, or image that carries the academic meaning. Select visuals by positive academic value:
 
 - concept clarity;
 - mechanism or pathway density;
@@ -93,7 +93,7 @@ PDF page-visible visuals, DOCX/PPTX embedded media, and source visual assets may
 - method readout, control, or limitation value;
 - close source relevance to the surrounding explanation.
 
-For PDFs, page rendering is acceptable when a figure, table, diagram, graph, pathway, scheme, or image is visible on the page and reliable direct media extraction is not available. Pair each visual with an academic caption or source locator and explanatory key points. Keep visual placement inside the relevant knowledge unit.
+For PDFs, use a cropped visual asset when the extractor can identify a concrete visual region. When the source evidence gives a page locator without a reliable local visual crop, use the locator to support the written explanation. Pair each included visual with an academic caption or source locator and explanatory key points. Keep visual placement inside the relevant knowledge unit.
 
 Acceptable public formula examples:
 
@@ -129,6 +129,7 @@ Each knowledge block should use the form that best teaches the content:
 | `compact_table` | The unit is a comparison, criteria set, parameter set, phase set, method set, or definition group. | Real DOCX table. |
 | `mechanism_chain` | The unit is causal, sequential, procedural, or derivational. | Numbered or arrow-linked mechanism steps. |
 | `formula_block` | The unit contains an important equation, derivation result, reaction scheme, or calculation template. | Visible formula plus symbol/use explanation. |
+| `worked_example` | A calculation, derivation, estimate, proof, data, or problem example teaches the knowledge unit. | Question, givens, target, method, step-by-step solution, final answer, assumptions, unit check, and interpretation. |
 | `image_plus_kp_list` | A source visual explains faster than text and has block-owned key points. | Academic visual, caption/source locator, and explanatory key points. |
 
 Bullets should contain explanation. A label becomes useful when it is paired with the reason, mechanism, condition, or interpretation that makes it meaningful.
@@ -167,6 +168,19 @@ The renderer should prefer strict section/block input:
           "symbols": ["ρ is charge density", "J is current density"],
           "assumptions": ["The equation is local and continuous."],
           "use": "Use this to connect current divergence to local charge change."
+        },
+        {
+          "render_mode": "worked_example",
+          "heading": "Worked calculation example",
+          "question": "Teaching question.",
+          "givens": ["Given quantity or condition."],
+          "target": "Quantity or expression to find.",
+          "method": "Relevant course relationship or derivation path.",
+          "steps": ["Step-by-step academic solution."],
+          "final_answer": "Final expression or value.",
+          "assumptions": ["Assumption or approximation."],
+          "unit_check": "Dimensional or unit check.",
+          "interpretation": "Meaning of the result."
         },
         {
           "render_mode": "image_plus_kp_list",

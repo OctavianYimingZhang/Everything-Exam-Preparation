@@ -91,6 +91,7 @@ def check_all() -> dict[str, Any]:
                 "Default output language is English",
                 "Exam Type Related",
                 "academic source visuals",
+                "Practical Worked Solutions",
             ],
         ),
         "references/exam_prep_notes_protocol.md": require_terms(
@@ -102,6 +103,7 @@ def check_all() -> dict[str, Any]:
                 "domain-neutral",
                 "formula_block",
                 "image_plus_kp_list",
+                "worked_example",
                 "Loose top-level planning fields are internal.",
             ],
         ),
@@ -112,6 +114,7 @@ def check_all() -> dict[str, Any]:
                 "separate outputs",
                 "Practice material can still inform Notes coverage",
                 "question-based Exam Type Related DOCX",
+                "practical_worked_solutions_docx",
             ],
         ),
         "references/language_quality_contract.md": require_terms(
@@ -130,6 +133,7 @@ def check_all() -> dict[str, Any]:
                 "safe_docx_name",
                 "formula_block",
                 "image_plus_kp_list",
+                "worked_example",
                 "INTERNAL_PUBLIC_HEADINGS",
             ],
         ),

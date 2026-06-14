@@ -13,10 +13,11 @@ setup_wizard:
   output:
     type: docx_notes
     conditional_addon: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
+    conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
     naming: user_requested_or_generated_from_context
     student_surface: explanation_only_notes
     formula_policy: domain_neutral_visible_formula_blocks
-    visual_policy: academic_pdf_page_visible_visuals
+    visual_policy: academic_cropped_pdf_visual_region_assets
   coverage_calibration:
     basis: open knowledge signals
     signals:

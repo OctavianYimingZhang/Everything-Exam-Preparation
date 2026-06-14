@@ -440,7 +440,7 @@ def normalize_units(text: str) -> str:
 
 def is_addon_document(plan: dict[str, Any]) -> bool:
     kind = str(plan.get("document_kind") or plan.get("kind") or plan.get("output") or "").lower()
-    return "addon" in kind or "exam_type_related" in kind
+    return "addon" in kind or "exam_type_related" in kind or "worked_solutions" in kind
 
 
 def image_extension(path: Path) -> str:
@@ -638,7 +638,7 @@ def prepare_media_blocks(blocks: list[Any]) -> tuple[list[Any], list[dict[str, A
             prepared.append(block)
             continue
         image_path = Path(str(block.get("path") or block.get("asset_path") or ""))
-        if not image_path.exists():
+        if not is_renderable_image_path(image_path):
             continue
         ext = image_extension(image_path)
         idx = len(media) + 1
@@ -732,8 +732,10 @@ ADDON_FIELD_ORDER = [
     "expected_answer_focus",
     "analysis_prediction",
     "example_answer",
+    "worked_solution",
     "answer_structure",
     "mark_points",
+    "verification",
 ]
 
 
@@ -812,8 +814,71 @@ def inline_text(value: Any, include_addon: bool = False) -> str:
     return str(value)
 
 
+def readable_step_text(value: Any, include_addon: bool = False) -> str:
+    text = inline_text(value, include_addon=include_addon)
+    technical = has_raw_formula_tokens(text) or bool(re.search(r"=|\b[A-Za-zμΩ]+-\d+\b|∝|≈|≤|≥", text))
+    return visible_formula(text) if technical else text
+
+
 def image_path_from_block(block: dict[str, Any]) -> str:
     return str(block.get("asset_path") or block.get("image_path") or block.get("path") or "")
+
+
+def has_supported_image_signature(path: Path) -> bool:
+    data = path.read_bytes()[:12]
+    suffix = path.suffix.lower()
+    if suffix == ".png":
+        return data.startswith(b"\x89PNG\r\n\x1a\n")
+    if suffix in {".jpg", ".jpeg"}:
+        return data.startswith(b"\xff\xd8")
+    if suffix == ".gif":
+        return data.startswith((b"GIF87a", b"GIF89a"))
+    return False
+
+
+def is_renderable_image_path(path: str | Path) -> bool:
+    image_path = Path(str(path or ""))
+    if not image_path.exists() or image_path.suffix.lower() not in IMAGE_CONTENT_TYPES:
+        return False
+    try:
+        if not has_supported_image_signature(image_path):
+            return False
+        width, height = image_dimensions(image_path)
+    except Exception:
+        return False
+    return width > 0 and height > 0
+
+
+def add_labeled_field(blocks: list[Any], label: str, value: Any, include_addon: bool = False) -> None:
+    if value in (None, "", [], {}):
+        return
+    if isinstance(value, list):
+        blocks.append((f"{label}:", "Normal", "both"))
+        for item in value:
+            add_text(blocks, readable_step_text(item, include_addon=include_addon), bullet=True, include_addon=include_addon)
+        return
+    rendered = readable_step_text(value, include_addon=include_addon)
+    if rendered:
+        blocks.append((f"{label}: {rendered}", "Normal", "both"))
+
+
+def render_worked_example(blocks: list[Any], block: dict[str, Any], include_addon: bool = False) -> None:
+    add_labeled_field(blocks, "Question", block.get("question"), include_addon=include_addon)
+    add_labeled_field(blocks, "Givens", block.get("givens"), include_addon=include_addon)
+    add_labeled_field(blocks, "Target", block.get("target"), include_addon=include_addon)
+    add_labeled_field(blocks, "Method", block.get("method"), include_addon=include_addon)
+    steps = block.get("steps") or block.get("worked_solution") or []
+    if steps:
+        blocks.append(("Step-by-step solution:", "Normal", "both"))
+        for idx, step in enumerate(steps, 1):
+            rendered = readable_step_text(step, include_addon=include_addon)
+            if rendered:
+                add_text(blocks, f"{idx}. {rendered}", include_addon=include_addon)
+    add_labeled_field(blocks, "Final answer", block.get("final_answer"), include_addon=include_addon)
+    add_labeled_field(blocks, "Assumptions", block.get("assumptions"), include_addon=include_addon)
+    add_labeled_field(blocks, "Unit check", block.get("unit_check"), include_addon=include_addon)
+    add_labeled_field(blocks, "Interpretation", block.get("interpretation"), include_addon=include_addon)
+    add_labeled_field(blocks, "Verification", block.get("verification"), include_addon=include_addon)
 
 
 def render_block(blocks: list[Any], block: dict[str, Any], include_addon: bool = False) -> None:
@@ -831,17 +896,19 @@ def render_block(blocks: list[Any], block: dict[str, Any], include_addon: bool =
         rows = table_rows(block)
         if rows:
             blocks.append({"kind": "table", "rows": rows})
+    elif mode == "worked_example":
+        render_worked_example(blocks, block, include_addon=include_addon)
     elif mode == "image_plus_kp_list":
         image_path = image_path_from_block(block)
         caption = block.get("caption") or block.get("source_locator") or block.get("locator")
-        if image_path:
+        if is_renderable_image_path(image_path):
             blocks.append({
                 "kind": "image",
                 "path": image_path,
                 "caption": caption,
                 "alt_text": block.get("alt_text") or caption or heading or "Academic source visual",
             })
-        if caption:
+        if caption and is_renderable_image_path(image_path):
             blocks.append((str(caption), "Caption", "center"))
         add_text(blocks, block.get("points") or block.get("key_points") or block.get("content"), bullet=True, include_addon=include_addon)
     elif mode == "kp_list":
@@ -967,11 +1034,45 @@ def self_test() -> None:
                             "exam_use": "This should not render in Notes.",
                         },
                         {
+                            "render_mode": "worked_example",
+                            "heading": "Worked calculation example",
+                            "question": "Given E = 2 V/m and H = 3 A/m, calculate the Poynting magnitude.",
+                            "givens": ["E = 2 V/m", "H = 3 A/m"],
+                            "target": "S",
+                            "method": "Use S = E cross H for perpendicular fields.",
+                            "steps": [
+                                "Write the magnitude relation S = EH.",
+                                "Substitute S = 2*3 = 6 W m-2.",
+                            ],
+                            "final_answer": "S = 6 W m-2",
+                            "assumptions": ["E and H are perpendicular."],
+                            "unit_check": "V/m times A/m = W m-2.",
+                            "interpretation": "The result is the electromagnetic power flow per unit area.",
+                            "verification": "Checked against supplied formula path.",
+                        },
+                        {
+                            "render_mode": "worked_example",
+                            "heading": "Second worked calculation example",
+                            "question": "Given a second calculation, show that numbering restarts.",
+                            "steps": [
+                                "Second example first step.",
+                                "Second example second step.",
+                            ],
+                            "final_answer": "Numbering restarts at 1.",
+                        },
+                        {
                             "render_mode": "image_plus_kp_list",
                             "heading": "Source visual",
                             "asset_path": str(image_path),
                             "caption": "Figure 1. Academic source visual.",
                             "key_points": ["The visual is tied to the knowledge unit."],
+                        },
+                        {
+                            "render_mode": "image_plus_kp_list",
+                            "heading": "Missing source visual",
+                            "asset_path": str(Path(td) / "missing_visual.png"),
+                            "caption": "Figure 2. Missing source visual.",
+                            "key_points": ["The explanation remains without embedding a missing asset."],
                         },
                         {
                             "render_mode": "compact_table",
@@ -1007,7 +1108,17 @@ def self_test() -> None:
             assert "word/media/image1.png" in zf.namelist()
             assert 'Target="media/image1.png"' in rels
             assert "Figure 1. Academic source visual." in raw
+            assert "Question: Given E = 2 V/m and H = 3 A/m, calculate the Poynting magnitude." in raw
+            assert "Step-by-step solution:" in raw
+            assert "1. Write the magnitude relation S = EH." in raw
+            assert "1. Second example first step." in raw
+            assert "3. Second example first step." not in raw
+            assert "S = 2*3 = 6 W m⁻²" in raw
+            assert "Final answer: S = 6 W m⁻²" in raw
+            assert "Unit check: V/m times A/m = W m⁻²." in raw
             assert "w:drawing" in raw
+            assert "Figure 2. Missing source visual." not in raw
+            assert "w:numPr" not in raw
             assert 'w:shd w:fill="F6F7F8"' in raw
             assert 'w:shd w:fill="E9EEF3"' in raw
             assert "∂ρ/∂t + ∇ · J = 0" in raw
@@ -1049,6 +1160,31 @@ def self_test() -> None:
             raw = zf.read("word/document.xml").decode("utf-8", errors="ignore")
             assert "Example Answer: Charge conservation means local accumulation is balanced by current flow." in raw
             assert "Analysis Prediction:" in raw
+        practical = generate(
+            {
+                "title": "Practical Worked Solutions",
+                "document_kind": "practical_worked_solutions_docx",
+                "sections": [
+                    {
+                        "heading": "Practical calculations",
+                        "blocks": [
+                            {
+                                "render_mode": "worked_example",
+                                "question": "Calculate the gradient from the data table.",
+                                "steps": ["Use gradient = delta y / delta x.", "Substitute the table values."],
+                                "final_answer": "gradient = delta y / delta x",
+                                "verification": {"status": "solution evidence matched"},
+                            }
+                        ],
+                    }
+                ],
+            },
+            td,
+        )
+        with zipfile.ZipFile(practical) as zf:
+            raw = zf.read("word/document.xml").decode("utf-8", errors="ignore")
+            assert "Practical Worked Solutions" in raw
+            assert "Verification: Status: solution evidence matched" in raw
 
 
 def main() -> None:

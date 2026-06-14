@@ -1,7 +1,7 @@
 prompt_cards:
   - id: exam_prep_notes
     title: Exam Preparation Notes
-    purpose: Build explanation-only student-facing Notes from uploaded course and practice material, with a separate add-on when Past Paper or question Practical material is present.
+    purpose: Build explanation-only student-facing Notes from uploaded course and practice material, with worked examples and separate outputs when Past Paper or Practical material is present.
     route: exam_prep_notes
   - id: exam_mode_diagnosis
     title: Exam Mode Diagnosis
@@ -19,6 +19,10 @@ prompt_cards:
     title: Long Answer Exam Type Related Add-on
     purpose: Build a separate long-answer/practical/data/problem add-on with example answers and academic analysis/prediction results.
     route: long_answer_preparation
+  - id: practical_worked_solutions
+    title: Detailed Worked Solutions
+    purpose: Build a separate practical worked-solutions DOCX for calculation, derivation, estimate, proof, data, or problem questions.
+    route: exam_prep_notes
   - id: essay_preparation
     title: Essay Exam Type Related Add-on
     purpose: Build a separate essay add-on with plans, claims, evidence integration, and example essays.

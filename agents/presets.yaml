@@ -2,10 +2,11 @@ presets:
   exam_prep_notes:
     output: docx_notes
     conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
+    conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
     output_name_policy: user_requested_or_generated_from_context
     student_surface: explanation_only_notes
     formula_policy: domain_neutral_visible_formula_blocks
-    visual_policy: academic_pdf_page_visible_visuals
+    visual_policy: academic_cropped_pdf_visual_region_assets
     actions:
       - source_inventory
       - fragment_index
@@ -14,6 +15,7 @@ presets:
       - course_knowledge_map
       - exam_prep_notes
       - question_based_exam_type_related_addon_when_triggered
+      - practical_worked_solutions_when_triggered
   exam_mode_diagnosis:
     output: chat_report
     actions:
