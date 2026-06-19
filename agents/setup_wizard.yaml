@@ -3,13 +3,23 @@ setup_wizard:
     - source_files
     - requested_output
     - exam_mode
+    - auto_diagnosis_review
+    - material_type_source_roles
+    - output_set_confirmation
     - output_depth
     - output_format
     - topic_focus
     - extra_reading_focus
   source_hints:
     purpose: open provenance labels only
-    policy: infer useful source hints from file content when they help routing; calibrate notes depth and coverage from knowledge signals, knowledge density, and knowledge units
+    policy: infer useful source hints from file content when they help routing; confirm Material type and source roles through human review; calibrate notes depth and coverage from confirmed roles, knowledge signals, knowledge density, and knowledge units
+  human_review:
+    required_before_public_output: true
+    plan_title: Auto-diagnosis review plan
+    targets:
+      - exam_type_route
+      - material_type_source_roles
+      - output_file_set
   output:
     type: docx_notes
     conditional_addon: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists

@@ -13,6 +13,8 @@ Students provide course material, practice material, and optionally Extra Readin
 
 Student-facing Notes are explanation-only, knowledge-only teaching notes. They explain concepts, mechanisms, methods, calculations, assumptions, interpretations, conceptual applications, academically useful source visuals, and calculation worked examples when those examples teach the relevant knowledge unit. Exam Type Related preparation is produced as separate add-on output for the relevant route.
 
+Automatic Exam type, Material type, and output-set recognition is only a preliminary diagnosis. Before generating Notes, Exam Type Related add-ons, or Worked Solutions, display an **Auto-diagnosis review plan** and use `request_user_input` to confirm or correct Exam type/route, Material type/source roles, and the final output set. If the source pack is Mixed or unclear, show the evidence signals and provide concrete correction options rather than silently choosing a route.
+
 If the user requests a filename or file set, follow that request. Otherwise generate a clear DOCX filename from the source, course, prompt, or note title. Do not treat an exact filename as part of the Skill contract.
 
 Default output language is English unless the user explicitly requests another language.
@@ -24,10 +26,12 @@ Default output language is English unless the user explicitly requests another l
 3. Calibrate coverage from knowledge signals and knowledge units.
 4. Discover Extra Reading from uploaded sources, source mentions, and academic search queries.
 5. Match Extra Reading to course knowledge units.
-6. Diagnose the exam mode from the prompt and practice material when the request asks for exam type-related preparation.
-7. Generate explanation-only teaching Notes from the coverage map.
-8. Render visible formulas, tables, academic source visuals, worked examples, and explanations in the target output format style.
-9. Produce MCQ, short-answer, long-answer, practical/data/problem, essay preparation, or Math/Physics/Practical Worked Solutions as separate outputs when the route or source signals call for them.
+6. Make a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and source material.
+7. Display an **Auto-diagnosis review plan**, then call `request_user_input` with concrete options for Exam type, Material type, and output set confirmation.
+8. Update the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
+9. Generate explanation-only teaching Notes from the confirmed coverage map.
+10. Render visible formulas, tables, academic source visuals, worked examples, and explanations in the target output format style.
+11. Produce MCQ, short-answer, long-answer, practical/data/problem, essay preparation, or Math/Physics/Practical Worked Solutions as separate outputs when the confirmed route or source signals call for them.
 
 ## Extra Reading workflow
 
@@ -68,7 +72,7 @@ Recommended section order:
 
 ## Routes
 
-| User request | Route | Output |
+| User request | Preliminary route | Output after human review |
 |---|---|---|
 | make notes, revise, prepare this course, go through lectures | `exam_prep_notes` | DOCX explanation Notes |
 | identify exam format, how is this course examined | `exam_mode_diagnosis` | chat or JSON diagnosis |

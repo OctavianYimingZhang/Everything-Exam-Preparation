@@ -11,6 +11,7 @@ presets:
       - source_inventory
       - fragment_index
       - practice_material_knowledge_signal_review
+      - human_review_exam_material_output_confirmation
       - coverage_calibration
       - course_knowledge_map
       - exam_prep_notes
@@ -20,6 +21,7 @@ presets:
     output: chat_report
     actions:
       - source_inventory
+      - human_review_exam_material_output_confirmation
       - exam_mode_diagnosis
   mcq_preparation:
     output: mcq_exam_type_related_addon
@@ -29,6 +31,7 @@ presets:
     actions:
       - source_inventory
       - fragment_index
+      - human_review_exam_material_output_confirmation
       - coverage_calibration
       - mcq_exam_habits
       - mcq_notes_enrichment
@@ -40,6 +43,7 @@ presets:
     actions:
       - source_inventory
       - fragment_index
+      - human_review_exam_material_output_confirmation
       - coverage_calibration
       - definition_and_mark_point_highlights
       - explain_answer_examples
@@ -51,6 +55,7 @@ presets:
     actions:
       - source_inventory
       - fragment_index
+      - human_review_exam_material_output_confirmation
       - coverage_calibration
       - practice_question_walkthroughs
       - example_answers
@@ -62,6 +67,7 @@ presets:
     actions:
       - source_inventory
       - fragment_index
+      - human_review_exam_material_output_confirmation
       - coverage_calibration
       - exam_ready_paragraphs
       - module_covering_essay_questions

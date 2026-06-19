@@ -15,10 +15,12 @@ The default output type is DOCX notes. If the user requests filenames or a multi
 5. Calibrates Notes coverage from the knowledge units and required explanation.
 6. Discovers Extra Reading from uploaded files, source mentions, and academic-paper search queries.
 7. Matches Extra Reading to course knowledge units.
-8. Diagnoses the exam mode from the prompt and practice material.
-9. Produces explanation-only teaching Notes and separate Exam Type Related add-ons for MCQ, short answer, long answer, practical/data/problem, or essay exams.
-10. When Past Paper or question-containing Practical Materials are supplied, produces a separate question-based Exam Type Related DOCX alongside Notes.
-11. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions, produces a separate detailed worked-solutions DOCX.
+8. Makes a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and practice material.
+9. Displays an **Auto-diagnosis review plan** and uses `request_user_input` for human review of Exam type, Material type, and output set confirmation.
+10. Updates the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
+11. Produces explanation-only teaching Notes and separate Exam Type Related add-ons for MCQ, short answer, long answer, practical/data/problem, or essay exams.
+12. When Past Paper or question-containing Practical Materials are supplied and confirmed, produces a separate question-based Exam Type Related DOCX alongside Notes.
+13. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
 
 Student-facing Notes explain knowledge. They do not expose source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, or other workflow internals.
 
@@ -53,6 +55,8 @@ Expected Extra Reading output shape:
 ## Current output focus
 
 This version focuses on signal-driven coverage, teaching depth, domain-neutral formula visibility, academic source visuals, calculation worked examples, output language style, and output format style.
+
+Before public output is generated, automatic routing remains a preliminary diagnosis. `scripts/plan_workflow.py` marks `human_review_required: true`, stores automatic files under `proposed_outputs`, and inserts `human_review_exam_material_output_confirmation` before writing. `scripts/build_review_questions.py` builds the `request_user_input` payload for Exam type/route, Material type/source roles, and output set confirmation.
 
 ### 1. Coverage calibration
 
@@ -116,6 +120,7 @@ Detailed worked solutions are generated as a separate DOCX when Past Paper or Pr
 - `mcq_preparation`
 - `short_answer_preparation`
 - `long_answer_preparation`
+- `worked_solution_preparation`
 - `essay_preparation`
 
 ## Step 8: publish and update

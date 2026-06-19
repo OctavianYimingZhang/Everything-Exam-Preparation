@@ -17,6 +17,12 @@ Use source hints as open, coarse provenance labels. Treat the labels below as ex
 
 Mixed files remain valid. A single file can contain several source roles, many knowledge units, and several knowledge roles. Coverage comes from knowledge signals and knowledge units, not from the hint label.
 
+## Human Review of Source Roles
+
+Material type and source roles are preliminary until the user confirms them through human review. After source scanning, display the **Auto-diagnosis review plan** with the detected Material type/source roles, role counts, question signals, and any Mixed or unclear evidence. Then ask the Material type/source roles question through `request_user_input`.
+
+The options must be concrete to the source pack, such as treating lecture files as `knowledge_material`, treating question files as `practice_material`, using answer keys as `marking_material`, using research files as `extra_reading_source`, or manually correcting Mixed/unclear files. After the user confirms or corrects the roles, update the source hints and use the confirmed roles for routing, coverage, Extra Reading, and output decisions.
+
 ## Intake
 
 For each file, record:

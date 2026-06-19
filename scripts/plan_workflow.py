@@ -10,6 +10,7 @@ BASE_ACTIONS = [
     "source_inventory",
     "fragment_index",
     "practice_material_knowledge_signal_review",
+    "human_review_exam_material_output_confirmation",
     "coverage_calibration",
     "extra_reading_discovery",
     "extra_reading_topic_matching",
@@ -53,6 +54,16 @@ ROUTE_OUTPUTS = {
     "long_answer_preparation": ["long_answer_practical_data_problem_exam_type_related_addon"],
     "worked_solution_preparation": ["practical_worked_solutions_docx"],
     "essay_preparation": ["essay_exam_type_related_addon"],
+}
+
+ROUTE_LABELS = {
+    "exam_prep_notes": "Notes",
+    "exam_mode_diagnosis": "Exam mode diagnosis",
+    "mcq_preparation": "MCQ",
+    "short_answer_preparation": "Short Answer",
+    "long_answer_preparation": "Long Answer or Practical/Data/Problem",
+    "worked_solution_preparation": "Worked Solutions",
+    "essay_preparation": "Essay",
 }
 
 
@@ -111,6 +122,29 @@ def source_summary(source_scan: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
+def auto_diagnosis(route: str, outputs: list[str], summary: dict[str, Any]) -> dict[str, Any]:
+    source_hints = summary.get("source_hints", {})
+    question_material = summary.get("question_material", {})
+    coverage_profile = summary.get("coverage_profile", {})
+    role_counts = coverage_profile.get("knowledge_role_counts", {})
+    mixed_or_unclear = bool(
+        len([count for count in source_hints.values() if count]) > 1
+        or bool(source_hints.get("other_material"))
+        or (question_material.get("has_past_paper_questions") and question_material.get("has_practical_questions"))
+    )
+    return {
+        "status": "preliminary",
+        "route": route,
+        "exam_type": ROUTE_LABELS.get(route, route),
+        "material_roles": source_hints,
+        "knowledge_role_counts": role_counts,
+        "question_material": question_material,
+        "proposed_outputs": outputs,
+        "mixed_or_unclear": mixed_or_unclear,
+        "review_requirement": "Confirm or correct route, source roles, and output set before generating public Notes, add-ons, or worked solutions.",
+    }
+
+
 def question_addon_required(source_scan: dict[str, Any] | None) -> bool:
     if not source_scan:
         return False
@@ -129,7 +163,11 @@ def practical_worked_required(source_scan: dict[str, Any] | None) -> bool:
 
 def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
     route = detect_route(prompt)
-    actions = [{"id": action, "purpose": action.replace("_", " ")} for action in ROUTES[route]]
+    action_ids = list(ROUTES[route])
+    if "human_review_exam_material_output_confirmation" not in action_ids:
+        insert_at = action_ids.index("source_inventory") + 1 if "source_inventory" in action_ids else 0
+        action_ids.insert(insert_at, "human_review_exam_material_output_confirmation")
+    actions = [{"id": action, "purpose": action.replace("_", " ")} for action in action_ids]
     outputs = ROUTE_OUTPUTS.get(route, ["docx_notes"])
     if route == "exam_prep_notes" and question_addon_required(source_scan):
         outputs = ["docx_notes", "exam_type_related_addon_docx"]
@@ -146,15 +184,36 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
             "id": "practical_worked_solutions",
             "purpose": "build detailed worked solutions for practical calculation derivation data or problem questions",
         })
+    summary = source_summary(source_scan)
     return {
         "schema_version": 2,
         "route": route,
+        "human_review_required": True,
+        "review_status": "pending_user_confirmation",
+        "review_targets": [
+            {
+                "id": "exam_type_route",
+                "purpose": "confirm or correct the preliminary Exam type and route before writing",
+            },
+            {
+                "id": "material_type_source_roles",
+                "purpose": "confirm or correct Material type and source roles before using sources",
+            },
+            {
+                "id": "output_file_set",
+                "purpose": "confirm the final output set before rendering files",
+            },
+        ],
+        "auto_diagnosis": auto_diagnosis(route, outputs, summary),
+        "proposed_outputs": outputs,
         "outputs": outputs,
+        "output_status": "proposed_until_human_review",
         "output_name_policy": "Use user-requested filenames when supplied; otherwise generate a clear DOCX filename from the source, course, prompt, or note title.",
         "actions": actions,
-        "source_summary": source_summary(source_scan),
+        "source_summary": summary,
         "notes": [
             "Use source hints as rough provenance labels.",
+            "Display the Auto-diagnosis review plan and complete human review before generating public Notes, add-ons, or worked solutions.",
             "Use coverage calibration to map knowledge signals into knowledge units before writing notes.",
             "Use practice material as knowledge-signal evidence for repeated concepts, methods, calculations, source difficulty, and coverage density.",
             "Use Extra Reading to add molecular detail, mechanism explanation, experimental evidence, and essay depth.",
@@ -178,14 +237,21 @@ def self_test() -> None:
     assert out["route"] == "exam_prep_notes"
     assert "exam_habit_analysis_if_practice_material_exists" not in [action["id"] for action in out["actions"]]
     assert any(action["id"] == "practice_material_knowledge_signal_review" for action in out["actions"])
+    assert any(action["id"] == "human_review_exam_material_output_confirmation" for action in out["actions"])
     assert any(action["id"] == "coverage_calibration" for action in out["actions"])
     assert any(action["id"] == "extra_reading_discovery" for action in out["actions"])
+    assert out["human_review_required"] is True
+    assert out["review_status"] == "pending_user_confirmation"
+    assert [target["id"] for target in out["review_targets"]] == ["exam_type_route", "material_type_source_roles", "output_file_set"]
+    assert out["auto_diagnosis"]["proposed_outputs"] == ["docx_notes"]
+    assert out["proposed_outputs"] == ["docx_notes"]
     assert out["outputs"] == ["docx_notes"]
     past = plan("prepare this course", {
         "documents": [{"source_hint": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True}}],
         "fragments": [{"knowledge_signals": ["calculation"], "knowledge_roles": ["calculation"]}],
     })
     assert past["outputs"] == ["docx_notes", "exam_type_related_addon_docx"]
+    assert past["proposed_outputs"] == ["docx_notes", "exam_type_related_addon_docx"]
     assert any(action["id"] == "question_based_exam_type_related_addon" for action in past["actions"])
     practical_without_questions = plan("prepare this course", {
         "documents": [{"source_hint": "knowledge_material", "question_signals": {"has_questions": False, "has_practical_questions": False}}],
@@ -202,6 +268,7 @@ def self_test() -> None:
         "fragments": [{"knowledge_signals": ["calculation"], "knowledge_roles": ["calculation"]}],
     })
     assert practical_worked["outputs"] == ["docx_notes", "practical_worked_solutions_docx"]
+    assert practical_worked["auto_diagnosis"]["mixed_or_unclear"] is False
     assert any(action["id"] == "practical_worked_solutions" for action in practical_worked["actions"])
     past_worked = plan("prepare this course", {
         "documents": [{"source_hint": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True, "has_practical_worked_questions": True}}],
@@ -212,6 +279,8 @@ def self_test() -> None:
     assert plan("short answer definitions")["outputs"] == ["short_answer_exam_type_related_addon"]
     assert plan("long answer worked problem")["outputs"] == ["practical_worked_solutions_docx"]
     assert plan("essay plans")["outputs"] == ["essay_exam_type_related_addon"]
+    assert plan("prepare this course")["auto_diagnosis"]["mixed_or_unclear"] is False
+    assert any(action["id"] == "human_review_exam_material_output_confirmation" for action in plan("identify exam format")["actions"])
     assert out["source_summary"]["coverage_profile"]["knowledge_signal_counts"]["mechanism"] == 1
 
 

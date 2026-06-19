@@ -5,10 +5,18 @@ default_output: docx_notes
 conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
 conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
 output_name_policy: user-requested filename first; otherwise generate a clear DOCX filename from the source, course, prompt, or note title
+human_review:
+  required_before_public_output: true
+  plan_title: Auto-diagnosis review plan
+  prompt: show the automatic diagnosis first, then call request_user_input to confirm Exam type, Material type/source roles, and output set confirmation before generating Notes, add-ons, or worked solutions
+  review_targets:
+    - Exam type or route
+    - Material type or source roles
+    - output set confirmation
 source_hints:
   use: open provenance labels
   coverage_driver: knowledge_signals
-  policy: infer useful source hints from content when they help routing; calibrate public notes coverage from knowledge signals and knowledge units
+  policy: infer useful source hints from content when they help routing, treat them as preliminary until human review, then calibrate public notes coverage from confirmed source roles, knowledge signals, and knowledge units
   examples:
   - course-facing knowledge source
   - practice or question source

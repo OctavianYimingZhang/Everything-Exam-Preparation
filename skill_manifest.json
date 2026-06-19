@@ -6,12 +6,19 @@
   "entrypoint": "SKILL.md",
   "default_output": "docx_notes",
   "output_name_policy": "user_requested_or_generated_from_context",
+  "human_review_required": true,
+  "human_review_targets": [
+    "exam_type_route",
+    "material_type_source_roles",
+    "output_file_set"
+  ],
   "routes": [
     "exam_prep_notes",
     "exam_mode_diagnosis",
     "mcq_preparation",
     "short_answer_preparation",
     "long_answer_preparation",
+    "worked_solution_preparation",
     "essay_preparation"
   ],
   "publish": {

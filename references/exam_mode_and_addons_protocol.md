@@ -9,6 +9,18 @@
 - Essay: essay prompts, critically discuss, to what extent, argument-led questions, in-campus essay language.
 - Mixed: more than one mode appears strongly.
 
+## Human review gate
+
+Exam type and route detection are preliminary and must pass human review. Before producing Notes, Exam Type Related add-ons, or Worked Solutions, display the **Auto-diagnosis review plan** and call `request_user_input` to confirm three decisions:
+
+- Exam type/route: Notes, MCQ, Short Answer, Long Answer, Practical/Data/Problem, Worked Solutions, Essay, or Mixed.
+- Material type/source roles: knowledge material, practice material, marking material, style reference, Extra Reading, or Mixed/unclear.
+- output set confirmation: Notes only, Notes plus Exam Type Related add-on, Notes plus Worked Solutions, add-on only, or a user-specified file set.
+
+Use the automatic diagnosis as evidence, not as the final decision. If the source pack is Mixed or unclear, show the prompt signals, source-role counts, and question signals that caused the uncertainty. Do not silently pick one exam type, Material type, or output set when several plausible routes remain.
+
+After the user confirms or corrects the review questions, update the route, confirmed source roles, and final output set before drafting. Public output must not be generated from `proposed_outputs` alone.
+
 ## Add-ons
 
 Exam Type Related add-ons are separate outputs from explanation-only Notes. They use the same knowledge map, source evidence, and Extra Reading enrichment, but shape the content around the requested exam mode.

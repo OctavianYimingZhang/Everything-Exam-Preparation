@@ -76,8 +76,15 @@ def require_terms(path: str, terms: list[str]) -> list[str]:
     return [term for term in terms if term not in text]
 
 
+def script_self_test(script: str) -> str | None:
+    proc = subprocess.run([sys.executable, str(ROOT / script), "--self-test"], cwd=ROOT, text=True, capture_output=True)
+    if proc.returncode == 0:
+        return None
+    return f"{script}: {proc.stderr.strip() or proc.stdout.strip() or proc.returncode}"
+
+
 def check_all() -> dict[str, Any]:
-    files = ["SKILL.md", "README.md", "skill_manifest.json", "scripts/publish_skill.py"]
+    files = ["SKILL.md", "README.md", "skill_manifest.json", "scripts/publish_skill.py", "scripts/build_review_questions.py"]
     schemas = sorted(str(path.relative_to(ROOT)) for path in (ROOT / "schemas").glob("*.schema.json"))
     missing_files = [name for name in files if not (ROOT / name).exists()]
     invalid_schemas = [name for name in schemas if not json_readable(ROOT / name)]
@@ -92,6 +99,11 @@ def check_all() -> dict[str, Any]:
                 "Exam Type Related",
                 "academic source visuals",
                 "Practical Worked Solutions",
+                "Auto-diagnosis review plan",
+                "human review",
+                "Exam type",
+                "Material type",
+                "output set",
             ],
         ),
         "references/exam_prep_notes_protocol.md": require_terms(
@@ -115,6 +127,20 @@ def check_all() -> dict[str, Any]:
                 "Practice material can still inform Notes coverage",
                 "question-based Exam Type Related DOCX",
                 "practical_worked_solutions_docx",
+                "human review",
+                "Exam type",
+                "Material type",
+                "output set confirmation",
+                "Mixed",
+            ],
+        ),
+        "references/input_and_evidence_protocol.md": require_terms(
+            "references/input_and_evidence_protocol.md",
+            [
+                "human review",
+                "source roles",
+                "Material type",
+                "Auto-diagnosis review plan",
             ],
         ),
         "references/language_quality_contract.md": require_terms(
@@ -137,14 +163,64 @@ def check_all() -> dict[str, Any]:
                 "INTERNAL_PUBLIC_HEADINGS",
             ],
         ),
+        "scripts/plan_workflow.py": require_terms(
+            "scripts/plan_workflow.py",
+            [
+                "human_review_required",
+                "review_status",
+                "auto_diagnosis",
+                "review_targets",
+                "human_review_exam_material_output_confirmation",
+            ],
+        ),
+        "scripts/build_review_questions.py": require_terms(
+            "scripts/build_review_questions.py",
+            [
+                "request_user_input",
+                "exam_type_route",
+                "material_type_source_roles",
+                "output_file_set",
+                "Auto-diagnosis review plan",
+            ],
+        ),
+        "README.md": require_terms(
+            "README.md",
+            [
+                "human review",
+                "Exam type",
+                "Material type",
+                "output set confirmation",
+                "scripts/build_review_questions.py",
+            ],
+        ),
+        "agents/openai.yaml": require_terms(
+            "agents/openai.yaml",
+            [
+                "human_review",
+                "Auto-diagnosis review plan",
+                "request_user_input",
+                "Exam type",
+                "Material type",
+                "output set confirmation",
+            ],
+        ),
     }
     missing_terms = {name: terms for name, terms in missing_terms.items() if terms}
     cjk = cjk_locations()
     prohibited_names = prohibited_filename_locations()
+    script_self_tests = [
+        failure
+        for failure in [
+            script_self_test("scripts/plan_workflow.py"),
+            script_self_test("scripts/build_review_questions.py"),
+        ]
+        if failure
+    ]
     failures = {
         "missing_files": missing_files,
         "invalid_schemas": invalid_schemas,
         "missing_terms": missing_terms,
+        "script_self_tests": script_self_tests,
         "non_english_cjk_locations": cjk,
         "fixed_filename_locations": prohibited_names,
     }

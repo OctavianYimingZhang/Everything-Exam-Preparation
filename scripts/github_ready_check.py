@@ -72,14 +72,19 @@ def check() -> dict[str, object]:
         "skill_manifest.json",
         "scripts/validate_skill_contracts.py",
         "scripts/github_ready_check.py",
+        "scripts/build_review_questions.py",
         "scripts/publish_skill.py",
         ".github/workflows/ci.yml",
         ".github/workflows/skill-health.yml",
     ]
     missing_files = [name for name in files if not (ROOT / name).exists()]
     terms = {
-        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "exact filename"]),
+        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "exact filename", "Auto-diagnosis review plan", "human review"]),
         "references/exam_prep_notes_protocol.md": missing_terms("references/exam_prep_notes_protocol.md", ["Formula Visibility", "formula_block", "workflow"]),
+        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "output set confirmation"]),
+        "references/input_and_evidence_protocol.md": missing_terms("references/input_and_evidence_protocol.md", ["human review", "source roles", "Material type"]),
+        "scripts/plan_workflow.py": missing_terms("scripts/plan_workflow.py", ["human_review_required", "review_status", "auto_diagnosis", "review_targets"]),
+        "scripts/build_review_questions.py": missing_terms("scripts/build_review_questions.py", ["request_user_input", "exam_type_route", "material_type_source_roles", "output_file_set"]),
         "scripts/generate_exam_prep_notes_docx.py": missing_terms("scripts/generate_exam_prep_notes_docx.py", ["def output_path", "def visible_formula", "safe_docx_name"]),
     }
     terms = {name: missing for name, missing in terms.items() if missing}

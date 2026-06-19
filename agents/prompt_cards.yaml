@@ -1,29 +1,29 @@
 prompt_cards:
   - id: exam_prep_notes
     title: Exam Preparation Notes
-    purpose: Build explanation-only student-facing Notes from uploaded course and practice material, with worked examples and separate outputs when Past Paper or Practical material is present.
+    purpose: Review the preliminary route with the user, then build explanation-only Notes with worked examples and separate outputs when Past Paper or Practical material is confirmed.
     route: exam_prep_notes
   - id: exam_mode_diagnosis
     title: Exam Mode Diagnosis
-    purpose: Identify how the course is examined and what the examiner repeatedly tests.
+    purpose: Identify how the course is examined, show the preliminary diagnosis, and ask the user to confirm or correct it.
     route: exam_mode_diagnosis
   - id: mcq_preparation
     title: MCQ Exam Type Related Add-on
-    purpose: Build a separate MCQ add-on with lecture-order questions and question-only high-frequency knowledge points.
+    purpose: Confirm the MCQ route and source roles, then build a separate MCQ add-on with lecture-order questions and question-only high-frequency knowledge points.
     route: mcq_preparation
   - id: short_answer_preparation
     title: Short Answer Exam Type Related Add-on
-    purpose: Build a separate short-answer add-on with lecture-order questions and concise academic answer forms.
+    purpose: Confirm the Short Answer route and source roles, then build a separate add-on with lecture-order questions and concise academic answer forms.
     route: short_answer_preparation
   - id: long_answer_preparation
     title: Long Answer Exam Type Related Add-on
-    purpose: Build a separate long-answer/practical/data/problem add-on with example answers and academic analysis/prediction results.
+    purpose: Confirm the Long Answer or Practical/Data/Problem route, then build a separate add-on with example answers and academic analysis/prediction results.
     route: long_answer_preparation
   - id: practical_worked_solutions
     title: Detailed Worked Solutions
-    purpose: Build a separate practical worked-solutions DOCX for calculation, derivation, estimate, proof, data, or problem questions.
-    route: exam_prep_notes
+    purpose: Confirm worked-solution signals, then build a separate DOCX for calculation, derivation, estimate, proof, data, or problem questions.
+    route: worked_solution_preparation
   - id: essay_preparation
     title: Essay Exam Type Related Add-on
-    purpose: Build a separate essay add-on with plans, claims, evidence integration, and example essays.
+    purpose: Confirm the Essay route and source roles, then build a separate essay add-on with plans, claims, evidence integration, and example essays.
     route: essay_preparation
