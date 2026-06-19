@@ -197,7 +197,7 @@ def exam_type_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any
     if flags["has_practical_worked_questions"] or has_calculation:
         options.append(option(
             "Worked solutions",
-            "Prioritise answer-only worked solutions because calculation, derivation, data, or problem signals are visible.",
+            "Prioritise worked-solution teaching notes because calculation, derivation, data, or problem signals are visible.",
         ))
     if flags["has_past_paper_questions"] or flags["has_practical_questions"]:
         options.append(option(
@@ -210,7 +210,7 @@ def exam_type_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any
             "Use the supplied material mainly for explanation-only Notes instead of an exam-mode add-on.",
         ))
     options.append(option(
-        "Diagnosis only",
+        "Diagnosis report",
         "Stop at exam-mode diagnosis if the source pack is not yet ready for Notes or add-on drafting.",
     ))
     return {
@@ -252,12 +252,12 @@ def material_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]
     if "marking_material" in roles:
         options.append(option(
             "Marking material",
-            "Use mark schemes, answer keys, or solutions only as answer evidence and verification support.",
+            "Use mark schemes, answer keys, or solutions as answer evidence and verification support.",
         ))
     if "extra_reading_source" in roles:
         options.append(option(
             "Extra Reading",
-            "Use research, textbook, DOI, PMID, or reference-like material only to enrich matched knowledge units.",
+            "Use research, textbook, DOI, PMID, or reference-like material for essay-style enrichment and matched knowledge-unit support.",
         ))
     custom_option = option(
         "Custom roles",
@@ -281,17 +281,17 @@ def output_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) 
     flags = question_flags(source_scan, workflow_plan)
     label = output_names(outputs)
     if outputs == ["docx_notes"]:
-        recommended_label = "Notes only (Recommended)"
+        recommended_label = "Notes focus (Recommended)"
     elif outputs == ["docx_notes", "exam_type_related_addon_docx"]:
         recommended_label = "Notes + Add-on (Recommended)"
     elif outputs == ["docx_notes", "practical_worked_solutions_docx"]:
         recommended_label = "Notes + Worked (Recommended)"
     elif outputs == ["practical_worked_solutions_docx"]:
-        recommended_label = "Worked only (Recommended)"
+        recommended_label = "Worked focus (Recommended)"
     elif outputs:
         recommended_label = "Proposed set (Recommended)"
     else:
-        recommended_label = "No file output (Recommended)"
+        recommended_label = "Diagnosis report (Recommended)"
     options = [
         option(
             recommended_label,
@@ -300,8 +300,8 @@ def output_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) 
     ]
     if outputs != ["docx_notes"]:
         options.append(option(
-            "Notes only",
-            "Generate only explanation-only Notes and do not create an Exam Type Related or Worked Solutions add-on.",
+            "Notes focus",
+            "Generate explanation Notes as the selected output set and keep add-on or worked-solution outputs for a separate request.",
         ))
     elif flags["has_past_paper_questions"] or flags["has_practical_questions"]:
         options.append(option(
@@ -311,12 +311,12 @@ def output_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) 
     elif flags["has_practical_worked_questions"] or "practical_worked_solutions_docx" in outputs:
         options.append(option(
             "Notes + Worked",
-            "Generate Notes plus detailed answer-only worked solutions for calculation, data, or problem material.",
+            "Generate Notes plus detailed worked-solution teaching notes for calculation, data, or problem material.",
         ))
     elif route != "exam_prep_notes":
         options.append(option(
-            "Add-on only",
-            "Generate only the route-specific exam add-on without full explanation Notes.",
+            "Add-on focus",
+            "Generate the route-specific exam add-on as the selected output set and keep full explanation Notes for a separate request.",
         ))
     custom_option = option(
         "Custom outputs",
@@ -370,7 +370,7 @@ def self_test() -> None:
     assert len(lecture["questions"]) == 3
     assert lecture["questions"][0]["id"] == "exam_type_route"
     assert lecture["questions"][0]["options"][0]["label"] == "Notes route (Recommended)"
-    assert lecture["questions"][2]["options"][0]["label"] == "Notes only (Recommended)"
+    assert lecture["questions"][2]["options"][0]["label"] == "Notes focus (Recommended)"
 
     past_scan = {"documents": [{"source_hint": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True}}]}
     past_plan = {"route": "exam_prep_notes", "proposed_outputs": ["docx_notes", "exam_type_related_addon_docx"], "source_summary": {"source_hints": {"practice_material": 1}}}
@@ -382,7 +382,7 @@ def self_test() -> None:
     practical_plan = {"route": "worked_solution_preparation", "proposed_outputs": ["practical_worked_solutions_docx"], "source_summary": {"source_hints": {"practice_material": 1}}}
     practical = build_payload(practical_plan, practical_scan)
     assert "Worked solutions" in [item["label"] for item in practical["questions"][0]["options"]]
-    assert practical["questions"][2]["options"][0]["label"] == "Worked only (Recommended)"
+    assert practical["questions"][2]["options"][0]["label"] == "Worked focus (Recommended)"
 
     mixed_scan = {"documents": [{"source_hint": "knowledge_material"}, {"source_hint": "practice_material"}, {"source_hint": "other_material"}]}
     mixed_plan = {"route": "exam_prep_notes", "proposed_outputs": ["docx_notes"], "auto_diagnosis": {"mixed_or_unclear": True}}

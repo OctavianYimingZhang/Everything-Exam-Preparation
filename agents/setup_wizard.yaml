@@ -11,7 +11,7 @@ setup_wizard:
     - topic_focus
     - extra_reading_focus
   source_hints:
-    purpose: open provenance labels only
+    purpose: source hints act as open provenance labels
     policy: infer useful source hints from file content when they help routing; confirm Material type and source roles through human review; calibrate notes depth and coverage from confirmed roles, knowledge signals, knowledge density, and knowledge units
   human_review:
     required_before_public_output: true

@@ -12,7 +12,7 @@ Render DOCX Notes with Arial, 2.5 cm margins, 1.5 line spacing, centered main ti
 
 Readable DOCX styling should remain academic. Use moderate font sizes, black academic text, restrained heading style, compact captions, centered display formulas, and black-and-white academic paper tables when they improve scanability. Tables should use compact editable cells, concise titles above, restrained horizontal rules, portrait-friendly width, and notes below for symbols, abbreviations, units, statistical notation, or source details.
 
-Notes are explanation-only teaching documents and remain knowledge-only teaching notes. They teach the lecture and exam-relevant knowledge a student needs to master by explaining concepts, mechanisms, methods, calculations, assumptions, interpretations, evidence, and conceptual applications. Exam Type Related preparation is handled as separate add-on output by `references/exam_mode_and_addons_protocol.md`.
+Notes are explanation-only teaching documents and remain knowledge-only teaching notes. They teach the lecture and exam-relevant knowledge a student needs to master by explaining concepts, mechanisms, methods, calculations, assumptions, interpretations, evidence, and conceptual applications. Formulas, visuals, and worked examples are part of knowledge explanation when they help teach a knowledge unit. Exam Type Related preparation is handled as separate add-on output by `references/exam_mode_and_addons_protocol.md`.
 
 ## Core Notes Content
 
@@ -26,9 +26,11 @@ Student-facing Notes may contain:
 - visible formula blocks with symbol explanations, assumptions, and conceptual use;
 - source visuals when they clarify a concept, mechanism, method, formula, graph, table, pathway, scheme, or data interpretation;
 - worked interpretation or calculation examples with step-by-step academic solutions when they teach reusable reasoning;
-- Extra Reading depth when it strengthens the explanation of a course point.
+- essay-style external enrichment when the confirmed output calls for it and the source strengthens a course point or essay claim.
 
 Student-facing Notes should present course knowledge explanation, exam-relevant understanding, academic source visuals, worked examples, and confirmed add-on content. Workflow artifacts, route planning, source intake narration, coverage calibration narration, QA state, and subagent narration belong to the internal workflow record.
+
+Notes coverage comes from the full set of lecture and course knowledge units. Question and practice material calibrate add-on emphasis and can reveal repeated concepts, methods, calculations, source difficulty, and knowledge density, but they do not narrow the Notes coverage. When no question or practice material is supplied, build Notes from the lecture/course knowledge units. Essay questions and scenario questions should guide add-on or essay emphasis while preserving full course knowledge coverage in Notes.
 
 ## Coverage Calibration
 
@@ -44,7 +46,7 @@ Coverage calibration is internal. Build the notes from connected knowledge signa
    - how the result or concept is used within the discipline.
 4. Match explanation depth to knowledge density, mechanism complexity, calculation burden, method-interpretation needs, evidence density, and source difficulty. Dense or difficult units should receive enough explanation for a student to reconstruct the reasoning.
 
-Source hints are provenance labels only. They help locate knowledge signals and Extra Reading, while the public Notes structure is set by the knowledge units.
+Source hints act as provenance labels. They help locate knowledge signals and essay-enrichment sources, while the public Notes structure is set by the knowledge units.
 
 ## Teaching Depth
 
@@ -129,7 +131,7 @@ Each knowledge block should use the form that best teaches the content:
 | `compact_table` | The unit is a comparison, criteria set, parameter set, phase set, method set, or definition group. | Real DOCX table. |
 | `mechanism_chain` | The unit is causal, sequential, procedural, or derivational. | Numbered or arrow-linked mechanism steps. |
 | `formula_block` | The unit contains an important equation, derivation result, reaction scheme, or calculation template. | Visible formula plus symbol/use explanation. |
-| `worked_example` | A calculation, derivation, estimate, proof, data, or problem example teaches the knowledge unit. | Question, givens, target, method, step-by-step solution, final answer, assumptions, unit check, and interpretation. |
+| `worked_example` | A calculation, derivation, estimate, proof, data, or problem example teaches the knowledge unit. | Coherent worked-solution teaching explanation that shows the question interpretation, method path, calculation or reasoning, result, checks, and meaning. |
 | `image_plus_kp_list` | A source visual explains faster than text and has block-owned key points. | Academic visual, caption/source locator, and explanatory key points. |
 
 Bullets should contain explanation. A label becomes useful when it is paired with the reason, mechanism, condition, or interpretation that makes it meaningful.
@@ -141,7 +143,7 @@ A typical Notes document contains:
 1. Main title.
 2. Knowledge-unit sections in course order or knowledge-priority order.
 3. Formula, method, comparison, and data-interpretation explanations inside the relevant knowledge unit.
-4. Extra Reading depth immediately after the course point it strengthens.
+4. Essay-style external enrichment inside the confirmed essay/add-on paragraph or beside the course point it strengthens.
 
 Exam Type Related sections such as MCQ traps, short-answer templates, long-answer structures, practical/data tactics, essay plans, and standalone reading lists are add-on content. Route them through the separate preparation add-on workflow.
 

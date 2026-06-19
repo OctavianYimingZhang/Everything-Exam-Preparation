@@ -9,7 +9,7 @@ prompt_cards:
     route: exam_mode_diagnosis
   - id: mcq_preparation
     title: MCQ Exam Type Related Add-on
-    purpose: Confirm the MCQ route and source roles, then build a separate MCQ add-on with lecture-order questions and question-only high-frequency knowledge points.
+    purpose: Confirm the MCQ route and source roles, then build a separate MCQ add-on with lecture-order questions and question-derived high-frequency knowledge points for the add-on.
     route: mcq_preparation
   - id: short_answer_preparation
     title: Short Answer Exam Type Related Add-on

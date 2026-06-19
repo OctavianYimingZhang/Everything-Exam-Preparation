@@ -1084,7 +1084,7 @@ def self_test() -> None:
                         },
                         {
                             "render_mode": "paragraph",
-                            "heading": "Add-on-only field filter",
+                            "heading": "Add-on field filter",
                             "content": {"label": "Conceptual point", "text": "This renders.", "exam_use": "This does not render."},
                         },
                         {

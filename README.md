@@ -13,8 +13,8 @@ The default output type is DOCX notes. If the user requests filenames or a multi
 3. Builds a fragment index from readable content.
 4. Extracts open knowledge signals and groups connected signals into knowledge units.
 5. Calibrates Notes coverage from the knowledge units and required explanation.
-6. Discovers Extra Reading from uploaded files, source mentions, and academic-paper search queries.
-7. Matches Extra Reading to course knowledge units.
+6. Identifies Extra Reading for essay-style enrichment when the user supplies it or the confirmed output calls for it.
+7. Matches confirmed Extra Reading to essay claims or course points that need external enrichment.
 8. Makes a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and practice material.
 9. Displays an **Auto-diagnosis review plan** and uses `request_user_input` for human review of Exam type, Material type, and output set confirmation.
 10. Updates the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
@@ -26,7 +26,7 @@ Student-facing Notes explain the lecture and exam-relevant knowledge the student
 
 ## Extra Reading
 
-Extra Reading can include any academically useful source that strengthens a knowledge unit, including textbook-like background, chapters, journal articles, primary research, DOI/PMID sources, lecture-mentioned references, method detail, mechanism evidence, and research context.
+Extra Reading is mainly for Essay Question and Example Essay enrichment. It can include academically useful sources such as textbook-like background, chapters, journal articles, primary research, DOI/PMID sources, lecture-mentioned references, mechanism evidence, counterargument material, and evaluation sources that help earn Extra Reading credit in essay-style outputs.
 
 Workflow utility:
 
@@ -60,7 +60,7 @@ Before public output is generated, automatic routing remains a preliminary diagn
 
 ### 1. Coverage calibration
 
-`references/input_and_evidence_protocol.md` defines open knowledge signals. `references/exam_prep_notes_protocol.md` defines how those signals become a coverage map before Notes are written. Coverage planning is internal; the final document contains only knowledge explanations.
+`references/input_and_evidence_protocol.md` defines open knowledge signals. `references/exam_prep_notes_protocol.md` defines how those signals become a coverage map before Notes are written. Coverage planning is internal; the final document is a knowledge-explanation document. Formulas, visuals, worked examples, and confirmed add-on content function as parts of knowledge explanation; exam advice, workflow display, Skill explanation, and high-frequency-analysis process stay in the internal workflow record.
 
 Coverage is driven by:
 
@@ -70,7 +70,7 @@ Coverage is driven by:
 - methods, assays, controls, and readouts;
 - comparisons;
 - calculations and data interpretation;
-- evidence and Extra Reading;
+- evidence and confirmed essay-style Extra Reading;
 - conceptual applications and interpretation use.
 - source visuals when they clarify a concept, mechanism, method, formula, graph, table, pathway, scheme, or data interpretation.
 - worked-example signals when a calculation, derivation, estimate, proof, data, or problem example teaches reusable reasoning.
@@ -89,7 +89,7 @@ Examples are used when they clarify knowledge, mechanism, method, calculation, i
 - domain-neutral formula normalization for mathematics, physics, chemistry, biological science, and coding-adjacent technical material;
 - academically useful cropped PDF visual-region assets and embedded DOCX/PPTX media when they strengthen a knowledge unit;
 - `worked_example` blocks for physics/math calculation-heavy knowledge units;
-- Extra Reading depth after relevant lecture explanation;
+- essay-style external enrichment when the confirmed output calls for it;
 - separate Exam Type Related add-ons for MCQ, short answer, long answer, practical/data/problem, and essay preparation.
 
 ### 3. Output format style
@@ -109,7 +109,7 @@ Examples are used when they clarify knowledge, mechanism, method, calculation, i
 
 ### 4. Separate question-based add-on
 
-`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer questions are arranged by lecture/source order and include high-frequency knowledge points derived from the question material. Long Answer and Practical/Data/Problem outputs contain source questions, example answers, and academic Analysis/Prediction results that develop exam-answering ability.
+`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer questions are arranged by lecture/source order and include question-derived high-frequency knowledge points for the add-on. Long Answer and Practical/Data/Problem outputs contain source questions, example answers, and academic Analysis/Prediction results that develop exam-answering ability.
 
 Complete worked-solution notes are generated as a separate DOCX when Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions. Available solutions or mark schemes are used as evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
 

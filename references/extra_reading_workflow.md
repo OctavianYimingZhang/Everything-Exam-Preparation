@@ -1,16 +1,16 @@
 # Extra Reading Workflow
 
-Extra Reading adds academically useful external depth to exam preparation notes and example essays.
+Extra Reading mainly supports Essay Question and Example Essay enrichment. It adds academically useful external depth where essay-style outputs can earn credit for external evidence, mechanism depth, counterargument, or evaluation.
 
 ## Extra Reading Source Signals
 
-Use extra reading signals as provenance labels only. They help locate useful enrichment; they do not define a closed source taxonomy or decide Notes depth.
+Use extra reading signals as provenance labels for essay-enrichment sources. They help locate useful external material for essay-style outputs and do not decide general Notes depth.
 
 Common signals include textbook-like background, book chapters, recommended reading, academic papers, primary research, recent research, journal articles, DOI/PMID references, abstract/methods/results format, figure sources, author-year citations, and reference-list text.
 
 ## Uploaded Extra Reading
 
-Use uploaded Extra Reading when the user provides it and the material adds academic value to a knowledge unit.
+Use uploaded Extra Reading when the user provides it and the material adds essay-relevant academic value.
 
 When uploaded material is not enough, scan source fragments and knowledge-unit evidence for extra reading mentions near phrases such as:
 
@@ -39,7 +39,7 @@ Create mention records when a source is identifiable:
 }
 ```
 
-Use extra reading material to deepen course notes with background, molecular explanation, mechanism explanation, pathway context, conceptual background, method detail, evidence, and evaluation.
+Use extra reading material to deepen essay-style outputs with background, molecular explanation, mechanism explanation, pathway context, conceptual background, method detail, external evidence, counterargument, and evaluation.
 
 ## Academic Search
 
@@ -70,7 +70,7 @@ Create source records with the fields that can be verified:
 }
 ```
 
-Use academic search results to add molecular mechanisms, primary findings, experimental evidence, figures, methods, limitations, and support for conclusions when they directly strengthen a knowledge unit.
+Use academic search results to add molecular mechanisms, primary findings, experimental evidence, figures, methods, limitations, and support for conclusions when they directly strengthen an essay argument or Example Essay paragraph.
 
 ## Knowledge-unit matching
 
@@ -90,21 +90,21 @@ Topic enrichment records use this shape:
 }
 ```
 
-## Notes enrichment
+## Essay-style enrichment
 
-Add Extra Reading inside relevant topic notes with this pattern:
+Add Extra Reading inside relevant essay-style paragraphs with this pattern:
 
 ```text
-Core course point: [...]
+Core course point or essay claim: [...]
 Extra reading depth: [...]
 Molecular/mechanism evidence: [...]
 Experimental support: [...]
 Knowledge use: [...]
 ```
 
-Use Extra Reading in Notes when it improves conceptual explanation, molecular or mechanism detail, method interpretation, readout explanation, control logic, limitation handling, or evidence support.
+Use Extra Reading in essay-style output when it improves conceptual explanation, molecular or mechanism detail, method interpretation, limitation handling, external evidence, counterargument, or evaluation.
 
-Use Extra Reading in Exam Type Related add-ons when it improves MCQ reasoning, short-answer precision, long-answer structure, practical/data/problem interpretation, or essay analysis.
+Use Extra Reading in Exam Type Related add-ons when it improves essay analysis or an explicitly requested externally enriched answer.
 
 ## Example Essay enrichment
 

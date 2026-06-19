@@ -71,6 +71,30 @@ def prohibited_filename_locations() -> list[str]:
     return failures
 
 
+def prohibited_wording_locations() -> list[str]:
+    prohibited = [
+        "question-" + "only",
+        "answer-" + "only",
+        "Notes " + "only",
+        "Worked " + "only",
+        "Diagnosis " + "only",
+        "Add-on " + "only",
+        "provenance labels " + "only",
+        "only " + "knowledge explanations",
+        "extra_reading_" + "notes_enrichment",
+        "answer_" + "only_worked_solutions",
+    ]
+    failures: list[str] = []
+    for path in tracked_files():
+        if not is_scanned_source(path):
+            continue
+        text = read_text(path)
+        for line_no, line in enumerate(text.splitlines(), 1):
+            if any(term in line for term in prohibited):
+                failures.append(f"{path.relative_to(ROOT)}:{line_no}")
+    return failures
+
+
 def require_terms(path: str, terms: list[str]) -> list[str]:
     text = read_text(ROOT / path)
     return [term for term in terms if term not in text]
@@ -104,6 +128,8 @@ def check_all() -> dict[str, Any]:
                 "Exam type",
                 "Material type",
                 "output set",
+                "Essay Question and Example Essay enrichment",
+                "question-derived high-frequency knowledge points for the add-on",
             ],
         ),
         "references/exam_prep_notes_protocol.md": require_terms(
@@ -119,6 +145,8 @@ def check_all() -> dict[str, Any]:
                 "image_plus_kp_list",
                 "worked_example",
                 "Loose top-level planning fields are internal.",
+                "Notes coverage comes from the full set of lecture and course knowledge units",
+                "Question and practice material calibrate add-on emphasis",
             ],
         ),
         "references/exam_mode_and_addons_protocol.md": require_terms(
@@ -137,6 +165,15 @@ def check_all() -> dict[str, Any]:
                 "complete worked-solution notes",
                 "exam-answering ability",
                 "user-confirmed final output set",
+                "question-derived high-frequency knowledge points for the add-on",
+            ],
+        ),
+        "references/extra_reading_workflow.md": require_terms(
+            "references/extra_reading_workflow.md",
+            [
+                "Essay Question and Example Essay enrichment",
+                "essay-enrichment sources",
+                "do not decide general Notes depth",
             ],
         ),
         "references/input_and_evidence_protocol.md": require_terms(
@@ -146,6 +183,7 @@ def check_all() -> dict[str, Any]:
                 "source roles",
                 "Material type",
                 "Auto-diagnosis review plan",
+                "Essay Question and Example Essay enrichment",
             ],
         ),
         "references/language_quality_contract.md": require_terms(
@@ -176,6 +214,7 @@ def check_all() -> dict[str, Any]:
                 "auto_diagnosis",
                 "review_targets",
                 "human_review_exam_material_output_confirmation",
+                "worked_solution_teaching_notes",
             ],
         ),
         "scripts/build_review_questions.py": require_terms(
@@ -197,6 +236,7 @@ def check_all() -> dict[str, Any]:
                 "output set confirmation",
                 "scripts/build_review_questions.py",
                 "exam-relevant knowledge",
+                "question-derived high-frequency knowledge points for the add-on",
             ],
         ),
         "agents/openai.yaml": require_terms(
@@ -216,6 +256,7 @@ def check_all() -> dict[str, Any]:
     missing_terms = {name: terms for name, terms in missing_terms.items() if terms}
     cjk = cjk_locations()
     prohibited_names = prohibited_filename_locations()
+    prohibited_wording = prohibited_wording_locations()
     script_self_tests = [
         failure
         for failure in [
@@ -231,6 +272,7 @@ def check_all() -> dict[str, Any]:
         "script_self_tests": script_self_tests,
         "non_english_cjk_locations": cjk,
         "fixed_filename_locations": prohibited_names,
+        "prohibited_wording_locations": prohibited_wording,
     }
     ok = not any(failures.values())
     return {

@@ -12,10 +12,13 @@ BASE_ACTIONS = [
     "practice_material_knowledge_signal_review",
     "human_review_exam_material_output_confirmation",
     "coverage_calibration",
+    "course_knowledge_map",
+]
+
+EXTRA_READING_ESSAY_ACTIONS = [
     "extra_reading_discovery",
     "extra_reading_topic_matching",
-    "course_knowledge_map",
-    "extra_reading_notes_enrichment",
+    "extra_reading_essay_enrichment",
 ]
 
 ROUTES: dict[str, list[str]] = {
@@ -37,11 +40,10 @@ ROUTES: dict[str, list[str]] = {
         "example_answers",
     ],
     "worked_solution_preparation": BASE_ACTIONS + [
-        "answer_only_worked_solutions",
+        "worked_solution_teaching_notes",
     ],
-    "essay_preparation": BASE_ACTIONS + [
+    "essay_preparation": BASE_ACTIONS + EXTRA_READING_ESSAY_ACTIONS + [
         "exam_ready_essay_paragraphs",
-        "extra_reading_essay_enrichment",
         "module_covering_essay_questions",
         "example_essays",
     ],
@@ -161,9 +163,16 @@ def practical_worked_required(source_scan: dict[str, Any] | None) -> bool:
     return any((doc.get("question_signals", {}) or {}).get("has_practical_worked_questions") for doc in source_scan.get("documents", []) or [])
 
 
+def extra_reading_requested(prompt: str) -> bool:
+    p = (prompt or "").lower()
+    return any(k in p for k in ["extra reading", "external evidence", "research article", "journal article", "doi", "pmid"])
+
+
 def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
     route = detect_route(prompt)
     action_ids = list(ROUTES[route])
+    if route != "essay_preparation" and extra_reading_requested(prompt):
+        action_ids.extend(EXTRA_READING_ESSAY_ACTIONS)
     if "human_review_exam_material_output_confirmation" not in action_ids:
         insert_at = action_ids.index("source_inventory") + 1 if "source_inventory" in action_ids else 0
         action_ids.insert(insert_at, "human_review_exam_material_output_confirmation")
@@ -216,9 +225,9 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
             "Display the Auto-diagnosis review plan and complete human review before generating public Notes, add-ons, or worked solutions.",
             "Use coverage calibration to map knowledge signals into knowledge units before writing notes.",
             "Use practice material as knowledge-signal evidence for repeated concepts, methods, calculations, source difficulty, and coverage density.",
-            "Use Extra Reading to add molecular detail, mechanism explanation, experimental evidence, and essay depth.",
-            "Keep plain Notes explanation-only; route Past Paper and non-calculation question Practical material to a separate Exam Type Related DOCX.",
-            "For calculation, derivation, estimate, proof, data, or problem material, build a separate detailed worked-solutions DOCX.",
+            "Use Extra Reading for essay-style enrichment when the user requests it or the confirmed output calls for it.",
+            "Keep public Notes as knowledge-explanation documents; route Past Paper and non-calculation question Practical material to a separate Exam Type Related DOCX.",
+            "For calculation, derivation, estimate, proof, data, or problem material, build a separate worked-solution teaching DOCX.",
         ],
     }
 
@@ -239,7 +248,7 @@ def self_test() -> None:
     assert any(action["id"] == "practice_material_knowledge_signal_review" for action in out["actions"])
     assert any(action["id"] == "human_review_exam_material_output_confirmation" for action in out["actions"])
     assert any(action["id"] == "coverage_calibration" for action in out["actions"])
-    assert any(action["id"] == "extra_reading_discovery" for action in out["actions"])
+    assert not any(action["id"] == "extra_reading_discovery" for action in out["actions"])
     assert out["human_review_required"] is True
     assert out["review_status"] == "pending_user_confirmation"
     assert [target["id"] for target in out["review_targets"]] == ["exam_type_route", "material_type_source_roles", "output_file_set"]
@@ -279,6 +288,8 @@ def self_test() -> None:
     assert plan("short answer definitions")["outputs"] == ["short_answer_exam_type_related_addon"]
     assert plan("long answer worked problem")["outputs"] == ["practical_worked_solutions_docx"]
     assert plan("essay plans")["outputs"] == ["essay_exam_type_related_addon"]
+    assert any(action["id"] == "extra_reading_essay_enrichment" for action in plan("essay plans")["actions"])
+    assert any(action["id"] == "extra_reading_essay_enrichment" for action in plan("use extra reading in these notes")["actions"])
     assert plan("prepare this course")["auto_diagnosis"]["mixed_or_unclear"] is False
     assert any(action["id"] == "human_review_exam_material_output_confirmation" for action in plan("identify exam format")["actions"])
     assert out["source_summary"]["coverage_profile"]["knowledge_signal_counts"]["mechanism"] == 1

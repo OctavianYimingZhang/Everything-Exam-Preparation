@@ -60,6 +60,29 @@ def prohibited_filename_locations() -> list[str]:
     return out
 
 
+def prohibited_wording_locations() -> list[str]:
+    prohibited = [
+        "question-" + "only",
+        "answer-" + "only",
+        "Notes " + "only",
+        "Worked " + "only",
+        "Diagnosis " + "only",
+        "Add-on " + "only",
+        "provenance labels " + "only",
+        "only " + "knowledge explanations",
+        "extra_reading_" + "notes_enrichment",
+        "answer_" + "only_worked_solutions",
+    ]
+    out: list[str] = []
+    for path in tracked_files():
+        if not source_file(path):
+            continue
+        for line_no, line in enumerate(read_text(path).splitlines(), 1):
+            if any(term in line for term in prohibited):
+                out.append(f"{path.relative_to(ROOT)}:{line_no}")
+    return out
+
+
 def missing_terms(path: str, terms: list[str]) -> list[str]:
     text = read_text(ROOT / path)
     return [term for term in terms if term not in text]
@@ -79,9 +102,9 @@ def check() -> dict[str, object]:
     ]
     missing_files = [name for name in files if not (ROOT / name).exists()]
     terms = {
-        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "distinct DOCX filename", "Auto-diagnosis review plan", "human review"]),
-        "references/exam_prep_notes_protocol.md": missing_terms("references/exam_prep_notes_protocol.md", ["Formula Visibility", "formula_block", "workflow", "black-and-white academic paper tables"]),
-        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "output set confirmation", "complete worked-solution notes"]),
+        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "distinct DOCX filename", "Auto-diagnosis review plan", "human review", "Essay Question and Example Essay enrichment"]),
+        "references/exam_prep_notes_protocol.md": missing_terms("references/exam_prep_notes_protocol.md", ["Formula Visibility", "formula_block", "workflow", "black-and-white academic paper tables", "Notes coverage comes from the full set of lecture and course knowledge units"]),
+        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "output set confirmation", "complete worked-solution notes", "question-derived high-frequency knowledge points for the add-on"]),
         "references/input_and_evidence_protocol.md": missing_terms("references/input_and_evidence_protocol.md", ["human review", "source roles", "Material type"]),
         "scripts/plan_workflow.py": missing_terms("scripts/plan_workflow.py", ["human_review_required", "review_status", "auto_diagnosis", "review_targets"]),
         "scripts/build_review_questions.py": missing_terms("scripts/build_review_questions.py", ["request_user_input", "exam_type_route", "material_type_source_roles", "output_file_set"]),
@@ -93,6 +116,7 @@ def check() -> dict[str, object]:
         "missing_terms": terms,
         "non_english_cjk_locations": cjk_locations(),
         "fixed_filename_locations": prohibited_filename_locations(),
+        "prohibited_wording_locations": prohibited_wording_locations(),
     }
     return {
         "status": "ok" if not any(failures.values()) else "error",
