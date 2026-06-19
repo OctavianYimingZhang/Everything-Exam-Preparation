@@ -94,7 +94,7 @@ def check_all() -> dict[str, Any]:
             [
                 "knowledge-only",
                 "visible formulas",
-                "Do not treat an exact filename as part of the Skill contract.",
+                "distinct DOCX filename",
                 "Default output language is English",
                 "Exam Type Related",
                 "academic source visuals",
@@ -112,6 +112,8 @@ def check_all() -> dict[str, Any]:
                 "knowledge-only teaching notes",
                 "Formula Visibility",
                 "Visual Rendering",
+                "lecture and exam-relevant knowledge",
+                "black-and-white academic paper tables",
                 "domain-neutral",
                 "formula_block",
                 "image_plus_kp_list",
@@ -132,6 +134,9 @@ def check_all() -> dict[str, Any]:
                 "Material type",
                 "output set confirmation",
                 "Mixed",
+                "complete worked-solution notes",
+                "exam-answering ability",
+                "user-confirmed final output set",
             ],
         ),
         "references/input_and_evidence_protocol.md": require_terms(
@@ -191,12 +196,15 @@ def check_all() -> dict[str, Any]:
                 "Material type",
                 "output set confirmation",
                 "scripts/build_review_questions.py",
+                "exam-relevant knowledge",
             ],
         ),
         "agents/openai.yaml": require_terms(
             "agents/openai.yaml",
             [
                 "human_review",
+                "public_content",
+                "internal_workflow_record",
                 "Auto-diagnosis review plan",
                 "request_user_input",
                 "Exam type",

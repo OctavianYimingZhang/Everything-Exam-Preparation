@@ -4,7 +4,7 @@ Signal-driven exam preparation Skill for uploaded course content, practice mater
 
 ## Output naming
 
-The default output type is DOCX notes. If the user requests filenames or a multi-file output set, follow that request. Otherwise generate clear DOCX filenames from the source, course, prompt, or note title.
+The default output type is DOCX notes. If the user requests filenames or a multi-file output set, follow that request. Otherwise generate clear, distinct DOCX filenames for each output from the source, course, prompt, or note title.
 
 ## What it does
 
@@ -22,7 +22,7 @@ The default output type is DOCX notes. If the user requests filenames or a multi
 12. When Past Paper or question-containing Practical Materials are supplied and confirmed, produces a separate question-based Exam Type Related DOCX alongside Notes.
 13. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
 
-Student-facing Notes explain knowledge. They do not expose source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, or other workflow internals.
+Student-facing Notes explain the lecture and exam-relevant knowledge the student needs to master. Source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, and similar workflow records remain internal.
 
 ## Extra Reading
 
@@ -54,7 +54,7 @@ Expected Extra Reading output shape:
 
 ## Current output focus
 
-This version focuses on signal-driven coverage, teaching depth, domain-neutral formula visibility, academic source visuals, calculation worked examples, output language style, and output format style.
+This version focuses on signal-driven coverage, teaching depth, domain-neutral formula visibility, academic source visuals, calculation worked examples, output language style, output format style, and student-facing coverage of exam-relevant knowledge.
 
 Before public output is generated, automatic routing remains a preliminary diagnosis. `scripts/plan_workflow.py` marks `human_review_required: true`, stores automatic files under `proposed_outputs`, and inserts `human_review_exam_material_output_confirmation` before writing. `scripts/build_review_questions.py` builds the `request_user_input` payload for Exam type/route, Material type/source roles, and output set confirmation.
 
@@ -105,13 +105,13 @@ Examples are used when they clarify knowledge, mechanism, method, calculation, i
 - justified body text;
 - compact tables;
 - compact academic captions and source visuals;
-- clear knowledge sections that teach the material without workflow or process sections.
+- clear knowledge sections that teach the material and keep workflow or process records internal.
 
 ### 4. Separate question-based add-on
 
-`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer questions are arranged by lecture/source order and include high-frequency knowledge points derived from the question material. Long Answer and Practical/Data/Problem outputs contain source questions, example answers, and academic Analysis/Prediction results without workflow narration or study-advice content.
+`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer questions are arranged by lecture/source order and include high-frequency knowledge points derived from the question material. Long Answer and Practical/Data/Problem outputs contain source questions, example answers, and academic Analysis/Prediction results that develop exam-answering ability.
 
-Detailed worked solutions are generated as a separate DOCX when Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions. Available solutions or mark schemes are used as evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
+Complete worked-solution notes are generated as a separate DOCX when Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions. Available solutions or mark schemes are used as evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
 
 ## Routes
 

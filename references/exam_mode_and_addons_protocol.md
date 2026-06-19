@@ -7,7 +7,7 @@
 - Long Answer: explain, compare, evaluate, discuss, practical/data/problem questions, higher mark values.
 - Practical/Data/Problem: method interpretation, controls, readouts, calculations, graph/table interpretation, problem statements.
 - Essay: essay prompts, critically discuss, to what extent, argument-led questions, in-campus essay language.
-- Mixed: more than one mode appears strongly.
+- Mixed: more than one mode appears strongly; confirmed Mixed output covers each relevant component in the mix.
 
 ## Human review gate
 
@@ -17,9 +17,9 @@ Exam type and route detection are preliminary and must pass human review. Before
 - Material type/source roles: knowledge material, practice material, marking material, style reference, Extra Reading, or Mixed/unclear.
 - output set confirmation: Notes only, Notes plus Exam Type Related add-on, Notes plus Worked Solutions, add-on only, or a user-specified file set.
 
-Use the automatic diagnosis as evidence, not as the final decision. If the source pack is Mixed or unclear, show the prompt signals, source-role counts, and question signals that caused the uncertainty. Do not silently pick one exam type, Material type, or output set when several plausible routes remain.
+Use the automatic diagnosis as evidence for the review decision. When Mixed signals appear, show the prompt signals, source-role counts, and question signals, then plan output that covers each relevant component after the user confirms the route, Material type, and output set.
 
-After the user confirms or corrects the review questions, update the route, confirmed source roles, and final output set before drafting. Public output must not be generated from `proposed_outputs` alone.
+After the user confirms or corrects the review questions, update the route, confirmed source roles, and final output set before drafting. Public output is generated from the user-confirmed final output set.
 
 ## Add-ons
 
@@ -42,6 +42,6 @@ When Past Paper material contains extractable questions, produce a separate ques
 
 When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, physics/math problem, data-interpretation, or problem-walkthrough signals, produce `practical_worked_solutions_docx` or an equivalent answer-only worked-solution document. Use available solution or mark-scheme fragments to verify formula choice, algebra path, assumptions, units, final expression or numeric result, and interpretation. If no solution evidence is found, keep the worked answer source-grounded and mark the evidence status concisely.
 
-Math, physics, calculation, derivation, estimate, proof, and data/problem walkthrough outputs should be detailed answers. Render the source question, givens, target, method, steps, final answer, assumptions, unit or dimension check, interpretation, and evidence status when available. Keep mode diagnosis, examiner-habit summaries, and high-frequency answer-demand summaries internal for this answer-only route.
+Math, physics, calculation, derivation, estimate, proof, and data/problem walkthrough outputs should be complete worked-solution notes. Write them as coherent teaching explanations that cover question interpretation, relevant givens, target, method choice, derivation or calculation path, answer explanation, assumptions, unit or dimension reasoning, result meaning, and evidence status where available.
 
-Question-based add-ons should remain purely academic. Analysis/Prediction should report the result only: likely topic, question demand, repeated knowledge target, and expected answer focus. Do not include workflow narration, study advice, or non-academic explanation.
+Question-based add-ons should be academic exam-preparation output. Analysis/Prediction should develop exam-answering ability by presenting likely topic, question demand, repeated knowledge target, expected answer focus, and the academic reasoning that connects those points to the confirmed question material.

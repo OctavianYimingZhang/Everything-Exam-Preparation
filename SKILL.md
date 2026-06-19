@@ -11,11 +11,11 @@ This Skill helps students prepare for exams from uploaded course material, pract
 
 Students provide course material, practice material, and optionally Extra Reading. The Skill reads the material, extracts open knowledge signals, groups connected signals into knowledge units, calibrates the required explanation for each unit, enriches course content with extra reading where useful, and produces student-facing exam preparation output.
 
-Student-facing Notes are explanation-only, knowledge-only teaching notes. They explain concepts, mechanisms, methods, calculations, assumptions, interpretations, conceptual applications, academically useful source visuals, and calculation worked examples when those examples teach the relevant knowledge unit. Exam Type Related preparation is produced as separate add-on output for the relevant route.
+Student-facing Notes are explanation-only, knowledge-only teaching notes that show the lecture and exam-relevant knowledge a student needs to master. They explain concepts, mechanisms, methods, calculations, assumptions, interpretations, conceptual applications, academically useful source visuals, and calculation worked examples when those examples teach the relevant knowledge unit. Exam Type Related preparation is produced as separate add-on output for the relevant route.
 
-Automatic Exam type, Material type, and output-set recognition is only a preliminary diagnosis. Before generating Notes, Exam Type Related add-ons, or Worked Solutions, display an **Auto-diagnosis review plan** and use `request_user_input` to confirm or correct Exam type/route, Material type/source roles, and the final output set. If the source pack is Mixed or unclear, show the evidence signals and provide concrete correction options rather than silently choosing a route.
+Automatic Exam type, Material type, and output-set recognition is a preliminary diagnosis. Before generating Notes, Exam Type Related add-ons, or Worked Solutions, display an **Auto-diagnosis review plan** and use `request_user_input` to confirm or correct Exam type/route, Material type/source roles, and the final output set. Mixed exam signals mean the confirmed output should cover each relevant component in the mix.
 
-If the user requests a filename or file set, follow that request. Otherwise generate a clear DOCX filename from the source, course, prompt, or note title. Do not treat an exact filename as part of the Skill contract.
+If the user requests a filename or file set, follow that request. Otherwise generate a clear, distinct DOCX filename for each output from the source, course, prompt, or note title.
 
 Default output language is English unless the user explicitly requests another language.
 
@@ -60,9 +60,9 @@ Exam Type Related add-on writing:
 - Math/Physics/Practical Worked Solutions: every extracted calculation, derivation, estimate, proof, data, or problem question with detailed answer-only solution, assumptions, unit or dimension check, interpretation, and concise evidence status.
 - Essay: claim, explanation, course detail, Extra Reading evidence, analysis, link back to the question.
 
-For math, physics, calculation, derivation, estimate, proof, and data/problem walkthrough outputs, render detailed answers rather than diagnosis or examiner-habit summaries. Keep mode diagnosis and high-frequency answer-demand analysis internal for that answer-only route.
+For math, physics, calculation, derivation, estimate, proof, and data/problem walkthrough outputs, write complete worked-solution notes. They should teach the question interpretation, relevant givens, target, method choice, derivation or calculation path, answer explanation, assumptions, unit or dimension reasoning, result meaning, and evidence status in coherent prose rather than a fixed fill-in template.
 
-Render DOCX Notes with Arial, 2.5 cm margins, 1.5 line spacing, centered main title, left-aligned headings, justified body text, compact tables, centered display formulas, academically useful source visuals, and clear knowledge sections. Use restrained academic styling only. Filename and file-set choices may follow the user's request or the source pack; do not make exact filenames part of the knowledge-quality contract.
+Render DOCX Notes with Arial, 2.5 cm margins, 1.5 line spacing, centered main title, left-aligned headings, justified body text, compact black-and-white academic tables, centered display formulas, academically useful source visuals, and clear knowledge sections. Use restrained academic styling. Filename and file-set choices should produce readable, distinct names for each output.
 
 Recommended section order:
 

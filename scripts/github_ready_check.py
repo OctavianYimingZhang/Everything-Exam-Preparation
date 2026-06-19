@@ -79,9 +79,9 @@ def check() -> dict[str, object]:
     ]
     missing_files = [name for name in files if not (ROOT / name).exists()]
     terms = {
-        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "exact filename", "Auto-diagnosis review plan", "human review"]),
-        "references/exam_prep_notes_protocol.md": missing_terms("references/exam_prep_notes_protocol.md", ["Formula Visibility", "formula_block", "workflow"]),
-        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "output set confirmation"]),
+        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "distinct DOCX filename", "Auto-diagnosis review plan", "human review"]),
+        "references/exam_prep_notes_protocol.md": missing_terms("references/exam_prep_notes_protocol.md", ["Formula Visibility", "formula_block", "workflow", "black-and-white academic paper tables"]),
+        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "output set confirmation", "complete worked-solution notes"]),
         "references/input_and_evidence_protocol.md": missing_terms("references/input_and_evidence_protocol.md", ["human review", "source roles", "Material type"]),
         "scripts/plan_workflow.py": missing_terms("scripts/plan_workflow.py", ["human_review_required", "review_status", "auto_diagnosis", "review_targets"]),
         "scripts/build_review_questions.py": missing_terms("scripts/build_review_questions.py", ["request_user_input", "exam_type_route", "material_type_source_roles", "output_file_set"]),

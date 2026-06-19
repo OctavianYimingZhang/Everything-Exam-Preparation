@@ -1,6 +1,6 @@
 # Exam Preparation Notes Protocol
 
-Output artifact names should follow user requests when supplied. If no filename is requested, generate a clear DOCX filename from the source, course, prompt, or note title. The contract below controls content quality and rendering behavior, not exact filenames.
+Output artifact names should follow user requests when supplied. If no filename is requested, generate a clear, distinct DOCX filename for each output from the source, course, prompt, or note title.
 
 This is the canonical contract for Notes coverage, explanation depth, default language, formula visibility, visual rendering, student-facing prose, and Word formatting.
 
@@ -10,9 +10,9 @@ Default student-facing output language is English unless the user explicitly req
 
 Render DOCX Notes with Arial, 2.5 cm margins, 1.5 line spacing, centered main title, left-aligned headings, justified body text, compact tables, centered display formulas, compact academic captions, academically useful source visuals, and clear knowledge sections.
 
-Readable DOCX styling should remain academic. Use moderate font sizes, restrained heading color, light table-header or formula shading, thin table borders, and compact captions when they improve scanability. Do not add decorative or non-academic content.
+Readable DOCX styling should remain academic. Use moderate font sizes, black academic text, restrained heading style, compact captions, centered display formulas, and black-and-white academic paper tables when they improve scanability. Tables should use compact editable cells, concise titles above, restrained horizontal rules, portrait-friendly width, and notes below for symbols, abbreviations, units, statistical notation, or source details.
 
-Notes are explanation-only teaching documents and remain knowledge-only teaching notes. They teach course knowledge by explaining concepts, mechanisms, methods, calculations, assumptions, interpretations, evidence, and conceptual applications. Exam Type Related preparation is handled as separate add-on output by `references/exam_mode_and_addons_protocol.md`.
+Notes are explanation-only teaching documents and remain knowledge-only teaching notes. They teach the lecture and exam-relevant knowledge a student needs to master by explaining concepts, mechanisms, methods, calculations, assumptions, interpretations, evidence, and conceptual applications. Exam Type Related preparation is handled as separate add-on output by `references/exam_mode_and_addons_protocol.md`.
 
 ## Core Notes Content
 
@@ -28,7 +28,7 @@ Student-facing Notes may contain:
 - worked interpretation or calculation examples with step-by-step academic solutions when they teach reusable reasoning;
 - Extra Reading depth when it strengthens the explanation of a course point.
 
-Student-facing Notes should present the knowledge itself. Workflow artifacts, route planning, source intake narration, coverage calibration narration, QA state, and subagent narration belong to internal work rather than public Notes.
+Student-facing Notes should present course knowledge explanation, exam-relevant understanding, academic source visuals, worked examples, and confirmed add-on content. Workflow artifacts, route planning, source intake narration, coverage calibration narration, QA state, and subagent narration belong to the internal workflow record.
 
 ## Coverage Calibration
 

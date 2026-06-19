@@ -4,7 +4,7 @@ default_route: exam_prep_notes
 default_output: docx_notes
 conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
 conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
-output_name_policy: user-requested filename first; otherwise generate a clear DOCX filename from the source, course, prompt, or note title
+output_name_policy: user-requested filename first; otherwise generate clear distinct DOCX filenames for each output from the source, course, prompt, or note title
 human_review:
   required_before_public_output: true
   plan_title: Auto-diagnosis review plan
@@ -39,8 +39,14 @@ coverage_calibration:
     - application
     - explanatory_example
 student_surface:
-  goal: explanation-only teaching Notes for students, with academic source visuals, calculation worked examples, and Exam Type Related preparation as separate add-on output
-  forbidden_public_content:
+  goal: explanation-only teaching Notes that show the lecture and exam-relevant knowledge students need to master, with academic source visuals, calculation worked examples, and Exam Type Related preparation as separate add-on output
+  public_content:
+    - course knowledge explanation
+    - exam-relevant understanding
+    - academic source visuals
+    - worked examples
+    - confirmed add-on content
+  internal_workflow_record:
     - source intake narration
     - extraction notes
     - coverage calibration narration
