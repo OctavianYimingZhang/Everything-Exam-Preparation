@@ -33,8 +33,8 @@ presets:
       - fragment_index
       - human_review_exam_material_output_confirmation
       - coverage_calibration
-      - mcq_exam_habits
-      - mcq_notes_enrichment
+      - past_paper_recurrence_analysis
+      - result_only_exam_needed_knowledge_points
   short_answer_preparation:
     output: short_answer_exam_type_related_addon
     output_name_policy: user_requested_or_generated_from_context
@@ -45,8 +45,8 @@ presets:
       - fragment_index
       - human_review_exam_material_output_confirmation
       - coverage_calibration
-      - definition_and_mark_point_highlights
-      - explain_answer_examples
+      - past_paper_recurrence_analysis
+      - result_only_exam_needed_knowledge_points
   long_answer_preparation:
     output: long_answer_practical_data_problem_exam_type_related_addon
     output_name_policy: user_requested_or_generated_from_context

@@ -133,7 +133,7 @@ Examples are used when they clarify knowledge, mechanism, method, calculation, i
 
 ### 4. Separate question-based Specific Research Report
 
-`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer questions are arranged by lecture/source order and include question-derived high-frequency knowledge points for the report. Long Answer and Practical/Data/Problem outputs contain source questions, example answers, and academic Analysis/Prediction results that develop exam-answering ability.
+`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer reports are result-only Past Paper-driven recurrence reports: they use Past Papers, Mock Papers, and official exam papers to find recurring exam-needed knowledge points, then present those points in Lecture Slides order. Ordinary Practice Material can provide context but does not count toward high-frequency recurrence. SAQ subquestions are treated as independent question records. Public MCQ and Short Answer reports do not show evidence tables, recurrence calculations, source locators, matching debug, or workflow steps.
 
 Complete worked-solution notes are generated as a separate DOCX when Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions. Available solutions or mark schemes are used as evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
 

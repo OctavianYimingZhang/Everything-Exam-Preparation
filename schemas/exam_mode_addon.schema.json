@@ -2,5 +2,29 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Exam mode preparation shape",
   "type": "object",
+  "properties": {
+    "document_kind": {
+      "type": "string"
+    },
+    "result_only": {
+      "type": "boolean",
+      "description": "True for MCQ and Short Answer public reports that render only lecture-order exam-needed knowledge points."
+    },
+    "default_language": {
+      "type": "string",
+      "description": "Default public language, normally English unless the user explicitly requests another language."
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "_internal_recurrence": {
+      "type": "array",
+      "description": "Internal recurrence evidence and clustering metadata. Renderers must not show this in public MCQ or Short Answer reports."
+    }
+  },
   "additionalProperties": true
 }

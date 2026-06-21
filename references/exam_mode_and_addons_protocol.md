@@ -27,8 +27,8 @@ Exam Type Related Specific Research Reports are separate outputs from explanatio
 
 | Mode | Preparation content |
 |---|---|
-| MCQ | lecture-order source questions, tested distinctions, single-best-answer reasoning, plausible wrong statements, and question-derived high-frequency knowledge points for the report |
-| Short Answer | lecture-order source questions, definitions, mark-point structures, concise answer forms, explain-style examples, and question-derived high-frequency knowledge points for the report |
+| MCQ | result-only Past Paper-driven recurrence report in lecture order, written as concise exam-needed knowledge points rather than a field-by-field template, answer walkthrough, or Notes-style teaching document |
+| Short Answer | result-only Past Paper-driven recurrence report in lecture order, with each SAQ subquestion treated as an independent question record and the public report written as concise exam-needed knowledge points |
 | Long Answer | source question, question demand, knowledge selection, reasoning order, example answer, and academic analysis/prediction result |
 | Practical/Data/Problem | source task, method aim, readout, control, calculation or interpretation path, limitation, conclusion, and academic analysis/prediction result |
 | Math/Physics/Practical Worked Solutions | every extracted calculation, derivation, estimate, proof, data, or problem question developed as worked-solution teaching notes with concise evidence status |
@@ -46,7 +46,15 @@ When Past Paper or Practical Materials contain calculation, derivation, estimate
 
 Math, physics, calculation, derivation, estimate, proof, and data/problem walkthrough outputs should be complete worked-solution notes. Write them as coherent teaching explanations that cover question interpretation, relevant givens, target, method choice, derivation or calculation path, answer explanation, assumptions, unit or dimension reasoning, result meaning, and evidence status where available.
 
-Question-based Specific Research Reports should be academic exam-preparation output. Analysis/Prediction should develop exam-answering ability by presenting likely topic, question demand, repeated knowledge target, expected answer focus, and the academic reasoning that connects those points to the confirmed question material.
+Long Answer and Practical/Data/Problem reports should develop exam-answering ability through source-grounded question demand, relevant knowledge selection, answer order, and concise example-answer structure.
+
+Question-based Specific Research Reports should be academic exam-preparation output. MCQ and Short Answer reports use a Past Paper-driven recurrence algorithm for high-frequency knowledge points. They should not copy star-ranking workflows from examples or use boundary formulas from screenshots. They should use only Past Papers, Mock Papers, and official exam papers for recurrence; ordinary Practice Material can provide context but must not count toward high-frequency recurrence.
+
+For MCQ and Short Answer recurrence, each question record should preserve a matched lecture knowledge unit, direct exam demand, tested knowledge terms, answer-operation type, MCQ question pattern or SAQ answer pattern, source year, paper key, and locator in the internal workflow record. Cluster questions into the same recurring knowledge point only when the same or clearly explicit lecture knowledge unit, direct exam demand, shared specific terms, and compatible question or answer-operation pattern all match. Broad topic similarity is not enough.
+
+Public MCQ and Short Answer reports are result-only. They should follow the user's reference-document style by using lecture headings, numbered knowledge-point titles, concise exam-needed knowledge-point content, and a short exam scope line when useful. Do not render template labels such as distractor logic, option selection, elimination steps, definition core, expected mark points, answer wording, or missing-mark traps. Do not render evidence tables, source locators, recurrence scores, frequency calculations, matching methods, debug fields, verification fields, or Codex workflow steps.
+
+Default public output language is English. Use Chinese, bilingual, or multiple-language output only when the user explicitly asks for it. User-provided bilingual examples are format references and do not change the default language.
 
 ## Question solving and transfer practice
 

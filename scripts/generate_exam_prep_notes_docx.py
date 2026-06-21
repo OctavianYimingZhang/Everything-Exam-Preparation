@@ -443,6 +443,13 @@ def is_addon_document(plan: dict[str, Any]) -> bool:
     return "addon" in kind or "exam_type_related" in kind or "worked_solutions" in kind
 
 
+def is_result_only_exam_report(plan: dict[str, Any]) -> bool:
+    kind = str(plan.get("document_kind") or plan.get("kind") or plan.get("output") or "").lower()
+    if plan.get("result_only") is True:
+        return True
+    return kind in {"mcq_exam_type_related_addon", "short_answer_exam_type_related_addon"}
+
+
 def image_extension(path: Path) -> str:
     suffix = path.suffix.lower()
     return suffix if suffix in IMAGE_CONTENT_TYPES else ".png"
@@ -743,14 +750,22 @@ def label_from_key(key: str) -> str:
     return key.replace("_", " ").title()
 
 
-def add_text(blocks: list[Any], text: Any, bullet: bool = False, include_addon: bool = False) -> None:
+def add_text(blocks: list[Any], text: Any, bullet: bool = False, include_addon: bool = False, result_only: bool = False) -> None:
     if text in (None, "", [], {}):
         return
     if isinstance(text, list):
         for item in text:
-            add_text(blocks, item, bullet=True, include_addon=include_addon)
+            add_text(blocks, item, bullet=True, include_addon=include_addon, result_only=result_only)
         return
     if isinstance(text, dict):
+        if result_only:
+            primary = text.get("content") or text.get("text") or text.get("paragraph")
+            if primary:
+                add_text(blocks, primary, bullet=bullet, include_addon=include_addon, result_only=result_only)
+            scope = text.get("exam_scope")
+            if scope:
+                add_text(blocks, scope, include_addon=include_addon, result_only=result_only)
+            return
         if include_addon:
             rendered_any = False
             ordered = [key for key in ADDON_FIELD_ORDER if key in text] + [key for key in text if key not in ADDON_FIELD_ORDER]
@@ -773,11 +788,11 @@ def add_text(blocks: list[Any], text: Any, bullet: bool = False, include_addon: 
         if knowledge_use:
             parts.append(str(knowledge_use))
         if parts:
-            add_text(blocks, " - ".join(parts), bullet=bullet, include_addon=include_addon)
+            add_text(blocks, " - ".join(parts), bullet=bullet, include_addon=include_addon, result_only=result_only)
         else:
             filtered = {k: v for k, v in text.items() if k not in ADDON_ONLY_FIELDS}
             if filtered:
-                add_text(blocks, json.dumps(filtered, ensure_ascii=False), bullet=bullet, include_addon=include_addon)
+                add_text(blocks, json.dumps(filtered, ensure_ascii=False), bullet=bullet, include_addon=include_addon, result_only=result_only)
         return
     prefix = "• " if bullet else ""
     blocks.append((prefix + str(text), "Normal", "both"))
@@ -881,17 +896,20 @@ def render_worked_example(blocks: list[Any], block: dict[str, Any], include_addo
     add_labeled_field(blocks, "Verification", block.get("verification"), include_addon=include_addon)
 
 
-def render_block(blocks: list[Any], block: dict[str, Any], include_addon: bool = False) -> None:
+def render_block(blocks: list[Any], block: dict[str, Any], include_addon: bool = False, result_only: bool = False) -> None:
     heading = block.get("heading") or block.get("title")
     if heading:
         blocks.append((str(heading), "Heading2", "left"))
     mode = block.get("render_mode") or block.get("kind") or "paragraph"
-    if mode == "formula_block":
+    if mode == "exam_knowledge_point":
+        add_text(blocks, block.get("content") or block.get("text") or block.get("paragraph"), include_addon=include_addon, result_only=result_only)
+        add_text(blocks, block.get("exam_scope"), include_addon=include_addon, result_only=result_only)
+    elif mode == "formula_block":
         formula = block.get("formula") or block.get("expression") or block.get("text")
         blocks.append({"kind": "formula", "formula": formula})
-        add_text(blocks, block.get("symbols"), include_addon=include_addon)
-        add_text(blocks, block.get("assumptions"), include_addon=include_addon)
-        add_text(blocks, block.get("use") or block.get("knowledge_use") or block.get("application_context") or block.get("explanation"), include_addon=include_addon)
+        add_text(blocks, block.get("symbols"), include_addon=include_addon, result_only=result_only)
+        add_text(blocks, block.get("assumptions"), include_addon=include_addon, result_only=result_only)
+        add_text(blocks, block.get("use") or block.get("knowledge_use") or block.get("application_context") or block.get("explanation"), include_addon=include_addon, result_only=result_only)
     elif mode == "compact_table":
         rows = table_rows(block)
         if rows:
@@ -910,20 +928,20 @@ def render_block(blocks: list[Any], block: dict[str, Any], include_addon: bool =
             })
         if caption and is_renderable_image_path(image_path):
             blocks.append((str(caption), "Caption", "center"))
-        add_text(blocks, block.get("points") or block.get("key_points") or block.get("content"), bullet=True, include_addon=include_addon)
+        add_text(blocks, block.get("points") or block.get("key_points") or block.get("content"), bullet=True, include_addon=include_addon, result_only=result_only)
     elif mode == "kp_list":
-        add_text(blocks, block.get("points") or block.get("key_points") or block.get("content"), bullet=True, include_addon=include_addon)
+        add_text(blocks, block.get("points") or block.get("key_points") or block.get("content"), bullet=True, include_addon=include_addon, result_only=result_only)
     elif mode == "mechanism_chain":
         steps = block.get("steps") or block.get("chain") or block.get("points") or []
         for idx, step in enumerate(steps, 1):
             rendered_step = inline_text(step, include_addon=include_addon)
             if rendered_step:
-                add_text(blocks, f"{idx}. {rendered_step}", include_addon=include_addon)
+                add_text(blocks, f"{idx}. {rendered_step}", include_addon=include_addon, result_only=result_only)
     else:
         primary = block.get("text") or block.get("paragraph") or block.get("content") or block.get("explanation")
-        if primary in (None, "", [], {}) and include_addon:
+        if primary in (None, "", [], {}) and include_addon and not result_only:
             primary = {k: v for k, v in block.items() if k not in {"render_mode", "kind", "heading", "title"}}
-        add_text(blocks, primary, include_addon=include_addon)
+        add_text(blocks, primary, include_addon=include_addon, result_only=result_only)
 
 
 def validate_plan_contract(plan: dict[str, Any]) -> list[str]:
@@ -950,6 +968,7 @@ def blocks_from_plan(plan: dict[str, Any]) -> list[Any]:
     if failures:
         raise ValueError(";".join(failures))
     include_addon = is_addon_document(plan)
+    result_only = is_result_only_exam_report(plan)
     blocks: list[Any] = [(plan.get("title") or "Exam Preparation Notes", "Title", "center")]
     for section in plan.get("sections", []) or []:
         heading = section.get("heading") or section.get("title")
@@ -957,9 +976,9 @@ def blocks_from_plan(plan: dict[str, Any]) -> list[Any]:
             blocks.append((str(heading), "Heading1", "left"))
         for block in section.get("blocks", []) or []:
             if isinstance(block, dict):
-                render_block(blocks, block, include_addon=include_addon)
+                render_block(blocks, block, include_addon=include_addon, result_only=result_only)
             else:
-                add_text(blocks, block, include_addon=include_addon)
+                add_text(blocks, block, include_addon=include_addon, result_only=result_only)
     if len(blocks) == 1:
         blocks.append(("No knowledge content was supplied.", "Normal", "both"))
     return blocks
@@ -1160,6 +1179,46 @@ def self_test() -> None:
             raw = zf.read("word/document.xml").decode("utf-8", errors="ignore")
             assert "Example Answer: Charge conservation means local accumulation is balanced by current flow." in raw
             assert "Analysis Prediction:" in raw
+        result_only = generate(
+            {
+                "title": "MCQ High-Frequency Knowledge Points",
+                "document_kind": "mcq_exam_type_related_addon",
+                "result_only": True,
+                "sections": [
+                    {
+                        "heading": "Lecture 2: Membrane physiology",
+                        "blocks": [
+                            {
+                                "render_mode": "exam_knowledge_point",
+                                "title": "1. Resting membrane potential and relative permeability",
+                                "content": "Resting membrane potential is determined by relative ion permeability, so high potassium permeability pulls the value closer to E_K.",
+                                "exam_scope": "Exam scope: relative permeability, potassium, resting membrane potential.",
+                                "source_name": "Past Paper 2024",
+                                "locator": "page 4",
+                                "score": 10,
+                                "frequency": 3,
+                                "verification": {"status": "internal"},
+                                "debug": "internal matching data",
+                            }
+                        ],
+                    }
+                ],
+                "_internal_recurrence": [{"source": "Past Paper 2024", "calculation": "hidden"}],
+            },
+            td,
+        )
+        with zipfile.ZipFile(result_only) as zf:
+            raw = zf.read("word/document.xml").decode("utf-8", errors="ignore")
+            assert "Resting membrane potential is determined by relative ion permeability" in raw
+            assert "Exam scope: relative permeability, potassium, resting membrane potential." in raw
+            assert "Past Paper 2024" not in raw
+            assert "Source Name:" not in raw
+            assert "Locator:" not in raw
+            assert "Score:" not in raw
+            assert "Frequency:" not in raw
+            assert "Verification:" not in raw
+            assert "debug" not in raw.lower()
+            assert "calculation" not in raw.lower()
         practical = generate(
             {
                 "title": "Practical Worked Solutions",

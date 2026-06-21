@@ -353,8 +353,8 @@ def mcq_followup_question() -> dict[str, Any]:
         "id": "mcq_research_report_choice",
         "question": "Should I generate the MCQ Exam Specific Research Report?",
         "options": [
-            option("Generate report (Recommended)", "Build the MCQ report with tested points, correct reasoning, and plausible wrong statements."),
-            option("Brief report", "Give a concise MCQ report without full question-by-question expansion."),
+            option("Generate report (Recommended)", "Build the MCQ result report as lecture-order high-frequency knowledge points from Past Papers and Mock Papers."),
+            option("Brief report", "Give a concise MCQ knowledge-point report without expanded question lists or workflow evidence."),
             option("Skip report", "Do not generate the MCQ report."),
         ],
     }
@@ -366,8 +366,8 @@ def short_answer_followup_question() -> dict[str, Any]:
         "id": "short_answer_research_report_choice",
         "question": "Should I generate the Short Answer Exam Specific Research Report?",
         "options": [
-            option("Generate report (Recommended)", "Build definitions, mark points, explain sentences, and example answers."),
-            option("Brief report", "Give a compact short-answer report focused on mark points."),
+            option("Generate report (Recommended)", "Build the Short Answer result report as lecture-order high-frequency knowledge points from Past Papers and Mock Papers."),
+            option("Brief report", "Give a concise Short Answer knowledge-point report without expanded question lists or workflow evidence."),
             option("Skip report", "Do not generate the Short Answer report."),
         ],
     }

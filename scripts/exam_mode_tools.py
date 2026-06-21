@@ -22,6 +22,8 @@ MODE_PATTERNS = {
 COMMAND_VERBS = ["define", "state", "list", "outline", "describe", "explain", "compare", "evaluate", "discuss", "calculate", "interpret", "justify", "criticise", "critically"]
 STOPWORDS = {"which", "there", "their", "about", "using", "answer", "question", "marks", "following", "explain", "describe", "compare", "evaluate", "discuss", "calculate", "interpret"}
 PRACTICAL_WORKED_WORDS = {"calculate", "derive", "show", "estimate", "prove", "data", "problem", "interpret", "graph", "table", "fit", "plot", "uncertainty", "error", "unit"}
+PAST_PAPER_WORDS = {"past paper", "mock paper", "official exam", "exam paper", "final examination", "final exam", "paper"}
+PRACTICE_ONLY_WORDS = {"practice material", "practice questions", "worksheet", "problem sheet", "revision questions"}
 
 
 def extract_questions(text: str) -> list[str]:
@@ -33,6 +35,24 @@ def extract_questions(text: str) -> list[str]:
         if "?" in clean or re.match(r"^(Q\d+|\d+[).]|[a-z][)])\s+", clean, re.I):
             questions.append(clean)
     return questions
+
+
+def split_saq_subquestions(question: str) -> list[str]:
+    clean = re.sub(r"\s+", " ", question or "").strip()
+    if not clean:
+        return []
+    markers = list(re.finditer(r"(?<![A-Za-z])(?:\([a-z]\)|[a-z]\)|\([ivx]{1,4}\)|[ivx]{1,4}\))\s+", clean))
+    if len(markers) < 2:
+        return [clean]
+    prefix = clean[:markers[0].start()].strip()
+    parts: list[str] = []
+    for idx, marker in enumerate(markers):
+        end = markers[idx + 1].start() if idx + 1 < len(markers) else len(clean)
+        part = clean[marker.start():end].strip()
+        if not part:
+            continue
+        parts.append(f"{prefix} {part}".strip() if prefix else part)
+    return parts or [clean]
 
 
 def question_mode(question: str) -> str:
@@ -50,12 +70,73 @@ def command_verbs_in_text(text: str) -> list[str]:
     return [verb for verb in COMMAND_VERBS if re.search(r"\b" + re.escape(verb) + r"\b", lower)]
 
 
+def answer_operation_type(text: str, mode: str = "") -> str:
+    lower = (text or "").lower()
+    if re.search(r"\bdefine\b|\bwhat is\b|\bwhat are\b", lower):
+        return "definition"
+    if re.search(r"\bcompare\b|\bdifference\b|\bversus\b|\bvs\b|\bwhich.*different", lower):
+        return "comparison"
+    if re.search(r"\bexplain\b|\bwhy\b|\bmechanism\b|\bhow\b", lower):
+        return "mechanism"
+    if re.search(r"\bcalculate\b|\bderive\b|\bestimate\b|\bsolve\b", lower):
+        return "calculation"
+    if re.search(r"\bidentify\b|\bstate\b|\blist\b|\bwhich of the following\b|\bsingle best\b", lower):
+        return "recognition"
+    if mode == "MCQ":
+        return "recognition"
+    if mode == "Short Answer":
+        return "short_answer_recall"
+    return "knowledge_application"
+
+
+def question_pattern(text: str, mode: str = "") -> str:
+    lower = (text or "").lower()
+    if mode == "MCQ" or re.search(r"\bwhich of the following\b|\bsingle best\b|\btrue/false\b", lower):
+        if re.search(r"\bexcept\b|\bnot\b|\bincorrect\b|\bfalse\b", lower):
+            return "mcq_negative_discrimination"
+        return "mcq_positive_recognition"
+    if re.search(r"\b\d+\s*marks?\b", lower):
+        return "saq_marked_prompt"
+    if re.search(r"\bdefine\b", lower):
+        return "saq_definition"
+    if re.search(r"\blist\b|\bstate\b", lower):
+        return "saq_list_or_state"
+    return "open_prompt"
+
+
 def has_practical_worked_signal(text: str) -> bool:
     lower = (text or "").lower()
     return any(re.search(r"\b" + re.escape(word) + r"\b", lower) for word in PRACTICAL_WORKED_WORDS)
 
 
 def question_records_from_text(text: str, source_name: str = "input", source_order: int = 0, locator: str = "text", source_id: str = "") -> list[dict[str, Any]]:
+    records = []
+    order = 0
+    for extracted in extract_questions(text):
+        parts = split_saq_subquestions(extracted)
+        for part_index, question in enumerate(parts, 1):
+            order += 1
+            mode = question_mode(question)
+            subpart = part_index if len(parts) > 1 else None
+            records.append({
+                "source_order": source_order,
+                "source_id": source_id,
+                "source_name": source_name,
+                "locator": locator,
+                "question_order": order,
+                "subquestion_order": subpart,
+                "mode": mode,
+                "question": question,
+                "question_demand": command_verbs_in_text(question),
+                "knowledge_terms": [item["term"] for item in question_terms([question])],
+                "answer_operation_type": answer_operation_type(question, mode),
+                "question_pattern": question_pattern(question, mode),
+                "practical_worked_signal": has_practical_worked_signal(question),
+            })
+    return records
+
+
+def legacy_question_records_from_text(text: str, source_name: str = "input", source_order: int = 0, locator: str = "text", source_id: str = "") -> list[dict[str, Any]]:
     records = []
     for idx, question in enumerate(extract_questions(text), 1):
         mode = question_mode(question)
@@ -69,6 +150,8 @@ def question_records_from_text(text: str, source_name: str = "input", source_ord
             "question": question,
             "question_demand": command_verbs_in_text(question),
             "knowledge_terms": [item["term"] for item in question_terms([question])],
+            "answer_operation_type": answer_operation_type(question, mode),
+            "question_pattern": question_pattern(question, mode),
             "practical_worked_signal": has_practical_worked_signal(question),
         })
     return records
@@ -91,6 +174,63 @@ def question_records_from_scan(scan: dict[str, Any]) -> list[dict[str, Any]]:
             source_id=str(frag.get("source_id") or ""),
         ))
     records.sort(key=lambda item: (item["source_order"], item["question_order"]))
+    return records
+
+
+def combined_source_text(source: dict[str, Any], frag: dict[str, Any] | None = None) -> str:
+    fields = [
+        source.get("name"),
+        source.get("path"),
+        source.get("source_hint"),
+        source.get("category"),
+    ]
+    if frag:
+        fields.extend([frag.get("source_name"), frag.get("locator"), frag.get("category")])
+    return " ".join(str(field or "") for field in fields).lower()
+
+
+def is_past_or_mock_source(source: dict[str, Any], frag: dict[str, Any] | None = None) -> bool:
+    signals = source.get("question_signals", {}) or {}
+    if signals.get("has_past_paper") or signals.get("has_mock_paper") or signals.get("has_official_exam_paper"):
+        return True
+    source_text = combined_source_text(source, frag)
+    if any(word in source_text for word in PAST_PAPER_WORDS):
+        return not any(word in source_text for word in PRACTICE_ONLY_WORDS if word != "paper")
+    return False
+
+
+def source_year(record: dict[str, Any]) -> str:
+    text = " ".join(str(record.get(key) or "") for key in ("source_name", "locator", "question"))
+    match = re.search(r"\b(19|20)\d{2}\b", text)
+    return match.group(0) if match else ""
+
+
+def paper_key(record: dict[str, Any]) -> str:
+    year = source_year(record)
+    source_name = re.sub(r"\s+", " ", str(record.get("source_name") or "paper")).strip().lower()
+    return f"{year}:{source_name}" if year else source_name
+
+
+def past_paper_question_records_from_scan(scan: dict[str, Any], modes: set[str] | None = None) -> list[dict[str, Any]]:
+    docs = {doc.get("id"): doc for doc in scan.get("documents", [])}
+    records: list[dict[str, Any]] = []
+    for source_order, frag in enumerate(scan.get("fragments", []), 1):
+        source = docs.get(frag.get("source_id"), {})
+        if not is_past_or_mock_source(source, frag):
+            continue
+        for record in question_records_from_text(
+            str(frag.get("text") or ""),
+            source_name=str(frag.get("source_name") or source.get("name") or "source"),
+            source_order=source_order,
+            locator=str(frag.get("locator") or ""),
+            source_id=str(frag.get("source_id") or ""),
+        ):
+            if modes and record.get("mode") not in modes:
+                continue
+            record["source_year"] = source_year(record)
+            record["paper_key"] = paper_key(record)
+            records.append(record)
+    records.sort(key=lambda item: (item["source_order"], item["question_order"], item.get("subquestion_order") or 0))
     return records
 
 
@@ -370,6 +510,196 @@ def matching_knowledge_units(record: dict[str, Any], units: list[dict[str, Any]]
 def match_question_to_knowledge_unit(record: dict[str, Any], units: list[dict[str, Any]]) -> dict[str, Any] | None:
     matches = matching_knowledge_units(record, units)
     return matches[0] if matches else None
+
+
+def direct_exam_demand_signature(record: dict[str, Any]) -> str:
+    demand = record.get("question_demand") or []
+    if demand:
+        return "+".join(str(item).lower() for item in demand[:2])
+    mode = str(record.get("mode") or "")
+    if mode == "MCQ":
+        return "recognize"
+    if mode == "Short Answer":
+        return "state"
+    return "identify"
+
+
+def first_relevant_sentence(text: str, terms: set[str]) -> str:
+    sentences = re.split(r"(?<=[.!?])\s+", re.sub(r"\s+", " ", text or "").strip())
+    for sentence in sentences:
+        lower = sentence.lower()
+        if terms and any(term.lower() in lower for term in terms):
+            return sentence[:420].strip()
+    return (sentences[0] if sentences else "").strip()[:420]
+
+
+def normalize_knowledge_title(label: str, terms: set[str]) -> str:
+    label = re.sub(r"\s+", " ", label or "").strip()
+    if label:
+        return label
+    if terms:
+        return ", ".join(sorted(terms)[:5]).title()
+    return "Exam knowledge point"
+
+
+def annotated_recurrence_records(records: list[dict[str, Any]], units: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    annotated: list[dict[str, Any]] = []
+    for record in records:
+        match = match_question_to_knowledge_unit(record, units)
+        if not match:
+            continue
+        unit = match["unit"]
+        shared_terms = set(match.get("shared_terms") or [])
+        if len(shared_terms) < 2:
+            continue
+        annotated.append({
+            "record": record,
+            "unit": unit,
+            "shared_terms": shared_terms,
+            "direct_exam_demand": direct_exam_demand_signature(record),
+            "answer_operation_type": record.get("answer_operation_type") or answer_operation_type(str(record.get("question") or ""), str(record.get("mode") or "")),
+            "question_pattern": record.get("question_pattern") or question_pattern(str(record.get("question") or ""), str(record.get("mode") or "")),
+            "paper_key": record.get("paper_key") or paper_key(record),
+            "source_year": record.get("source_year") or source_year(record),
+            "mode": record.get("mode"),
+        })
+    return annotated
+
+
+def compatible_recurrence_record(cluster: dict[str, Any], item: dict[str, Any]) -> bool:
+    if cluster["unit"]["id"] != item["unit"]["id"]:
+        return False
+    if cluster["direct_exam_demand"] != item["direct_exam_demand"]:
+        return False
+    if cluster["answer_operation_type"] != item["answer_operation_type"]:
+        return False
+    return len(set(cluster["terms"]) & set(item["shared_terms"])) >= 2
+
+
+def cluster_recurrent_exam_points(records: list[dict[str, Any]], units: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    clusters: list[dict[str, Any]] = []
+    for item in annotated_recurrence_records(records, units):
+        target: dict[str, Any] | None = None
+        for cluster in clusters:
+            if compatible_recurrence_record(cluster, item):
+                target = cluster
+                break
+        if target is None:
+            target = {
+                "unit": item["unit"],
+                "lecture_order": item["unit"]["lecture_order"],
+                "direct_exam_demand": item["direct_exam_demand"],
+                "answer_operation_type": item["answer_operation_type"],
+                "question_patterns": set(),
+                "terms": set(item["shared_terms"]),
+                "records": [],
+                "paper_keys": set(),
+                "modes": set(),
+            }
+            clusters.append(target)
+        target["records"].append(item["record"])
+        target["terms"].update(item["shared_terms"])
+        target["paper_keys"].add(item["paper_key"])
+        target["modes"].add(item["mode"])
+        target["question_patterns"].add(item["question_pattern"])
+    recurrent = []
+    for cluster in clusters:
+        paper_count = len(cluster["paper_keys"])
+        if paper_count < 2:
+            continue
+        level = "strong_recurrent" if paper_count >= 3 or {"MCQ", "Short Answer"} <= set(cluster["modes"]) else "recurrent"
+        if len(cluster["question_patterns"]) == 1 and paper_count >= 2:
+            level = "recurrent_question_form" if level == "recurrent" else level
+        cluster["recurrence_level"] = level
+        recurrent.append(cluster)
+    recurrent.sort(key=lambda item: (item["lecture_order"], str(item["unit"].get("label") or "")))
+    return recurrent
+
+
+def exam_needed_knowledge_content(cluster: dict[str, Any]) -> str:
+    unit = cluster["unit"]
+    terms = set(cluster.get("terms") or [])
+    title = normalize_knowledge_title(str(unit.get("label") or ""), terms)
+    sentence = first_relevant_sentence(str(unit.get("text") or ""), terms)
+    if sentence and title.lower() not in sentence.lower():
+        return f"{title}: {sentence}"
+    return sentence or title
+
+
+def exam_scope_text(cluster: dict[str, Any]) -> str:
+    terms = sorted(set(cluster.get("terms") or []))[:8]
+    if not terms:
+        return ""
+    return "Exam scope: " + ", ".join(terms) + "."
+
+
+def build_recurrence_sections(clusters: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    sections: list[dict[str, Any]] = []
+    by_lecture: dict[int, list[dict[str, Any]]] = {}
+    for cluster in clusters:
+        by_lecture.setdefault(int(cluster["lecture_order"]), []).append(cluster)
+    for lecture_order in sorted(by_lecture):
+        clusters_for_lecture = by_lecture[lecture_order]
+        source_name = str(clusters_for_lecture[0]["unit"].get("source_name") or f"Lecture {lecture_order}")
+        heading = f"Lecture {lecture_order}: {source_name}"
+        blocks = []
+        for idx, cluster in enumerate(clusters_for_lecture, 1):
+            title = normalize_knowledge_title(str(cluster["unit"].get("label") or ""), set(cluster.get("terms") or []))
+            block = {
+                "render_mode": "exam_knowledge_point",
+                "title": f"{idx}. {title}",
+                "content": exam_needed_knowledge_content(cluster),
+            }
+            scope = exam_scope_text(cluster)
+            if scope:
+                block["exam_scope"] = scope
+            blocks.append(block)
+        sections.append({"heading": heading, "blocks": blocks})
+    return sections
+
+
+def build_mcq_saq_recurrence_report(scan: dict[str, Any], route: str = "mixed") -> dict[str, Any]:
+    mode_map = {
+        "mcq": {"MCQ", "Mixed"},
+        "short_answer": {"Short Answer", "Mixed"},
+        "mixed": {"MCQ", "Short Answer", "Mixed"},
+    }
+    modes = mode_map.get(route, mode_map["mixed"])
+    records = past_paper_question_records_from_scan(scan, modes=modes)
+    units = lecture_knowledge_units_from_scan(scan)
+    clusters = cluster_recurrent_exam_points(records, units)
+    title_map = {
+        "mcq": "MCQ High-Frequency Knowledge Points",
+        "short_answer": "Short Answer High-Frequency Knowledge Points",
+        "mixed": "MCQ and Short Answer High-Frequency Knowledge Points",
+    }
+    kind_map = {
+        "mcq": "mcq_exam_type_related_addon",
+        "short_answer": "short_answer_exam_type_related_addon",
+        "mixed": "exam_type_related_addon_docx",
+    }
+    return {
+        "schema_version": 2,
+        "document_kind": kind_map.get(route, kind_map["mixed"]),
+        "result_only": True,
+        "default_language": "English",
+        "title": title_map.get(route, title_map["mixed"]),
+        "sections": build_recurrence_sections(clusters),
+        "_internal_recurrence": [
+            {
+                "recurrence_level": cluster["recurrence_level"],
+                "lecture_order": cluster["lecture_order"],
+                "knowledge_unit": cluster["unit"].get("label"),
+                "paper_count": len(cluster["paper_keys"]),
+                "question_count": len(cluster["records"]),
+                "terms": sorted(cluster["terms"]),
+                "direct_exam_demand": cluster["direct_exam_demand"],
+                "answer_operation_type": cluster["answer_operation_type"],
+                "question_patterns": sorted(cluster["question_patterns"]),
+            }
+            for cluster in clusters
+        ],
+    }
 
 
 def target_question_record(question: str) -> dict[str, Any]:
@@ -656,6 +986,72 @@ def self_test() -> None:
     assert lecture_orders == sorted(lecture_orders)
     latest_section = next(section for section in organized["sections"] if section["knowledge_unit"] == "Enzyme kinetics and substrate velocity")
     assert any("membrane potential and enzyme kinetics" in item["question"] for item in latest_section["questions"])
+
+    recurrence_scan = {
+        "documents": [
+            {"id": "RL1", "name": "Lecture 1 Membranes", "category": "knowledge_material"},
+            {"id": "RL2", "name": "Lecture 2 Enzymes", "category": "knowledge_material"},
+            {"id": "RP1", "name": "Physiology Past Paper 2022", "category": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True}},
+            {"id": "RP2", "name": "Physiology Mock Paper 2023", "category": "practice_material", "question_signals": {"has_questions": True, "has_mock_paper": True}},
+            {"id": "RPR", "name": "Physiology Practice Material", "category": "practice_material", "question_signals": {"has_questions": True}},
+        ],
+        "fragments": [
+            {
+                "source_id": "RL1",
+                "source_name": "Lecture 1 Membranes",
+                "category": "knowledge_material",
+                "locator": "slide 3",
+                "text": "Resting membrane potential depends on potassium permeability, sodium permeability, and relative ion permeability.",
+                "knowledge_unit_candidates": [{"label": "Resting membrane potential and relative permeability"}],
+            },
+            {
+                "source_id": "RL2",
+                "source_name": "Lecture 2 Enzymes",
+                "category": "knowledge_material",
+                "locator": "slide 9",
+                "text": "Enzyme velocity depends on substrate concentration and Michaelis constant.",
+                "knowledge_unit_candidates": [{"label": "Enzyme velocity and substrate concentration"}],
+            },
+            {
+                "source_id": "RP1",
+                "source_name": "Physiology Past Paper 2022",
+                "category": "practice_material",
+                "locator": "page 1",
+                "text": "1. Which of the following describes resting membrane potential and potassium permeability?",
+            },
+            {
+                "source_id": "RP2",
+                "source_name": "Physiology Mock Paper 2023",
+                "category": "practice_material",
+                "locator": "page 1",
+                "text": "1. Which of the following describes resting membrane potential and potassium permeability?\n2. (a) State how resting membrane potential depends on potassium permeability. (b) State how resting membrane potential depends on sodium permeability.",
+            },
+            {
+                "source_id": "RPR",
+                "source_name": "Physiology Practice Material",
+                "category": "practice_material",
+                "locator": "worksheet",
+                "text": "1. Which of the following describes enzyme velocity and substrate concentration?",
+            },
+        ],
+    }
+    past_records = past_paper_question_records_from_scan(recurrence_scan)
+    assert all("Practice Material" not in str(record.get("source_name")) for record in past_records)
+    saq_records = past_paper_question_records_from_scan(recurrence_scan, modes={"Short Answer", "Mixed"})
+    assert len([record for record in saq_records if record.get("subquestion_order")]) == 2
+    mcq_report = build_mcq_saq_recurrence_report(recurrence_scan, "mcq")
+    assert mcq_report["document_kind"] == "mcq_exam_type_related_addon"
+    assert mcq_report["default_language"] == "English"
+    assert mcq_report["sections"]
+    rendered_public = json.dumps({"sections": mcq_report["sections"]}, ensure_ascii=False)
+    assert "Resting membrane potential and relative permeability" in rendered_public
+    assert "enzyme velocity" not in rendered_public.lower()
+    assert "source_name" not in rendered_public
+    assert "locator" not in rendered_public
+    assert "score" not in rendered_public
+    assert "frequency" not in rendered_public
+    assert mcq_report["_internal_recurrence"][0]["recurrence_level"] in {"recurrent", "recurrent_question_form", "strong_recurrent"}
+    assert mcq_report["_internal_recurrence"][0]["paper_count"] == 2
     with tempfile.TemporaryDirectory() as tmpdir:
         out_docx = Path(tmpdir) / "organized_questions.docx"
         write_organized_questions_docx(out_docx, organized)
@@ -686,6 +1082,18 @@ def main() -> None:
         result: Any = {"questions": extract_questions(text)}
     elif args.command == "build-addon":
         result = build_exam_type_addon(scan, text)
+    elif args.command == "build-mcq-report":
+        if not scan:
+            parser.error("build-mcq-report requires --source-scan")
+        result = build_mcq_saq_recurrence_report(scan, "mcq")
+    elif args.command == "build-short-answer-report":
+        if not scan:
+            parser.error("build-short-answer-report requires --source-scan")
+        result = build_mcq_saq_recurrence_report(scan, "short_answer")
+    elif args.command == "build-mcq-saq-report":
+        if not scan:
+            parser.error("build-mcq-saq-report requires --source-scan")
+        result = build_mcq_saq_recurrence_report(scan, "mixed")
     elif args.command == "build-practical-worked-solutions":
         result = build_practical_worked_solutions(scan, text)
     elif args.command == "solve-question":

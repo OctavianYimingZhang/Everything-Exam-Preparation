@@ -27,10 +27,10 @@ ROUTES: dict[str, list[str]] = {
         "exam_prep_notes",
     ],
     "mcq_preparation": BASE_ACTIONS + [
-        "mcq_specific_research_report",
+        "mcq_result_only_high_frequency_knowledge_report",
     ],
     "short_answer_preparation": BASE_ACTIONS + [
-        "short_answer_specific_research_report",
+        "short_answer_result_only_high_frequency_knowledge_report",
     ],
     "long_answer_preparation": BASE_ACTIONS + [
         "long_answer_practical_data_problem_specific_research_report",
@@ -219,7 +219,7 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
         "Ask the user to confirm the Exam type and whether Notes should be generated.",
         "Generate Notes before the exam-specific report when the user accepts Notes; skip Notes when the user declines them.",
         "Use coverage calibration to map knowledge signals into knowledge units before writing notes.",
-        "Use practice material as knowledge-signal evidence for repeated concepts, methods, calculations, source difficulty, and coverage density.",
+        "Use Past Papers, Mock Papers, and official exam papers for MCQ or Short Answer high-frequency recurrence; ordinary Practice Material can provide context but does not count toward recurrence.",
         "Keep public Notes as knowledge-explanation documents; route confirmed exam types to separate Specific Research Reports.",
         "For mixed exam formats, activate every confirmed exam-type Sub Skill.",
         "For calculation, derivation, estimate, proof, data, or problem material, build a separate worked-solution teaching DOCX.",

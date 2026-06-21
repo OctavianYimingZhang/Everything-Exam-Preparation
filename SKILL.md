@@ -17,7 +17,7 @@ Automatic Exam type, Material type, and Notes-choice recognition is a preliminar
 
 If the user requests a filename or file set, follow that request. Otherwise generate a clear, distinct DOCX filename for each output from the source, course, prompt, or note title.
 
-Default output language is English unless the user explicitly requests another language.
+Default output language is English unless the user explicitly requests Chinese, bilingual, or multiple-language output. Bilingual examples supplied by the user are format references and do not change the default language by themselves.
 
 ## Multiple Skill system
 
@@ -75,8 +75,8 @@ Render Notes as knowledge explanations with integrated formula, method, calculat
 
 Specific Research Report writing:
 
-- MCQ: source questions in lecture order, tested point, MCQ wording, correct reasoning, plausible wrong statement, why it is wrong, and question-derived high-frequency knowledge points for the report.
-- Short Answer: source questions in lecture order, definition, mark points, explain sentence, example answer, and question-derived high-frequency knowledge points for the report.
+- MCQ: a result-only Past Paper-driven recurrence report in lecture order, written as concise exam-needed knowledge points in the reference-document style rather than as a field-by-field template, answer walkthrough, or Notes-style teaching document.
+- Short Answer: a result-only Past Paper-driven recurrence report in lecture order, written as concise exam-needed knowledge points in the reference-document style rather than as a field-by-field template, answer walkthrough, or Notes-style teaching document.
 - Long Answer: source question, question demand, relevant knowledge, answer structure, example answer, and academic analysis/prediction result.
 - Practical/Data/Problem: source task, method aim, readout, control, calculation or interpretation, limitation, conclusion, and academic analysis/prediction result.
 - Math/Physics/Practical Worked Solutions: every extracted calculation, derivation, estimate, proof, data, or problem question developed as worked-solution teaching notes with assumptions, unit or dimension reasoning, interpretation, and concise evidence status.
