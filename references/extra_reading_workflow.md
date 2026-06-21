@@ -1,6 +1,6 @@
 # Extra Reading Workflow
 
-Extra Reading mainly supports Essay Question and Example Essay enrichment. It adds academically useful external depth where essay-style outputs can earn credit for external evidence, mechanism depth, counterargument, or evaluation.
+Extra Reading supports Essay Question and Example Essay enrichment only. It adds academically useful external depth where essay-style outputs can earn credit for external evidence, mechanism depth, counterargument, or evaluation.
 
 ## Extra Reading Source Signals
 
@@ -104,7 +104,7 @@ Knowledge use: [...]
 
 Use Extra Reading in essay-style output when it improves conceptual explanation, molecular or mechanism detail, method interpretation, limitation handling, external evidence, counterargument, or evaluation.
 
-Use Extra Reading in Exam Type Related add-ons when it improves essay analysis or an explicitly requested externally enriched answer.
+Use Extra Reading in Exam Type Related output only when the confirmed Exam type includes Essay.
 
 ## Example Essay enrichment
 

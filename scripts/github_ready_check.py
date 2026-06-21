@@ -13,10 +13,22 @@ TEXT_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".json", ".toml", ".txt"}
 SKIP_PARTS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", "outputs"}
 PROHIBITED_EXACT_NAME = "_".join(["Exam", "Preparation", "Notes"]) + ".docx"
 PROHIBITED_RENDERER_CONSTANT = "OUTPUT" + "_NAME ="
+FOCUSED_SKILL_FILES = [
+    "skills/exam-prep-index/SKILL.md",
+    "skills/exam-prep-notes/SKILL.md",
+    "skills/exam-prep-mcq/SKILL.md",
+    "skills/exam-prep-short-answer/SKILL.md",
+    "skills/exam-prep-long-answer/SKILL.md",
+    "skills/exam-prep-worked-solutions/SKILL.md",
+    "skills/exam-prep-essay/SKILL.md",
+    "skills/exam-prep-extra-reading/SKILL.md",
+    "skills/exam-prep-question-solver/SKILL.md",
+    "skills/exam-prep-question-organizer/SKILL.md",
+]
 
 
 def tracked_files() -> list[Path]:
-    proc = subprocess.run(["git", "ls-files"], cwd=ROOT, text=True, capture_output=True)
+    proc = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=ROOT, text=True, capture_output=True)
     if proc.returncode == 0:
         return [ROOT / line for line in proc.stdout.splitlines() if line.strip()]
     return [path for path in ROOT.rglob("*") if path.is_file()]
@@ -96,20 +108,27 @@ def check() -> dict[str, object]:
         "scripts/validate_skill_contracts.py",
         "scripts/github_ready_check.py",
         "scripts/build_review_questions.py",
+        "scripts/exam_mode_tools.py",
         "scripts/publish_skill.py",
         ".github/workflows/ci.yml",
         ".github/workflows/skill-health.yml",
+        *FOCUSED_SKILL_FILES,
     ]
     missing_files = [name for name in files if not (ROOT / name).exists()]
     terms = {
-        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "distinct DOCX filename", "Auto-diagnosis review plan", "human review", "Essay Question and Example Essay enrichment"]),
+        "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "distinct DOCX filename", "Auto-diagnosis review plan", "human review", "Essay Question and Example Essay enrichment", "Question Solving", "Question Organization"]),
         "references/exam_prep_notes_protocol.md": missing_terms("references/exam_prep_notes_protocol.md", ["Formula Visibility", "formula_block", "workflow", "black-and-white academic paper tables", "Notes coverage comes from the full set of lecture and course knowledge units"]),
-        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "output set confirmation", "complete worked-solution notes", "question-derived high-frequency knowledge points for the add-on"]),
-        "references/input_and_evidence_protocol.md": missing_terms("references/input_and_evidence_protocol.md", ["human review", "source roles", "Material type"]),
-        "scripts/plan_workflow.py": missing_terms("scripts/plan_workflow.py", ["human_review_required", "review_status", "auto_diagnosis", "review_targets"]),
-        "scripts/build_review_questions.py": missing_terms("scripts/build_review_questions.py", ["request_user_input", "exam_type_route", "material_type_source_roles", "output_file_set"]),
+        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "Notes generation choice", "complete worked-solution notes", "question-derived high-frequency knowledge points for the report", "question_solution_report", "organized_questions_docx", "strict same-knowledge-point"]),
+        "references/input_and_evidence_protocol.md": missing_terms("references/input_and_evidence_protocol.md", ["human review", "source roles", "Material type", "strict same-knowledge-point retrieval", "latest matching unit"]),
+        "scripts/plan_workflow.py": missing_terms("scripts/plan_workflow.py", ["human_review_required", "review_status", "auto_diagnosis", "review_targets", "question_solution_report", "organized_questions_docx"]),
+        "scripts/build_review_questions.py": missing_terms("scripts/build_review_questions.py", ["request_user_input", "exam_type_route", "material_type_source_roles", "notes_output_choice", "follow_up_question_batches"]),
+        "scripts/exam_mode_tools.py": missing_terms("scripts/exam_mode_tools.py", ["build_question_solver_pack", "strict_same_knowledge_point_questions", "organize_questions_by_lecture_order", "write_organized_questions_docx"]),
         "scripts/generate_exam_prep_notes_docx.py": missing_terms("scripts/generate_exam_prep_notes_docx.py", ["def output_path", "def visible_formula", "safe_docx_name"]),
+        "skill_manifest.json": missing_terms("skill_manifest.json", ["multi_skill_system", "focused_skills", "removed_focused_skills", "exam-prep-index", "exam-prep-worked-solutions", "exam-prep-question-solver", "exam-prep-question-organizer"]),
+        "scripts/publish_skill.py": missing_terms("scripts/publish_skill.py", ["discover_focused_skills", "sync_focused_skill", "cleanup_removed_focused_skills", "focused_skills", "DEFAULT_LOCAL_SKILL_ROOT"]),
     }
+    for focused_path in FOCUSED_SKILL_FILES:
+        terms[focused_path] = missing_terms(focused_path, ["description:", "When this Skill is read from the source checkout"])
     terms = {name: missing for name, missing in terms.items() if missing}
     failures = {
         "missing_files": missing_files,

@@ -14,6 +14,18 @@ TEXT_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".json", ".toml", ".txt"}
 SKIP_PARTS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", "outputs"}
 PROHIBITED_EXACT_NAME = "_".join(["Exam", "Preparation", "Notes"]) + ".docx"
 PROHIBITED_RENDERER_CONSTANT = "OUTPUT" + "_NAME ="
+FOCUSED_SKILL_FILES = [
+    "skills/exam-prep-index/SKILL.md",
+    "skills/exam-prep-notes/SKILL.md",
+    "skills/exam-prep-mcq/SKILL.md",
+    "skills/exam-prep-short-answer/SKILL.md",
+    "skills/exam-prep-long-answer/SKILL.md",
+    "skills/exam-prep-worked-solutions/SKILL.md",
+    "skills/exam-prep-essay/SKILL.md",
+    "skills/exam-prep-extra-reading/SKILL.md",
+    "skills/exam-prep-question-solver/SKILL.md",
+    "skills/exam-prep-question-organizer/SKILL.md",
+]
 
 
 def json_readable(path: Path) -> bool:
@@ -25,7 +37,7 @@ def json_readable(path: Path) -> bool:
 
 
 def tracked_files() -> list[Path]:
-    proc = subprocess.run(["git", "ls-files"], cwd=ROOT, text=True, capture_output=True)
+    proc = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=ROOT, text=True, capture_output=True)
     if proc.returncode == 0:
         return [ROOT / line for line in proc.stdout.splitlines() if line.strip()]
     return [path for path in ROOT.rglob("*") if path.is_file()]
@@ -108,7 +120,15 @@ def script_self_test(script: str) -> str | None:
 
 
 def check_all() -> dict[str, Any]:
-    files = ["SKILL.md", "README.md", "skill_manifest.json", "scripts/publish_skill.py", "scripts/build_review_questions.py"]
+    files = [
+        "SKILL.md",
+        "README.md",
+        "skill_manifest.json",
+        "scripts/publish_skill.py",
+        "scripts/build_review_questions.py",
+        "scripts/exam_mode_tools.py",
+        *FOCUSED_SKILL_FILES,
+    ]
     schemas = sorted(str(path.relative_to(ROOT)) for path in (ROOT / "schemas").glob("*.schema.json"))
     missing_files = [name for name in files if not (ROOT / name).exists()]
     invalid_schemas = [name for name in schemas if not json_readable(ROOT / name)]
@@ -127,9 +147,13 @@ def check_all() -> dict[str, Any]:
                 "human review",
                 "Exam type",
                 "Material type",
-                "output set",
+                "whether Notes should be generated",
                 "Essay Question and Example Essay enrichment",
-                "question-derived high-frequency knowledge points for the add-on",
+                "question-derived high-frequency knowledge points for the report",
+                "Question Solving",
+                "Question Organization",
+                "strict same-knowledge-point",
+                "organized_questions_docx",
             ],
         ),
         "references/exam_prep_notes_protocol.md": require_terms(
@@ -146,26 +170,30 @@ def check_all() -> dict[str, Any]:
                 "worked_example",
                 "Loose top-level planning fields are internal.",
                 "Notes coverage comes from the full set of lecture and course knowledge units",
-                "Question and practice material calibrate add-on emphasis",
+                "Question and practice material calibrate Specific Research Report emphasis",
             ],
         ),
         "references/exam_mode_and_addons_protocol.md": require_terms(
             "references/exam_mode_and_addons_protocol.md",
             [
                 "Exam Type Related",
-                "separate outputs",
+                "Specific Research Reports",
                 "Practice material can still inform Notes coverage",
-                "question-based Exam Type Related DOCX",
+                "question-based Specific Research Report",
                 "practical_worked_solutions_docx",
                 "human review",
                 "Exam type",
                 "Material type",
-                "output set confirmation",
+                "Notes generation choice",
                 "Mixed",
                 "complete worked-solution notes",
                 "exam-answering ability",
-                "user-confirmed final output set",
-                "question-derived high-frequency knowledge points for the add-on",
+                "user-confirmed route and Notes decision",
+                "question-derived high-frequency knowledge points for the report",
+                "question_solution_report",
+                "organized_questions_docx",
+                "strict same-knowledge-point",
+                "latest matching lecture",
             ],
         ),
         "references/extra_reading_workflow.md": require_terms(
@@ -184,6 +212,8 @@ def check_all() -> dict[str, Any]:
                 "Material type",
                 "Auto-diagnosis review plan",
                 "Essay Question and Example Essay enrichment",
+                "strict same-knowledge-point retrieval",
+                "latest matching unit",
             ],
         ),
         "references/language_quality_contract.md": require_terms(
@@ -214,7 +244,10 @@ def check_all() -> dict[str, Any]:
                 "auto_diagnosis",
                 "review_targets",
                 "human_review_exam_material_output_confirmation",
-                "worked_solution_teaching_notes",
+                "worked_solution_specific_research_report",
+                "question_solution_report",
+                "organized_questions_docx",
+                "strict_same_knowledge_point_question_retrieval",
             ],
         ),
         "scripts/build_review_questions.py": require_terms(
@@ -223,8 +256,25 @@ def check_all() -> dict[str, Any]:
                 "request_user_input",
                 "exam_type_route",
                 "material_type_source_roles",
-                "output_file_set",
+                "notes_output_choice",
                 "Auto-diagnosis review plan",
+                "follow_up_question_batches",
+                "essay_example_essay_count",
+                "mcq_research_report_choice",
+                "short_answer_research_report_choice",
+                "long_answer_detailed_analysis_choice",
+                "worked_solution_teaching_choice",
+            ],
+        ),
+        "scripts/exam_mode_tools.py": require_terms(
+            "scripts/exam_mode_tools.py",
+            [
+                "build_question_solver_pack",
+                "strict_same_knowledge_point_questions",
+                "organize_questions_by_lecture_order",
+                "write_organized_questions_docx",
+                "solve-question",
+                "organize-questions",
             ],
         ),
         "README.md": require_terms(
@@ -233,10 +283,30 @@ def check_all() -> dict[str, Any]:
                 "human review",
                 "Exam type",
                 "Material type",
-                "output set confirmation",
+                "whether Notes should be generated",
+                "Multiple Skill system",
+                "focused sibling Skills",
                 "scripts/build_review_questions.py",
                 "exam-relevant knowledge",
-                "question-derived high-frequency knowledge points for the add-on",
+                "Specific Research Report",
+                "exam-prep-question-solver",
+                "exam-prep-question-organizer",
+                "question_solution_report",
+                "organized_questions_docx",
+            ],
+        ),
+        "skill_manifest.json": require_terms(
+            "skill_manifest.json",
+            [
+                "multi_skill_system",
+                "focused_skills",
+                "removed_focused_skills",
+                "exam-prep-index",
+                "exam-prep-worked-solutions",
+                "exam-prep-question-solver",
+                "exam-prep-question-organizer",
+                "question_solving",
+                "question_organizing",
             ],
         ),
         "agents/openai.yaml": require_terms(
@@ -245,14 +315,38 @@ def check_all() -> dict[str, Any]:
                 "human_review",
                 "public_content",
                 "internal_workflow_record",
+                "multi_skill_system",
+                "focused_skills",
                 "Auto-diagnosis review plan",
                 "request_user_input",
                 "Exam type",
                 "Material type",
-                "output set confirmation",
+                "Notes generation choice",
+                "exam-prep-question-solver",
+                "exam-prep-question-organizer",
+                "question_solution_report",
+                "organized_questions_docx",
+            ],
+        ),
+        "scripts/publish_skill.py": require_terms(
+            "scripts/publish_skill.py",
+            [
+                "discover_focused_skills",
+                "sync_focused_skill",
+                "cleanup_removed_focused_skills",
+                "focused_skills",
+                "DEFAULT_LOCAL_SKILL_ROOT",
             ],
         ),
     }
+    for focused_path in FOCUSED_SKILL_FILES:
+        missing_terms[focused_path] = require_terms(
+            focused_path,
+            [
+                "description:",
+                "When this Skill is read from the source checkout",
+            ],
+        )
     missing_terms = {name: terms for name, terms in missing_terms.items() if terms}
     cjk = cjk_locations()
     prohibited_names = prohibited_filename_locations()
@@ -262,6 +356,7 @@ def check_all() -> dict[str, Any]:
         for failure in [
             script_self_test("scripts/plan_workflow.py"),
             script_self_test("scripts/build_review_questions.py"),
+            script_self_test("scripts/exam_mode_tools.py"),
         ]
         if failure
     ]

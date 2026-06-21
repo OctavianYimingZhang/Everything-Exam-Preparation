@@ -4,26 +4,87 @@
   "repo": "OctavianYimingZhang/Everything-Exam-Preparation",
   "branch": "main",
   "entrypoint": "SKILL.md",
+  "multi_skill_system": true,
+  "index_skill": "skills/exam-prep-index/SKILL.md",
   "default_output": "docx_notes",
   "output_name_policy": "user_requested_or_generated_from_context",
   "human_review_required": true,
   "human_review_targets": [
     "exam_type_route",
     "material_type_source_roles",
-    "output_file_set"
+    "notes_output_choice",
+    "route_specific_follow_up_choices"
   ],
   "routes": [
     "exam_prep_notes",
-    "exam_mode_diagnosis",
     "mcq_preparation",
     "short_answer_preparation",
     "long_answer_preparation",
     "worked_solution_preparation",
-    "essay_preparation"
+    "essay_preparation",
+    "mixed_exam_preparation",
+    "question_solving",
+    "question_organizing"
+  ],
+  "removed_focused_skills": [
+    "exam-prep-exam-mode"
+  ],
+  "focused_skills": [
+    {
+      "name": "exam-prep-index",
+      "path": "skills/exam-prep-index/SKILL.md",
+      "route": "index"
+    },
+    {
+      "name": "exam-prep-notes",
+      "path": "skills/exam-prep-notes/SKILL.md",
+      "route": "exam_prep_notes"
+    },
+    {
+      "name": "exam-prep-mcq",
+      "path": "skills/exam-prep-mcq/SKILL.md",
+      "route": "mcq_preparation"
+    },
+    {
+      "name": "exam-prep-short-answer",
+      "path": "skills/exam-prep-short-answer/SKILL.md",
+      "route": "short_answer_preparation"
+    },
+    {
+      "name": "exam-prep-long-answer",
+      "path": "skills/exam-prep-long-answer/SKILL.md",
+      "route": "long_answer_preparation"
+    },
+    {
+      "name": "exam-prep-worked-solutions",
+      "path": "skills/exam-prep-worked-solutions/SKILL.md",
+      "route": "worked_solution_preparation"
+    },
+    {
+      "name": "exam-prep-essay",
+      "path": "skills/exam-prep-essay/SKILL.md",
+      "route": "essay_preparation"
+    },
+    {
+      "name": "exam-prep-extra-reading",
+      "path": "skills/exam-prep-extra-reading/SKILL.md",
+      "route": "extra_reading_enrichment"
+    },
+    {
+      "name": "exam-prep-question-solver",
+      "path": "skills/exam-prep-question-solver/SKILL.md",
+      "route": "question_solving"
+    },
+    {
+      "name": "exam-prep-question-organizer",
+      "path": "skills/exam-prep-question-organizer/SKILL.md",
+      "route": "question_organizing"
+    }
   ],
   "publish": {
     "github_push": "python3 scripts/publish_skill.py --push",
     "local_skill_update": "python3 scripts/publish_skill.py --sync-local-skill",
+    "local_multi_skill_update": "python3 scripts/publish_skill.py --sync-local-skill",
     "push_and_update": "python3 scripts/publish_skill.py --push --sync-local-skill"
   },
   "post_update_commands": [

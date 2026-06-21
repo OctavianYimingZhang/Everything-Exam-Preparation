@@ -8,24 +8,26 @@ from typing import Any
 
 ROUTE_LABELS = {
     "exam_prep_notes": "Notes",
-    "exam_mode_diagnosis": "Exam mode diagnosis",
     "mcq_preparation": "MCQ",
     "short_answer_preparation": "Short Answer",
     "long_answer_preparation": "Long Answer or Practical/Data/Problem",
     "worked_solution_preparation": "Worked Solutions",
     "essay_preparation": "Essay",
     "mixed_exam_preparation": "Mixed",
+    "question_solving": "Question Solving",
+    "question_organizing": "Question Organization",
 }
 
 ROUTE_SHORT_LABELS = {
     "exam_prep_notes": "Notes",
-    "exam_mode_diagnosis": "Diagnosis",
     "mcq_preparation": "MCQ",
     "short_answer_preparation": "Short Answer",
     "long_answer_preparation": "Long Answer",
     "worked_solution_preparation": "Worked",
     "essay_preparation": "Essay",
     "mixed_exam_preparation": "Mixed",
+    "question_solving": "Solver",
+    "question_organizing": "Organizer",
 }
 
 ROLE_LABELS = {
@@ -48,13 +50,14 @@ ROLE_SHORT_LABELS = {
 
 OUTPUT_LABELS = {
     "docx_notes": "Notes",
-    "exam_type_related_addon_docx": "Exam Type Related add-on",
-    "mcq_exam_type_related_addon": "MCQ add-on",
-    "short_answer_exam_type_related_addon": "Short Answer add-on",
-    "long_answer_practical_data_problem_exam_type_related_addon": "Long Answer or Practical/Data/Problem add-on",
-    "essay_exam_type_related_addon": "Essay add-on",
-    "practical_worked_solutions_docx": "Worked Solutions",
-    "chat_report": "chat diagnosis",
+    "exam_type_related_addon_docx": "Specific Research Report",
+    "mcq_exam_type_related_addon": "MCQ Specific Research Report",
+    "short_answer_exam_type_related_addon": "Short Answer Specific Research Report",
+    "long_answer_practical_data_problem_exam_type_related_addon": "Long Answer or Practical/Data/Problem Specific Research Report",
+    "essay_exam_type_related_addon": "Essay Specific Research Report",
+    "practical_worked_solutions_docx": "Worked Solutions Specific Research Report",
+    "question_solution_report": "Question Solution Report",
+    "organized_questions_docx": "Organized Questions DOCX",
 }
 
 
@@ -192,7 +195,7 @@ def exam_type_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any
     if mixed:
         options.append(option(
             "Mixed route",
-            "Keep multiple exam signals active and ask again if the route needs splitting after source review.",
+            "Activate every selected exam-type Sub Skill after Notes are generated or skipped.",
         ))
     if flags["has_practical_worked_questions"] or has_calculation:
         options.append(option(
@@ -201,17 +204,17 @@ def exam_type_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any
         ))
     if flags["has_past_paper_questions"] or flags["has_practical_questions"]:
         options.append(option(
-            "Question add-on",
-            "Treat question material as an Exam Type Related add-on while keeping Notes knowledge-only.",
+            "Question report",
+            "Treat question material as a Specific Research Report while keeping Notes knowledge-only.",
         ))
     if route != "exam_prep_notes":
         options.append(option(
             "Notes route",
-            "Use the supplied material mainly for explanation-only Notes instead of an exam-mode add-on.",
+            "Use the supplied material mainly for explanation-only Notes before any exam-specific report.",
         ))
     options.append(option(
-        "Diagnosis report",
-        "Stop at exam-mode diagnosis if the source pack is not yet ready for Notes or add-on drafting.",
+        "Ask me to choose",
+        "Use the material diagnosis to ask for the exact Exam type before selecting Sub Skills.",
     ))
     return {
         "header": "Exam Type",
@@ -247,7 +250,7 @@ def material_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]
     if dominant_role != "practice_material":
         options.append(option(
             "Practice material",
-            "Treat question-like files as practice material that informs exam add-ons and Notes coverage signals.",
+            "Treat question-like files as practice material that informs Specific Research Reports and Notes coverage signals.",
         ))
     if "marking_material" in roles:
         options.append(option(
@@ -277,61 +280,161 @@ def material_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]
 
 def output_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> dict[str, Any]:
     outputs = proposed_outputs(workflow_plan)
-    route = str(workflow_plan.get("route") or "exam_prep_notes")
-    flags = question_flags(source_scan, workflow_plan)
-    label = output_names(outputs)
-    if outputs == ["docx_notes"]:
-        recommended_label = "Notes focus (Recommended)"
-    elif outputs == ["docx_notes", "exam_type_related_addon_docx"]:
-        recommended_label = "Notes + Add-on (Recommended)"
-    elif outputs == ["docx_notes", "practical_worked_solutions_docx"]:
-        recommended_label = "Notes + Worked (Recommended)"
-    elif outputs == ["practical_worked_solutions_docx"]:
-        recommended_label = "Worked focus (Recommended)"
-    elif outputs:
-        recommended_label = "Proposed set (Recommended)"
-    else:
-        recommended_label = "Diagnosis report (Recommended)"
-    options = [
-        option(
-            recommended_label,
-            f"Generate the preliminary output set: {label}.",
+    route = str(workflow_plan.get("route") or workflow_plan.get("auto_diagnosis", {}).get("route") or "exam_prep_notes")
+    report_outputs = [output for output in outputs if output != "docx_notes"]
+    report_label = output_names(report_outputs)
+    if "docx_notes" in outputs:
+        recommended = option(
+            "Generate Notes first (Recommended)",
+            f"Generate explanation Notes before the {report_label if report_outputs else 'final output'}; skip Notes when the user declines them.",
         )
+    else:
+        recommended = option(
+            "Add Notes first (Recommended)",
+            f"Add explanation Notes before the confirmed {ROUTE_LABELS.get(route, route)} output.",
+        )
+    options = [
+        recommended,
+        option(
+            "Skip Notes",
+            "Do not generate Notes; go directly to the confirmed exam-specific Specific Research Report.",
+        ),
+        option(
+            "Notes in chat",
+            "Give concise Notes in chat before the report instead of rendering a separate Notes DOCX.",
+        ),
     ]
-    if outputs != ["docx_notes"]:
-        options.append(option(
-            "Notes focus",
-            "Generate explanation Notes as the selected output set and keep add-on or worked-solution outputs for a separate request.",
-        ))
-    elif flags["has_past_paper_questions"] or flags["has_practical_questions"]:
-        options.append(option(
-            "Notes + Add-on",
-            "Generate Notes plus a separate Exam Type Related add-on from question or practical material.",
-        ))
-    elif flags["has_practical_worked_questions"] or "practical_worked_solutions_docx" in outputs:
-        options.append(option(
-            "Notes + Worked",
-            "Generate Notes plus detailed worked-solution teaching notes for calculation, data, or problem material.",
-        ))
-    elif route != "exam_prep_notes":
-        options.append(option(
-            "Add-on focus",
-            "Generate the route-specific exam add-on as the selected output set and keep full explanation Notes for a separate request.",
-        ))
-    custom_option = option(
-        "Custom outputs",
-        "Specify the exact file set before rendering begins.",
-    )
-    options.append(custom_option)
-    selected_options = unique_options(options, limit=2)
-    if not any(item["label"] == "Custom outputs" for item in selected_options):
-        selected_options.append(custom_option)
     return {
-        "header": "Outputs",
-        "id": "output_file_set",
-        "question": "Confirm the final output file set before DOCX, add-on, or worked-solution rendering.",
-        "options": selected_options,
+        "header": "Notes",
+        "id": "notes_output_choice",
+        "question": "Should I generate Notes before the exam-specific report?",
+        "options": unique_options(options, limit=3),
     }
+
+
+def essay_followup_questions() -> list[dict[str, Any]]:
+    return [
+        {
+            "header": "Essay",
+            "id": "essay_example_essay_choice",
+            "question": "Should I generate Example Essays for the confirmed Essay route?",
+            "options": [
+                option("Generate examples (Recommended)", "Generate Example Essays after the essay preparation report."),
+                option("Plan only", "Generate essay plans and paragraph strategy without full Example Essays."),
+                option("Skip examples", "Do not generate Example Essays."),
+            ],
+        },
+        {
+            "header": "Count",
+            "id": "essay_example_essay_count",
+            "question": "How many Example Essays should be generated if examples are selected?",
+            "options": [
+                option("2 essays (Recommended)", "Generate two Example Essays to cover more than one likely angle."),
+                option("1 essay", "Generate one focused Example Essay."),
+                option("3 essays", "Generate three Example Essays for broader coverage."),
+            ],
+        },
+        {
+            "header": "Questions",
+            "id": "essay_question_source",
+            "question": "Which essay questions should the Example Essays use?",
+            "options": [
+                option("Generate from material (Recommended)", "Infer likely essay questions from the supplied course and assessment material."),
+                option("Use my questions", "Use the user's prepared or predicted questions as the essay prompts."),
+                option("Both", "Use user-prepared questions first, then fill remaining examples from the material."),
+            ],
+        },
+    ]
+
+
+def mcq_followup_question() -> dict[str, Any]:
+    return {
+        "header": "MCQ Report",
+        "id": "mcq_research_report_choice",
+        "question": "Should I generate the MCQ Exam Specific Research Report?",
+        "options": [
+            option("Generate report (Recommended)", "Build the MCQ report with tested points, correct reasoning, and plausible wrong statements."),
+            option("Brief report", "Give a concise MCQ report without full question-by-question expansion."),
+            option("Skip report", "Do not generate the MCQ report."),
+        ],
+    }
+
+
+def short_answer_followup_question() -> dict[str, Any]:
+    return {
+        "header": "SAQ Report",
+        "id": "short_answer_research_report_choice",
+        "question": "Should I generate the Short Answer Exam Specific Research Report?",
+        "options": [
+            option("Generate report (Recommended)", "Build definitions, mark points, explain sentences, and example answers."),
+            option("Brief report", "Give a compact short-answer report focused on mark points."),
+            option("Skip report", "Do not generate the Short Answer report."),
+        ],
+    }
+
+
+def long_answer_followup_question() -> dict[str, Any]:
+    return {
+        "header": "Long Ans",
+        "id": "long_answer_detailed_analysis_choice",
+        "question": "Should I generate detailed analysis for Long Answer questions?",
+        "options": [
+            option("Detailed analysis (Recommended)", "Explain question demand, relevant knowledge, structure, and example answer logic."),
+            option("Outline only", "Generate answer structures without full detailed analysis."),
+            option("Skip analysis", "Do not generate long-answer analysis."),
+        ],
+    }
+
+
+def worked_solution_followup_question() -> dict[str, Any]:
+    return {
+        "header": "Worked",
+        "id": "worked_solution_teaching_choice",
+        "question": "Should I provide question-by-question teaching for Worked Solutions?",
+        "options": [
+            option("Teach each question (Recommended)", "Explain interpretation, method choice, steps, units, and result meaning."),
+            option("Steps only", "Show solution steps with minimal teaching prose."),
+            option("Skip teaching", "Do not add question-by-question teaching."),
+        ],
+    }
+
+
+def route_followup_keys(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> list[str]:
+    route = str(workflow_plan.get("route") or workflow_plan.get("auto_diagnosis", {}).get("route") or "exam_prep_notes")
+    if route == "mixed_exam_preparation":
+        return ["essay", "mcq", "short_answer", "long_answer", "worked_solution"]
+    mapping = {
+        "essay_preparation": ["essay"],
+        "mcq_preparation": ["mcq"],
+        "short_answer_preparation": ["short_answer"],
+        "long_answer_preparation": ["long_answer"],
+        "worked_solution_preparation": ["worked_solution"],
+    }
+    keys = list(mapping.get(route, []))
+    flags = question_flags(source_scan, workflow_plan)
+    if flags.get("has_practical_worked_questions") and "worked_solution" not in keys:
+        keys.append("worked_solution")
+    return keys
+
+
+def route_specific_questions(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> list[dict[str, Any]]:
+    questions: list[dict[str, Any]] = []
+    for key in route_followup_keys(workflow_plan, source_scan):
+        if key == "essay":
+            questions.extend(essay_followup_questions())
+        elif key == "mcq":
+            questions.append(mcq_followup_question())
+        elif key == "short_answer":
+            questions.append(short_answer_followup_question())
+        elif key == "long_answer":
+            questions.append(long_answer_followup_question())
+        elif key == "worked_solution":
+            questions.append(worked_solution_followup_question())
+    return questions
+
+
+def question_batches(questions: list[dict[str, Any]], size: int = 3) -> list[list[dict[str, Any]]]:
+    return [questions[i:i + size] for i in range(0, len(questions), size)]
 
 
 def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> dict[str, Any]:
@@ -343,6 +446,7 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
         material_question(workflow_plan, source_scan),
         output_question(workflow_plan, source_scan),
     ]
+    followups = route_specific_questions(workflow_plan, source_scan)
     return {
         "schema_version": 1,
         "call": "request_user_input",
@@ -353,13 +457,16 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
             "material_type_source_roles": roles,
             "question_material": question_flags(source_scan, workflow_plan),
             "proposed_outputs": outputs,
+            "notes_default": "generate_notes_first",
             "review_sequence": [
                 "Show this plan to the user before asking questions.",
-                "Ask the Exam type, Material type, and output set questions.",
+                "Ask the Exam type, Material type, and Notes questions.",
+                "Ask route-specific follow-up questions in batches of at most three.",
                 "Update the workflow plan from the user's answers before generating public output.",
             ],
         },
         "questions": questions,
+        "follow_up_question_batches": question_batches(followups),
     }
 
 
@@ -370,25 +477,47 @@ def self_test() -> None:
     assert len(lecture["questions"]) == 3
     assert lecture["questions"][0]["id"] == "exam_type_route"
     assert lecture["questions"][0]["options"][0]["label"] == "Notes route (Recommended)"
-    assert lecture["questions"][2]["options"][0]["label"] == "Notes focus (Recommended)"
+    assert lecture["questions"][2]["id"] == "notes_output_choice"
+    assert lecture["questions"][2]["options"][0]["label"] == "Generate Notes first (Recommended)"
 
     past_scan = {"documents": [{"source_hint": "practice_material", "question_signals": {"has_questions": True, "has_past_paper": True}}]}
     past_plan = {"route": "exam_prep_notes", "proposed_outputs": ["docx_notes", "exam_type_related_addon_docx"], "source_summary": {"source_hints": {"practice_material": 1}}}
     past = build_payload(past_plan, past_scan)
-    assert "Question add-on" in [item["label"] for item in past["questions"][0]["options"]]
-    assert past["questions"][2]["options"][0]["label"] == "Notes + Add-on (Recommended)"
+    assert "Question report" in [item["label"] for item in past["questions"][0]["options"]]
+    assert past["questions"][2]["options"][0]["label"] == "Generate Notes first (Recommended)"
 
     practical_scan = {"documents": [{"source_hint": "practice_material", "question_signals": {"has_questions": True, "has_practical_questions": True, "has_practical_worked_questions": True}}], "fragments": [{"knowledge_roles": ["calculation"]}]}
     practical_plan = {"route": "worked_solution_preparation", "proposed_outputs": ["practical_worked_solutions_docx"], "source_summary": {"source_hints": {"practice_material": 1}}}
     practical = build_payload(practical_plan, practical_scan)
     assert "Worked solutions" in [item["label"] for item in practical["questions"][0]["options"]]
-    assert practical["questions"][2]["options"][0]["label"] == "Worked focus (Recommended)"
+    assert practical["questions"][2]["options"][0]["label"] == "Add Notes first (Recommended)"
+    assert practical["follow_up_question_batches"][0][0]["id"] == "worked_solution_teaching_choice"
+
+    essay_plan = {"route": "essay_preparation", "proposed_outputs": ["docx_notes", "essay_exam_type_related_addon"]}
+    essay = build_payload(essay_plan, lecture_scan)
+    essay_ids = [item["id"] for batch in essay["follow_up_question_batches"] for item in batch]
+    assert essay_ids == ["essay_example_essay_choice", "essay_example_essay_count", "essay_question_source"]
+
+    mcq = build_payload({"route": "mcq_preparation", "proposed_outputs": ["docx_notes", "mcq_exam_type_related_addon"]}, past_scan)
+    assert mcq["follow_up_question_batches"][0][0]["id"] == "mcq_research_report_choice"
+
+    short_answer = build_payload({"route": "short_answer_preparation", "proposed_outputs": ["docx_notes", "short_answer_exam_type_related_addon"]}, past_scan)
+    assert short_answer["follow_up_question_batches"][0][0]["id"] == "short_answer_research_report_choice"
+
+    long_answer = build_payload({"route": "long_answer_preparation", "proposed_outputs": ["docx_notes", "long_answer_practical_data_problem_exam_type_related_addon"]}, past_scan)
+    assert long_answer["follow_up_question_batches"][0][0]["id"] == "long_answer_detailed_analysis_choice"
 
     mixed_scan = {"documents": [{"source_hint": "knowledge_material"}, {"source_hint": "practice_material"}, {"source_hint": "other_material"}]}
-    mixed_plan = {"route": "exam_prep_notes", "proposed_outputs": ["docx_notes"], "auto_diagnosis": {"mixed_or_unclear": True}}
+    mixed_plan = {"route": "mixed_exam_preparation", "proposed_outputs": ["docx_notes", "exam_type_related_addon_docx"], "auto_diagnosis": {"mixed_or_unclear": True}}
     mixed = build_payload(mixed_plan, mixed_scan)
     assert mixed["auto_diagnosis_review_plan"]["title"] == "Auto-diagnosis review plan"
     assert mixed["questions"][1]["options"][0]["label"] == "Mixed roles (Recommended)"
+    mixed_ids = [item["id"] for batch in mixed["follow_up_question_batches"] for item in batch]
+    assert "essay_example_essay_choice" in mixed_ids
+    assert "mcq_research_report_choice" in mixed_ids
+    assert "short_answer_research_report_choice" in mixed_ids
+    assert "long_answer_detailed_analysis_choice" in mixed_ids
+    assert "worked_solution_teaching_choice" in mixed_ids
 
 
 def main() -> None:

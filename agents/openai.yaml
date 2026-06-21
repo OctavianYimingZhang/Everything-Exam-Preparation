@@ -1,18 +1,37 @@
 name: Everything Exam Preparation
 entrypoint: SKILL.md
+multi_skill_system:
+  enabled: true
+  index_skill: skills/exam-prep-index/SKILL.md
+  focused_skills:
+    - exam-prep-index
+    - exam-prep-notes
+    - exam-prep-mcq
+    - exam-prep-short-answer
+    - exam-prep-long-answer
+    - exam-prep-worked-solutions
+    - exam-prep-essay
+    - exam-prep-extra-reading
+    - exam-prep-question-solver
+    - exam-prep-question-organizer
+  removed_focused_skills:
+    - exam-prep-exam-mode
 default_route: exam_prep_notes
 default_output: docx_notes
+default_workflow: analyze_all_materials_then_ask_exam_type_and_notes_then_generate_notes_then_specific_research_report
 conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
 conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
+conditional_question_solution: question_solution_report_when_user_asks_how_to_solve_a_supplied_question
+conditional_question_organization: organized_questions_docx_when_user_asks_to_sort_past_paper_or_practice_questions_by_lecture_order
 output_name_policy: user-requested filename first; otherwise generate clear distinct DOCX filenames for each output from the source, course, prompt, or note title
 human_review:
   required_before_public_output: true
   plan_title: Auto-diagnosis review plan
-  prompt: show the automatic diagnosis first, then call request_user_input to confirm Exam type, Material type/source roles, and output set confirmation before generating Notes, add-ons, or worked solutions
+  prompt: show the automatic diagnosis first, then call request_user_input to confirm Exam type, Material type/source roles, and whether Notes should be generated before generating Notes, Specific Research Reports, add-ons, or worked solutions
   review_targets:
     - Exam type or route
     - Material type or source roles
-    - output set confirmation
+    - Notes generation choice
 source_hints:
   use: open provenance labels
   coverage_driver: knowledge_signals
@@ -45,7 +64,9 @@ student_surface:
     - exam-relevant understanding
     - academic source visuals
     - worked examples
-    - confirmed add-on content
+    - confirmed Specific Research Report content
+    - question solution reports with strict same-knowledge-point transfer practice
+    - organized Past Paper and Practice Material question lists
   internal_workflow_record:
     - source intake narration
     - extraction notes
@@ -60,4 +81,11 @@ student_surface:
     - Short Answer
     - Long Answer
     - Practical/Data/Problem
+    - Worked Solutions
     - Essay
+    - Mixed
+    - Question Solving
+    - Question Organization
+extra_reading_policy: Extra Reading is only used when the confirmed Exam type includes Essay.
+question_solver_policy: Use user-supplied material to explain the target question, show the matched knowledge unit, and retrieve strict same-knowledge-point questions.
+question_organizer_policy: Generate organized_questions_docx from supplied Past Paper and Practice Material questions sorted by lecture knowledge-unit order, assigning multi-unit questions to the latest matching lecture.

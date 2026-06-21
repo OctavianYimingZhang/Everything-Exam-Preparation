@@ -13,6 +13,7 @@ BASE_ACTIONS = [
     "human_review_exam_material_output_confirmation",
     "coverage_calibration",
     "course_knowledge_map",
+    "notes_generation_if_user_accepts",
 ]
 
 EXTRA_READING_ESSAY_ACTIONS = [
@@ -25,52 +26,72 @@ ROUTES: dict[str, list[str]] = {
     "exam_prep_notes": BASE_ACTIONS + [
         "exam_prep_notes",
     ],
-    "exam_mode_diagnosis": ["source_inventory", "exam_mode_diagnosis"],
     "mcq_preparation": BASE_ACTIONS + [
-        "mcq_exam_habit_analysis",
-        "mcq_notes_enrichment",
+        "mcq_specific_research_report",
     ],
     "short_answer_preparation": BASE_ACTIONS + [
-        "short_answer_habit_analysis",
-        "definition_and_mark_point_highlights",
-        "explain_answer_examples",
+        "short_answer_specific_research_report",
     ],
     "long_answer_preparation": BASE_ACTIONS + [
-        "practice_question_walkthroughs",
-        "example_answers",
+        "long_answer_practical_data_problem_specific_research_report",
     ],
     "worked_solution_preparation": BASE_ACTIONS + [
-        "worked_solution_teaching_notes",
+        "worked_solution_specific_research_report",
     ],
     "essay_preparation": BASE_ACTIONS + EXTRA_READING_ESSAY_ACTIONS + [
-        "exam_ready_essay_paragraphs",
-        "module_covering_essay_questions",
-        "example_essays",
+        "essay_specific_research_report",
+    ],
+    "mixed_exam_preparation": BASE_ACTIONS + [
+        "mixed_specific_research_reports",
+    ],
+    "question_solving": [
+        "source_inventory",
+        "fragment_index",
+        "target_question_analysis",
+        "match_question_to_knowledge_unit",
+        "strict_same_knowledge_point_question_retrieval",
+        "question_solution_report",
+    ],
+    "question_organizing": [
+        "source_inventory",
+        "fragment_index",
+        "lecture_order_knowledge_map",
+        "past_paper_practice_question_extraction",
+        "sort_questions_by_latest_matching_lecture",
+        "organized_questions_docx",
     ],
 }
 
 ROUTE_OUTPUTS = {
-    "exam_mode_diagnosis": ["chat_report"],
-    "mcq_preparation": ["mcq_exam_type_related_addon"],
-    "short_answer_preparation": ["short_answer_exam_type_related_addon"],
-    "long_answer_preparation": ["long_answer_practical_data_problem_exam_type_related_addon"],
-    "worked_solution_preparation": ["practical_worked_solutions_docx"],
-    "essay_preparation": ["essay_exam_type_related_addon"],
+    "mcq_preparation": ["docx_notes", "mcq_exam_type_related_addon"],
+    "short_answer_preparation": ["docx_notes", "short_answer_exam_type_related_addon"],
+    "long_answer_preparation": ["docx_notes", "long_answer_practical_data_problem_exam_type_related_addon"],
+    "worked_solution_preparation": ["docx_notes", "practical_worked_solutions_docx"],
+    "essay_preparation": ["docx_notes", "essay_exam_type_related_addon"],
+    "mixed_exam_preparation": ["docx_notes", "exam_type_related_addon_docx"],
+    "question_solving": ["question_solution_report"],
+    "question_organizing": ["organized_questions_docx"],
 }
 
 ROUTE_LABELS = {
     "exam_prep_notes": "Notes",
-    "exam_mode_diagnosis": "Exam mode diagnosis",
     "mcq_preparation": "MCQ",
     "short_answer_preparation": "Short Answer",
     "long_answer_preparation": "Long Answer or Practical/Data/Problem",
     "worked_solution_preparation": "Worked Solutions",
     "essay_preparation": "Essay",
+    "mixed_exam_preparation": "Mixed",
+    "question_solving": "Question Solving",
+    "question_organizing": "Question Organization",
 }
 
 
 def detect_route(prompt: str) -> str:
     p = (prompt or "").lower()
+    if any(k in p for k in ["organize past paper", "organise past paper", "sort past paper", "organize practice", "organise practice", "question organizer", "question list"]):
+        return "question_organizing"
+    if any(k in p for k in ["solve this question", "how to solve", "how do i solve", "work through this question", "question walkthrough", "same knowledge point"]):
+        return "question_solving"
     if any(k in p for k in ["essay", "in-campus", "model essay", "example essay", "thesis"]):
         return "essay_preparation"
     if any(k in p for k in ["mcq", "sba", "single best", "multiple choice", "true/false"]):
@@ -81,8 +102,8 @@ def detect_route(prompt: str) -> str:
         return "worked_solution_preparation"
     if any(k in p for k in ["long answer", "walkthrough", "practical", "data"]):
         return "long_answer_preparation"
-    if any(k in p for k in ["exam mode", "exam format", "how is", "diagnose", "identify format"]):
-        return "exam_mode_diagnosis"
+    if any(k in p for k in ["exam mode", "exam format", "how is", "diagnose", "identify format", "mixed"]):
+        return "mixed_exam_preparation"
     return "exam_prep_notes"
 
 
@@ -143,7 +164,7 @@ def auto_diagnosis(route: str, outputs: list[str], summary: dict[str, Any]) -> d
         "question_material": question_material,
         "proposed_outputs": outputs,
         "mixed_or_unclear": mixed_or_unclear,
-        "review_requirement": "Confirm or correct route, source roles, and output set before generating public Notes, add-ons, or worked solutions.",
+        "review_requirement": "Confirm or correct route, source roles, route-specific follow-up choices, and whether Notes should be generated before generating public Notes, Specific Research Reports, add-ons, or worked solutions.",
     }
 
 
@@ -171,8 +192,6 @@ def extra_reading_requested(prompt: str) -> bool:
 def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
     route = detect_route(prompt)
     action_ids = list(ROUTES[route])
-    if route != "essay_preparation" and extra_reading_requested(prompt):
-        action_ids.extend(EXTRA_READING_ESSAY_ACTIONS)
     if "human_review_exam_material_output_confirmation" not in action_ids:
         insert_at = action_ids.index("source_inventory") + 1 if "source_inventory" in action_ids else 0
         action_ids.insert(insert_at, "human_review_exam_material_output_confirmation")
@@ -194,6 +213,21 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
             "purpose": "build detailed worked solutions for practical calculation derivation data or problem questions",
         })
     summary = source_summary(source_scan)
+    notes = [
+        "Use source hints as rough provenance labels.",
+        "Display the Auto-diagnosis review plan and complete human review before generating public Notes, Specific Research Reports, add-ons, or worked solutions.",
+        "Ask the user to confirm the Exam type and whether Notes should be generated.",
+        "Generate Notes before the exam-specific report when the user accepts Notes; skip Notes when the user declines them.",
+        "Use coverage calibration to map knowledge signals into knowledge units before writing notes.",
+        "Use practice material as knowledge-signal evidence for repeated concepts, methods, calculations, source difficulty, and coverage density.",
+        "Keep public Notes as knowledge-explanation documents; route confirmed exam types to separate Specific Research Reports.",
+        "For mixed exam formats, activate every confirmed exam-type Sub Skill.",
+        "For calculation, derivation, estimate, proof, data, or problem material, build a separate worked-solution teaching DOCX.",
+        "For question solving, explain the target question, show matching knowledge, and retrieve only strict same-knowledge-point questions from user-supplied material.",
+        "For question organization, generate a DOCX question list ordered by lecture order and containing questions only.",
+    ]
+    if extra_reading_requested(prompt) and route != "essay_preparation":
+        notes.append("Extra Reading was requested, but Extra Reading is available only when the confirmed Exam type includes essay.")
     return {
         "schema_version": 2,
         "route": route,
@@ -209,8 +243,8 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
                 "purpose": "confirm or correct Material type and source roles before using sources",
             },
             {
-                "id": "output_file_set",
-                "purpose": "confirm the final output set before rendering files",
+                "id": "notes_output_choice",
+                "purpose": "confirm whether Notes should be generated before the exam-specific report",
             },
         ],
         "auto_diagnosis": auto_diagnosis(route, outputs, summary),
@@ -220,15 +254,7 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
         "output_name_policy": "Use user-requested filenames when supplied; otherwise generate a clear DOCX filename from the source, course, prompt, or note title.",
         "actions": actions,
         "source_summary": summary,
-        "notes": [
-            "Use source hints as rough provenance labels.",
-            "Display the Auto-diagnosis review plan and complete human review before generating public Notes, add-ons, or worked solutions.",
-            "Use coverage calibration to map knowledge signals into knowledge units before writing notes.",
-            "Use practice material as knowledge-signal evidence for repeated concepts, methods, calculations, source difficulty, and coverage density.",
-            "Use Extra Reading for essay-style enrichment when the user requests it or the confirmed output calls for it.",
-            "Keep public Notes as knowledge-explanation documents; route Past Paper and non-calculation question Practical material to a separate Exam Type Related DOCX.",
-            "For calculation, derivation, estimate, proof, data, or problem material, build a separate worked-solution teaching DOCX.",
-        ],
+        "notes": notes,
     }
 
 
@@ -251,7 +277,7 @@ def self_test() -> None:
     assert not any(action["id"] == "extra_reading_discovery" for action in out["actions"])
     assert out["human_review_required"] is True
     assert out["review_status"] == "pending_user_confirmation"
-    assert [target["id"] for target in out["review_targets"]] == ["exam_type_route", "material_type_source_roles", "output_file_set"]
+    assert [target["id"] for target in out["review_targets"]] == ["exam_type_route", "material_type_source_roles", "notes_output_choice"]
     assert out["auto_diagnosis"]["proposed_outputs"] == ["docx_notes"]
     assert out["proposed_outputs"] == ["docx_notes"]
     assert out["outputs"] == ["docx_notes"]
@@ -284,13 +310,16 @@ def self_test() -> None:
         "fragments": [{"knowledge_signals": ["calculation"], "knowledge_roles": ["calculation"]}],
     })
     assert past_worked["outputs"] == ["docx_notes", "practical_worked_solutions_docx"]
-    assert plan("make MCQ notes")["outputs"] == ["mcq_exam_type_related_addon"]
-    assert plan("short answer definitions")["outputs"] == ["short_answer_exam_type_related_addon"]
-    assert plan("long answer worked problem")["outputs"] == ["practical_worked_solutions_docx"]
-    assert plan("essay plans")["outputs"] == ["essay_exam_type_related_addon"]
+    assert plan("make MCQ notes")["outputs"] == ["docx_notes", "mcq_exam_type_related_addon"]
+    assert plan("short answer definitions")["outputs"] == ["docx_notes", "short_answer_exam_type_related_addon"]
+    assert plan("long answer worked problem")["outputs"] == ["docx_notes", "practical_worked_solutions_docx"]
+    assert plan("essay plans")["outputs"] == ["docx_notes", "essay_exam_type_related_addon"]
+    assert plan("solve this question")["outputs"] == ["question_solution_report"]
+    assert plan("organize past paper questions")["outputs"] == ["organized_questions_docx"]
     assert any(action["id"] == "extra_reading_essay_enrichment" for action in plan("essay plans")["actions"])
-    assert any(action["id"] == "extra_reading_essay_enrichment" for action in plan("use extra reading in these notes")["actions"])
+    assert not any(action["id"] == "extra_reading_essay_enrichment" for action in plan("use extra reading in these notes")["actions"])
     assert plan("prepare this course")["auto_diagnosis"]["mixed_or_unclear"] is False
+    assert plan("identify exam format")["route"] == "mixed_exam_preparation"
     assert any(action["id"] == "human_review_exam_material_output_confirmation" for action in plan("identify exam format")["actions"])
     assert out["source_summary"]["coverage_profile"]["knowledge_signal_counts"]["mechanism"] == 1
 

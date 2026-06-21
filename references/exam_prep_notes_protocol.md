@@ -12,7 +12,7 @@ Render DOCX Notes with Arial, 2.5 cm margins, 1.5 line spacing, centered main ti
 
 Readable DOCX styling should remain academic. Use moderate font sizes, black academic text, restrained heading style, compact captions, centered display formulas, and black-and-white academic paper tables when they improve scanability. Tables should use compact editable cells, concise titles above, restrained horizontal rules, portrait-friendly width, and notes below for symbols, abbreviations, units, statistical notation, or source details.
 
-Notes are explanation-only teaching documents and remain knowledge-only teaching notes. They teach the lecture and exam-relevant knowledge a student needs to master by explaining concepts, mechanisms, methods, calculations, assumptions, interpretations, evidence, and conceptual applications. Formulas, visuals, and worked examples are part of knowledge explanation when they help teach a knowledge unit. Exam Type Related preparation is handled as separate add-on output by `references/exam_mode_and_addons_protocol.md`.
+Notes are explanation-only teaching documents and remain knowledge-only teaching notes. They teach the lecture and exam-relevant knowledge a student needs to master by explaining concepts, mechanisms, methods, calculations, assumptions, interpretations, evidence, and conceptual applications. Formulas, visuals, and worked examples are part of knowledge explanation when they help teach a knowledge unit. Exam Type Related preparation is handled as a separate Specific Research Report by `references/exam_mode_and_addons_protocol.md`.
 
 ## Core Notes Content
 
@@ -28,9 +28,9 @@ Student-facing Notes may contain:
 - worked interpretation or calculation examples with step-by-step academic solutions when they teach reusable reasoning;
 - essay-style external enrichment when the confirmed output calls for it and the source strengthens a course point or essay claim.
 
-Student-facing Notes should present course knowledge explanation, exam-relevant understanding, academic source visuals, worked examples, and confirmed add-on content. Workflow artifacts, route planning, source intake narration, coverage calibration narration, QA state, and subagent narration belong to the internal workflow record.
+Student-facing Notes should present course knowledge explanation, exam-relevant understanding, academic source visuals, worked examples, and confirmed Specific Research Report content. Workflow artifacts, route planning, source intake narration, coverage calibration narration, QA state, and subagent narration belong to the internal workflow record.
 
-Notes coverage comes from the full set of lecture and course knowledge units. Question and practice material calibrate add-on emphasis and can reveal repeated concepts, methods, calculations, source difficulty, and knowledge density, but they do not narrow the Notes coverage. When no question or practice material is supplied, build Notes from the lecture/course knowledge units. Essay questions and scenario questions should guide add-on or essay emphasis while preserving full course knowledge coverage in Notes.
+Notes coverage comes from the full set of lecture and course knowledge units. Question and practice material calibrate Specific Research Report emphasis and can reveal repeated concepts, methods, calculations, source difficulty, and knowledge density, but they do not narrow the Notes coverage. When no question or practice material is supplied, build Notes from the lecture/course knowledge units. Essay questions and scenario questions should guide report emphasis while preserving full course knowledge coverage in Notes.
 
 ## Coverage Calibration
 
@@ -143,9 +143,9 @@ A typical Notes document contains:
 1. Main title.
 2. Knowledge-unit sections in course order or knowledge-priority order.
 3. Formula, method, comparison, and data-interpretation explanations inside the relevant knowledge unit.
-4. Essay-style external enrichment inside the confirmed essay/add-on paragraph or beside the course point it strengthens.
+4. Essay-style external enrichment inside the confirmed essay report paragraph or beside the course point it strengthens.
 
-Exam Type Related sections such as MCQ traps, short-answer templates, long-answer structures, practical/data tactics, essay plans, and standalone reading lists are add-on content. Route them through the separate preparation add-on workflow.
+Exam Type Related sections such as MCQ traps, short-answer templates, long-answer structures, practical/data tactics, essay plans, and standalone reading lists are Specific Research Report content. Route them through the separate preparation report workflow.
 
 ## Renderer Input Shape
 
