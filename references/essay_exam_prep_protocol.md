@@ -2,6 +2,8 @@
 
 Essay preparation should turn course material into paragraphs and arguments that can be used under exam conditions.
 
+This protocol is for ordinary Essay Question preparation, example essays, and model-answer support. It is not the Online Essay Exam drafting branch. Online Essay Exam uses `references/online_essay_exam_protocol.md`, source-permission Ask Questions for Online Materials and Lecture Materials, locked brief, evidence map, paragraph-level plan, Planning Approval, draft generation, and QA.
+
 ## Output pieces
 
 - Module-covering essay questions.

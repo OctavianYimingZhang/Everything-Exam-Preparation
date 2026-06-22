@@ -15,6 +15,7 @@ Use source hints as open, coarse provenance labels. Treat the labels below as ex
 - `marking_material`: answer keys, mark schemes, solutions, or examiner feedback.
 - `style_reference`: examples that show preferred answer style or layout.
 - `extra_reading_source`: academically useful background, methods, evidence, research context, textbook-like, chapter-like, paper-like, DOI/PMID, or reference material.
+- `online_material`: web-accessible academic/module material, online readings, official pages, databases, papers, or user-provided links whose use must be confirmed before Online Essay Exam planning.
 - `other_material`: readable files whose source role remains mixed or unclear.
 
 Mixed files remain valid. A single file can contain several source roles, many knowledge units, and several knowledge roles. Coverage comes from knowledge signals and knowledge units, not from the hint label.
@@ -23,7 +24,9 @@ Mixed files remain valid. A single file can contain several source roles, many k
 
 Material type and source roles are preliminary until the user confirms them through human review. After source scanning, display the **Auto-diagnosis review plan** with the detected Material type/source roles, role counts, question signals, and any Mixed or unclear evidence. Then ask the Material type/source roles question through `request_user_input`.
 
-The options must be concrete to the source pack, such as treating lecture files as `knowledge_material`, treating question files as `practice_material`, using answer keys as `marking_material`, using research files as `extra_reading_source`, or manually correcting Mixed/unclear files. After the user confirms or corrects the roles, update the source hints and use the confirmed roles for routing, coverage, essay-only Extra Reading, and output decisions.
+The options must be concrete to the source pack, such as treating lecture files as `knowledge_material`, treating question files as `practice_material`, using answer keys as `marking_material`, using research files as `extra_reading_source`, treating links or web-accessible sources as `online_material`, or manually correcting Mixed/unclear files. After the user confirms or corrects the roles, update the source hints and use the confirmed roles for routing, coverage, essay-style Extra Reading, Online Essay Exam source permissions, and output decisions.
+
+For Online Essay Exam, material collection has an additional source-permission gate before any plan, evidence map, Notes, report, or draft. Ask whether Online Materials are required, optional, forbidden, or unclear; whether Lecture Materials may be used as primary evidence, background only, forbidden, or unclear; whether Past Papers, rubrics, module handbooks, uploaded readings, and external academic sources may be used; whether citations or references are required; and whether the final output should be a chat draft, DOCX draft, or both. Missing source-permission answers remain plan-changing unresolved items unless explicitly recorded as a user-confirmed default.
 
 ## Intake
 
@@ -83,7 +86,7 @@ Use content triage before writing Notes:
 
 Extra Reading can be uploaded directly or mentioned inside course material. Mentions include Source, Sources, References, Recommended reading, Further reading, Textbook, Book, Chapter, DOI, PMID, author-year citation, journal reference, figure source, or reference-list text.
 
-Extra Reading is used only for Essay Question and Example Essay enrichment, where external evidence, mechanism depth, molecular evidence, counterargument, and evaluation can help earn Extra Reading credit. Do not use Extra Reading for MCQ, short-answer, long-answer, practical/data/problem, worked-solution, or general Notes routes unless the user also confirms an essay output.
+Extra Reading is used for Essay Question and Example Essay enrichment, plus Online Essay Exam enrichment when source permissions allow it, where external evidence, mechanism depth, molecular evidence, counterargument, and evaluation can help earn Extra Reading credit. Do not use Extra Reading for MCQ, short-answer, long-answer, practical/data/problem, worked-solution, or general Notes routes unless the user also confirms an essay-style output.
 
 ## Practical Extraction
 

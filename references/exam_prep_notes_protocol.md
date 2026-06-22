@@ -32,6 +32,8 @@ Student-facing Notes should present course knowledge explanation, exam-relevant 
 
 Notes coverage comes from the full set of lecture and course knowledge units. Question and practice material calibrate Specific Research Report emphasis and can reveal repeated concepts, methods, calculations, source difficulty, and knowledge density, but they do not narrow the Notes coverage. When no question or practice material is supplied, build Notes from the lecture/course knowledge units. Essay questions and scenario questions should guide report emphasis while preserving full course knowledge coverage in Notes.
 
+Online Essay Exam is a separate drafting branch. Notes may support it when the user wants lecture review, but Online Materials and Lecture Materials permissions must be confirmed before the Online Essay Exam evidence map or draft is planned.
+
 ## Notes and Reports Separation
 
 Notes and Reports are intentionally separate outputs:

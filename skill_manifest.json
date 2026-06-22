@@ -9,6 +9,7 @@
   "default_output": "docx_notes",
   "notes_coverage_policy": "lecture_unit_complete",
   "slide_triage_policy": "notes_material_analysis_use_merge_or_exclude_not_detail_level_grading",
+  "online_essay_exam_policy": "parallel_drafting_branch_with_online_and_lecture_materials_permission_gate",
   "output_name_policy": "user_requested_or_generated_from_context",
   "human_review_required": true,
   "human_review_targets": [
@@ -24,6 +25,7 @@
     "long_answer_preparation",
     "worked_solution_preparation",
     "essay_preparation",
+    "online_essay_exam_drafting",
     "mixed_exam_preparation",
     "question_solving",
     "question_organizing"
@@ -71,6 +73,11 @@
       "name": "exam-prep-essay",
       "path": "skills/exam-prep-essay/SKILL.md",
       "route": "essay_preparation"
+    },
+    {
+      "name": "exam-prep-online-essay-exam",
+      "path": "skills/exam-prep-online-essay-exam/SKILL.md",
+      "route": "online_essay_exam_drafting"
     },
     {
       "name": "exam-prep-extra-reading",

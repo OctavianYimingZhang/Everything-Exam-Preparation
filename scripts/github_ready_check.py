@@ -21,6 +21,7 @@ FOCUSED_SKILL_FILES = [
     "skills/exam-prep-long-answer/SKILL.md",
     "skills/exam-prep-worked-solutions/SKILL.md",
     "skills/exam-prep-essay/SKILL.md",
+    "skills/exam-prep-online-essay-exam/SKILL.md",
     "skills/exam-prep-extra-reading/SKILL.md",
     "skills/exam-prep-question-solver/SKILL.md",
     "skills/exam-prep-question-organizer/SKILL.md",
@@ -118,13 +119,14 @@ def check() -> dict[str, object]:
     terms = {
         "SKILL.md": missing_terms("SKILL.md", ["knowledge-only", "visible formulas", "distinct DOCX filename", "Auto-diagnosis review plan", "human review", "Essay Question and Example Essay enrichment", "Question Solving", "Question Organization"]),
         "references/exam_prep_notes_protocol.md": missing_terms("references/exam_prep_notes_protocol.md", ["Formula Visibility", "formula_block", "workflow", "black-and-white academic paper tables", "Notes coverage comes from the full set of lecture and course knowledge units"]),
-        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "Notes generation choice", "complete worked-solution notes", "Past Paper-driven recurrence algorithm", "result-only", "question_solution_report", "organized_questions_docx", "strict same-knowledge-point"]),
-        "references/input_and_evidence_protocol.md": missing_terms("references/input_and_evidence_protocol.md", ["human review", "source roles", "Material type", "strict same-knowledge-point retrieval", "latest matching unit"]),
-        "scripts/plan_workflow.py": missing_terms("scripts/plan_workflow.py", ["human_review_required", "review_status", "auto_diagnosis", "review_targets", "question_solution_report", "organized_questions_docx"]),
-        "scripts/build_review_questions.py": missing_terms("scripts/build_review_questions.py", ["request_user_input", "exam_type_route", "material_type_source_roles", "notes_output_choice", "follow_up_question_batches"]),
+        "references/exam_mode_and_addons_protocol.md": missing_terms("references/exam_mode_and_addons_protocol.md", ["human review", "Exam type", "Material type", "Notes generation choice", "complete worked-solution notes", "Past Paper-driven recurrence algorithm", "result-only", "question_solution_report", "organized_questions_docx", "strict same-knowledge-point", "Online Essay Exam", "Online Materials", "Lecture Materials"]),
+        "references/input_and_evidence_protocol.md": missing_terms("references/input_and_evidence_protocol.md", ["human review", "source roles", "Material type", "strict same-knowledge-point retrieval", "latest matching unit", "online_material", "Online Materials are required, optional, forbidden, or unclear", "Lecture Materials may be used as primary evidence"]),
+        "references/online_essay_exam_protocol.md": missing_terms("references/online_essay_exam_protocol.md", ["Online Essay Exam", "online_essay_exam_drafting", "Online Materials", "Lecture Materials", "Planning Approval"]),
+        "scripts/plan_workflow.py": missing_terms("scripts/plan_workflow.py", ["human_review_required", "review_status", "auto_diagnosis", "review_targets", "question_solution_report", "organized_questions_docx", "online_essay_exam_drafting", "online_materials_permission_review", "lecture_materials_permission_review"]),
+        "scripts/build_review_questions.py": missing_terms("scripts/build_review_questions.py", ["request_user_input", "exam_type_route", "material_type_source_roles", "notes_output_choice", "follow_up_question_batches", "selected_mixed_followup_keys", "online_essay_online_materials_permission", "online_essay_lecture_materials_permission"]),
         "scripts/exam_mode_tools.py": missing_terms("scripts/exam_mode_tools.py", ["build_question_solver_pack", "strict_same_knowledge_point_questions", "organize_questions_by_lecture_order", "write_organized_questions_docx", "build_mcq_saq_recurrence_report", "past_paper_question_records_from_scan"]),
         "scripts/generate_exam_prep_notes_docx.py": missing_terms("scripts/generate_exam_prep_notes_docx.py", ["def output_path", "def visible_formula", "safe_docx_name"]),
-        "skill_manifest.json": missing_terms("skill_manifest.json", ["multi_skill_system", "focused_skills", "removed_focused_skills", "exam-prep-index", "exam-prep-worked-solutions", "exam-prep-question-solver", "exam-prep-question-organizer"]),
+        "skill_manifest.json": missing_terms("skill_manifest.json", ["multi_skill_system", "focused_skills", "removed_focused_skills", "exam-prep-index", "exam-prep-worked-solutions", "exam-prep-online-essay-exam", "online_essay_exam_drafting", "exam-prep-question-solver", "exam-prep-question-organizer"]),
         "scripts/publish_skill.py": missing_terms("scripts/publish_skill.py", ["discover_focused_skills", "sync_focused_skill", "cleanup_removed_focused_skills", "focused_skills", "DEFAULT_LOCAL_SKILL_ROOT"]),
     }
     for focused_path in FOCUSED_SKILL_FILES:

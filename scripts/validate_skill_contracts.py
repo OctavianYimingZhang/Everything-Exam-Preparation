@@ -23,6 +23,7 @@ FOCUSED_SKILL_FILES = [
     "skills/exam-prep-long-answer/SKILL.md",
     "skills/exam-prep-worked-solutions/SKILL.md",
     "skills/exam-prep-essay/SKILL.md",
+    "skills/exam-prep-online-essay-exam/SKILL.md",
     "skills/exam-prep-extra-reading/SKILL.md",
     "skills/exam-prep-question-solver/SKILL.md",
     "skills/exam-prep-question-organizer/SKILL.md",
@@ -113,6 +114,36 @@ def require_terms(path: str, terms: list[str]) -> list[str]:
     return [term for term in terms if term not in text]
 
 
+def manifest_sync_failures() -> list[str]:
+    manifest_path = ROOT / "skill_manifest.json"
+    if not manifest_path.exists():
+        return ["skill_manifest.json missing"]
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return [f"skill_manifest.json unreadable: {exc}"]
+    failures: list[str] = []
+    plan_text = read_text(ROOT / "scripts/plan_workflow.py")
+    questions_text = read_text(ROOT / "scripts/build_review_questions.py")
+    for route in manifest.get("routes", []) or []:
+        route = str(route)
+        if route not in plan_text:
+            failures.append(f"route {route} missing from scripts/plan_workflow.py")
+        if route not in questions_text:
+            failures.append(f"route {route} missing from scripts/build_review_questions.py")
+    for skill in manifest.get("focused_skills", []) or []:
+        name = str(skill.get("name") or "")
+        path = str(skill.get("path") or "")
+        route = str(skill.get("route") or "")
+        if path and not (ROOT / path).exists():
+            failures.append(f"focused skill path missing for {name}: {path}")
+        if name and name not in read_text(ROOT / "skill_manifest.json"):
+            failures.append(f"focused skill name missing from manifest text: {name}")
+        if route and route != "index" and route not in plan_text and route not in questions_text and route != "extra_reading_enrichment" and route != "notes_material_analysis":
+            failures.append(f"focused skill route {route} for {name} is not referenced by route scripts")
+    return failures
+
+
 def script_self_test(script: str) -> str | None:
     proc = subprocess.run([sys.executable, str(ROOT / script), "--self-test"], cwd=ROOT, text=True, capture_output=True)
     if proc.returncode == 0:
@@ -164,6 +195,27 @@ def check_all() -> dict[str, Any]:
                 "merge_with_previous",
                 "detailed_explanation_allowed",
                 "slide_triage_audit",
+                "Online Essay Exam",
+                "online_essay_exam_drafting",
+                "Online Materials and Lecture Materials permissions",
+                "drafting branch rather than a Specific Research Report",
+            ],
+        ),
+        "references/online_essay_exam_protocol.md": require_terms(
+            "references/online_essay_exam_protocol.md",
+            [
+                "Online Essay Exam is a first-class drafting branch",
+                "not a subtype of ordinary Essay Question",
+                "48 hours is metadata",
+                "must not become separate public Types",
+                "Online Materials are required, optional, forbidden, or unclear",
+                "Lecture Materials may be used as primary evidence",
+                "Missing source-permission answers remain plan-changing unresolved items",
+                "locked brief",
+                "evidence map",
+                "Planning Approval",
+                "draft",
+                "QA",
             ],
         ),
         "references/exam_prep_notes_protocol.md": require_terms(
@@ -230,12 +282,17 @@ def check_all() -> dict[str, Any]:
                 "Slide triage is a Notes material-analysis step",
                 "slide_decision",
                 "slide_triage_audit",
+                "Online Essay Exam",
+                "Online Materials",
+                "Lecture Materials",
             ],
         ),
         "references/extra_reading_workflow.md": require_terms(
             "references/extra_reading_workflow.md",
             [
                 "Essay Question and Example Essay enrichment",
+                "Online Essay Exam enrichment",
+                "confirmed source permissions",
                 "essay-enrichment sources",
                 "do not decide general Notes depth",
             ],
@@ -248,6 +305,9 @@ def check_all() -> dict[str, Any]:
                 "Material type",
                 "Auto-diagnosis review plan",
                 "Essay Question and Example Essay enrichment",
+                "online_material",
+                "Online Materials are required, optional, forbidden, or unclear",
+                "Lecture Materials may be used as primary evidence",
                 "strict same-knowledge-point retrieval",
                 "latest matching unit",
             ],
@@ -330,6 +390,11 @@ def check_all() -> dict[str, Any]:
                 "question_solution_report",
                 "organized_questions_docx",
                 "strict_same_knowledge_point_question_retrieval",
+                "online_essay_exam_drafting",
+                "online_materials_permission_review",
+                "lecture_materials_permission_review",
+                "online_essay_exam_source_permissions",
+                "48h essay",
             ],
         ),
         "scripts/build_review_questions.py": require_terms(
@@ -346,6 +411,12 @@ def check_all() -> dict[str, Any]:
                 "short_answer_research_report_choice",
                 "long_answer_detailed_analysis_choice",
                 "worked_solution_teaching_choice",
+                "Online Essay Exam",
+                "online_essay_online_materials_permission",
+                "online_essay_lecture_materials_permission",
+                "online_essay_allowed_source_set",
+                "online_essay_citation_expectation",
+                "online_essay_output_format",
             ],
         ),
         "scripts/exam_mode_tools.py": require_terms(
@@ -396,6 +467,9 @@ def check_all() -> dict[str, Any]:
                 "exam-prep-question-solver",
                 "exam-prep-question-organizer",
                 "exam-prep-slide-triage",
+                "exam-prep-online-essay-exam",
+                "online_essay_exam_policy",
+                "online_essay_exam_drafting",
                 "notes_material_analysis",
                 "question_solving",
                 "question_organizing",
@@ -417,7 +491,10 @@ def check_all() -> dict[str, Any]:
                 "exam-prep-question-solver",
                 "exam-prep-question-organizer",
                 "exam-prep-slide-triage",
+                "exam-prep-online-essay-exam",
                 "slide_triage",
+                "Online Essay Exam",
+                "Online Materials and Lecture Materials permissions",
                 "question_solution_report",
                 "organized_questions_docx",
             ],
@@ -460,6 +537,7 @@ def check_all() -> dict[str, Any]:
         "missing_files": missing_files,
         "invalid_schemas": invalid_schemas,
         "missing_terms": missing_terms,
+        "manifest_sync_failures": manifest_sync_failures(),
         "script_self_tests": script_self_tests,
         "non_english_cjk_locations": cjk,
         "fixed_filename_locations": prohibited_names,

@@ -1,6 +1,6 @@
 # Everything Exam Preparation
 
-Signal-driven exam preparation Skill for uploaded course content, practice material, and Extra Reading.
+Signal-driven exam preparation and Online Essay Exam drafting Skill for uploaded course content, practice material, Online Materials, and Extra Reading.
 
 ## Output naming
 
@@ -14,17 +14,18 @@ The default output type is DOCX notes. If the user requests filenames or a multi
 4. Applies slide triage before Notes generation for slide decks and slide-like PDFs so useless slides are excluded from detailed public explanation while ILO, topic, visual, example, and summary slides can still support lecture order.
 5. Extracts open knowledge signals and groups connected signals into knowledge units.
 6. Calibrates Notes coverage from the knowledge units and required explanation.
-7. Identifies Extra Reading only when the confirmed Exam type includes essay.
+7. Identifies Extra Reading and Online Materials only when the confirmed branch and source permissions allow essay-style enrichment.
 8. Matches confirmed Extra Reading to essay claims or course points that need external enrichment.
 9. Makes a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and practice material.
 10. Displays an **Auto-diagnosis review plan** and uses `request_user_input` for human review of Exam type, Material type, and whether Notes should be generated.
 11. Updates the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
 12. Produces explanation-only teaching Notes first when the user accepts Notes.
 13. Produces the confirmed Specific Research Report for MCQ, short answer, long answer, practical/data/problem, worked-solution, essay, or mixed exams.
-14. When Past Paper or question-containing Practical Materials are supplied and confirmed, produces a separate question-based Specific Research Report alongside Notes when Notes are accepted.
-15. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
-16. When the user asks how to solve a supplied question, produces a `question_solution_report` that explains the target question, shows the matching knowledge unit, and retrieves strict same-knowledge-point questions from the supplied Past Paper or Practice Material.
-17. When the user asks to organize Past Paper or Practice Material, produces `organized_questions_docx` sorted by Lecture Slides or lecture knowledge-unit order and containing questions plus minimal provenance.
+14. For Online Essay Exam, asks Online Materials and Lecture Materials source-permission questions, locks the brief, builds an evidence map and approved paragraph-level plan, then produces a draft and QA instead of a Specific Research Report.
+15. When Past Paper or question-containing Practical Materials are supplied and confirmed, produces a separate question-based Specific Research Report alongside Notes when Notes are accepted.
+16. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
+17. When the user asks how to solve a supplied question, produces a `question_solution_report` that explains the target question, shows the matching knowledge unit, and retrieves strict same-knowledge-point questions from the supplied Past Paper or Practice Material.
+18. When the user asks to organize Past Paper or Practice Material, produces `organized_questions_docx` sorted by Lecture Slides or lecture knowledge-unit order and containing questions plus minimal provenance.
 
 Student-facing Notes explain the lecture and exam-relevant knowledge the student needs to master. They are broad lecture reconstruction documents for students who may not have learned the material yet. MCQ, SAQ, and other Specific Research Reports remain separate concise exam-priority reinforcement outputs. Source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, and similar workflow records remain internal.
 
@@ -42,17 +43,18 @@ Focused Skills:
 - `exam-prep-long-answer`: produces long-answer, practical, data, scenario, and problem Specific Research Reports.
 - `exam-prep-worked-solutions`: produces calculation, derivation, estimate, proof, data, and problem worked-solution teaching notes.
 - `exam-prep-essay`: produces essay preparation and Extra Reading enriched essay outputs.
+- `exam-prep-online-essay-exam`: produces Online Essay Exam locked briefs, allowed-source evidence maps, approved plans, drafts, and QA.
 - `exam-prep-extra-reading`: finds, classifies, and matches Extra Reading for essay enrichment.
 - `exam-prep-question-solver`: explains a target question, displays the matched course knowledge, and returns strict same-knowledge-point transfer questions.
 - `exam-prep-question-organizer`: compiles Past Paper and Practice Material questions into a DOCX ordered by lecture knowledge-unit sequence.
 
 `python3 scripts/publish_skill.py --sync-local-skill` installs both the legacy `everything-exam-preparation` local Skill and the focused sibling Skills under `~/.codex/skills/`.
 
-The routing workflow is: analyze all supplied material, ask the user to choose or correct the Exam type, ask whether to generate Notes, ask route-specific follow-up questions, generate Notes first if accepted, then run the confirmed exam-type Sub Skill or Sub Skills to produce the Specific Research Report. Mixed exam format activates every selected exam-type Sub Skill. Exam-mode diagnosis now lives inside `exam-prep-index`, not in a separate Skill.
+The routing workflow is: analyze all supplied material, ask the user to choose or correct the Exam type, ask whether to generate Notes, ask route-specific follow-up questions, generate Notes first if accepted, then run the confirmed exam-type Sub Skill or Sub Skills to produce the Specific Research Report. Online Essay Exam is a parallel branch: ask Online Materials and Lecture Materials permissions before planning, then produce a draft workflow instead of a Specific Research Report. Mixed exam format activates every selected exam-type Sub Skill. Exam-mode diagnosis now lives inside `exam-prep-index`, not in a separate Skill.
 
 ## Extra Reading
 
-Extra Reading is only for Essay Question and Example Essay enrichment. It can include academically useful sources such as textbook-like background, chapters, journal articles, primary research, DOI/PMID sources, lecture-mentioned references, mechanism evidence, counterargument material, and evaluation sources that help earn Extra Reading credit in essay-style outputs.
+Extra Reading is only for Essay Question, Example Essay, and Online Essay Exam enrichment when source permissions allow it. It can include academically useful sources such as textbook-like background, chapters, journal articles, primary research, DOI/PMID sources, lecture-mentioned references, mechanism evidence, counterargument material, and evaluation sources that help earn Extra Reading credit in essay-style outputs.
 
 Workflow utility:
 
@@ -149,6 +151,8 @@ Slide triage adds page-level material analysis for slide decks and slide-like PD
 
 Slide triage is not used to narrow Specific Research Reports. MCQ, SAQ, Long Answer, Worked Solutions, Essay, Question Solving, and Question Organization keep their route-specific evidence logic.
 
+Online Essay Exam keeps a separate drafting logic. It requires source-permission Ask Questions for Online Materials and Lecture Materials, a locked brief, allowed-source evidence map, paragraph-level plan, CriticalAnalysisPlan, Planning Approval, draft generation, and QA. It is not ordinary Essay Specific Research Report behavior.
+
 Complete worked-solution notes are generated as a separate DOCX when Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions. Available solutions or mark schemes are used as evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
 
 Question solving uses `exam-prep-question-solver` and `scripts/exam_mode_tools.py solve-question`. The fixed student-facing order is question analysis, matching knowledge display and explanation, solution reasoning, strict same-knowledge-point Past Paper or Practice Material questions, and transfer-practice prompt. Strict same-point retrieval depends on user-supplied material, matched lecture knowledge unit, shared knowledge terms, question demand, and source locators.
@@ -163,6 +167,7 @@ Question organization uses `exam-prep-question-organizer` and `scripts/exam_mode
 - `long_answer_preparation`
 - `worked_solution_preparation`
 - `essay_preparation`
+- `online_essay_exam_drafting`
 - `mixed_exam_preparation`
 - `question_solving`
 - `question_organizing`

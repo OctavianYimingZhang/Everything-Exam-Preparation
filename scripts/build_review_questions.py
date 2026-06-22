@@ -13,6 +13,7 @@ ROUTE_LABELS = {
     "long_answer_preparation": "Long Answer or Practical/Data/Problem",
     "worked_solution_preparation": "Worked Solutions",
     "essay_preparation": "Essay",
+    "online_essay_exam_drafting": "Online Essay Exam",
     "mixed_exam_preparation": "Mixed",
     "question_solving": "Question Solving",
     "question_organizing": "Question Organization",
@@ -25,6 +26,7 @@ ROUTE_SHORT_LABELS = {
     "long_answer_preparation": "Long Answer",
     "worked_solution_preparation": "Worked",
     "essay_preparation": "Essay",
+    "online_essay_exam_drafting": "Online Essay Exam",
     "mixed_exam_preparation": "Mixed",
     "question_solving": "Solver",
     "question_organizing": "Organizer",
@@ -36,6 +38,7 @@ ROLE_LABELS = {
     "marking_material": "marking material",
     "style_reference": "style reference",
     "extra_reading_source": "Extra Reading",
+    "online_material": "Online Material",
     "other_material": "mixed or unclear material",
 }
 
@@ -45,6 +48,7 @@ ROLE_SHORT_LABELS = {
     "marking_material": "Marking",
     "style_reference": "Style",
     "extra_reading_source": "Extra Reading",
+    "online_material": "Online",
     "other_material": "Unclear",
 }
 
@@ -55,9 +59,43 @@ OUTPUT_LABELS = {
     "short_answer_exam_type_related_addon": "Short Answer Specific Research Report",
     "long_answer_practical_data_problem_exam_type_related_addon": "Long Answer or Practical/Data/Problem Specific Research Report",
     "essay_exam_type_related_addon": "Essay Specific Research Report",
+    "online_essay_exam_draft": "Online Essay Exam Draft",
+    "online_essay_exam_draft_docx_if_requested": "Online Essay Exam DOCX Draft if requested",
     "practical_worked_solutions_docx": "Worked Solutions Specific Research Report",
     "question_solution_report": "Question Solution Report",
     "organized_questions_docx": "Organized Questions DOCX",
+}
+
+FOLLOWUP_KEY_BY_ROUTE = {
+    "essay_preparation": "essay",
+    "online_essay_exam_drafting": "online_essay_exam",
+    "mcq_preparation": "mcq",
+    "short_answer_preparation": "short_answer",
+    "long_answer_preparation": "long_answer",
+    "worked_solution_preparation": "worked_solution",
+}
+
+FOLLOWUP_ALIASES = {
+    "essay": "essay",
+    "essay_question": "essay",
+    "essay_preparation": "essay",
+    "online_essay_exam": "online_essay_exam",
+    "online_essay": "online_essay_exam",
+    "online_essay_exam_drafting": "online_essay_exam",
+    "mcq": "mcq",
+    "sba": "mcq",
+    "multiple_choice": "mcq",
+    "mcq_preparation": "mcq",
+    "short_answer": "short_answer",
+    "saq": "short_answer",
+    "short_answer_preparation": "short_answer",
+    "long_answer": "long_answer",
+    "long_answer_preparation": "long_answer",
+    "practical_data_problem": "long_answer",
+    "worked": "worked_solution",
+    "worked_solution": "worked_solution",
+    "worked_solutions": "worked_solution",
+    "worked_solution_preparation": "worked_solution",
 }
 
 
@@ -173,6 +211,54 @@ def unique_options(options: list[dict[str, str]], limit: int = 3) -> list[dict[s
     return out
 
 
+def flatten_selection_values(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        out: list[Any] = []
+        for key in ["route", "id", "label", "exam_type", "type", "key"]:
+            if key in value:
+                out.extend(flatten_selection_values(value.get(key)))
+        return out
+    if isinstance(value, list):
+        out = []
+        for item in value:
+            out.extend(flatten_selection_values(item))
+        return out
+    return [str(value)]
+
+
+def normalize_followup_key(value: Any) -> str | None:
+    key = str(value).strip().lower()
+    key = key.replace("-", "_").replace("/", "_").replace(" ", "_")
+    while "__" in key:
+        key = key.replace("__", "_")
+    return FOLLOWUP_ALIASES.get(key)
+
+
+def selected_mixed_followup_keys(workflow_plan: dict[str, Any]) -> list[str]:
+    selected_values: list[Any] = []
+    for field in [
+        "route_specific_follow_up_keys",
+        "confirmed_mixed_routes",
+        "selected_mixed_routes",
+        "selected_routes",
+        "selected_exam_routes",
+        "confirmed_exam_types",
+        "exam_type_selection",
+    ]:
+        if field in workflow_plan:
+            selected_values.extend(flatten_selection_values(workflow_plan.get(field)))
+    keys: list[str] = []
+    for value in selected_values:
+        key = normalize_followup_key(value)
+        if key and key not in keys:
+            keys.append(key)
+    return keys
+
+
 def exam_type_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> dict[str, Any]:
     route = str(workflow_plan.get("route") or workflow_plan.get("auto_diagnosis", {}).get("route") or "exam_prep_notes")
     route_label = ROUTE_LABELS.get(route, route)
@@ -192,6 +278,11 @@ def exam_type_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any
             f"Use the preliminary {route_label} route from the prompt and source scan; question signals are {flags}.",
         )
     ]
+    if route != "online_essay_exam_drafting":
+        options.append(option(
+            "Online Essay Exam",
+            "Use the material for an online essay exam draft branch with source-permission checks before planning.",
+        ))
     if mixed:
         options.append(option(
             "Mixed route",
@@ -281,6 +372,17 @@ def material_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]
 def output_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> dict[str, Any]:
     outputs = proposed_outputs(workflow_plan)
     route = str(workflow_plan.get("route") or workflow_plan.get("auto_diagnosis", {}).get("route") or "exam_prep_notes")
+    if route == "online_essay_exam_drafting":
+        return {
+            "header": "Notes",
+            "id": "notes_output_choice",
+            "question": "Should Notes be generated as optional support before the Online Essay Exam draft?",
+            "options": [
+                option("Skip Notes (Recommended)", "Go directly to brief lock, evidence map, planning approval, and drafting after source permissions are confirmed."),
+                option("Generate Notes first", "Create lecture walkthrough Notes before drafting the Online Essay Exam response."),
+                option("Notes in chat", "Use a concise lecture recap in chat before drafting instead of a separate Notes DOCX."),
+            ],
+        }
     report_outputs = [output for output in outputs if output != "docx_notes"]
     report_label = output_names(report_outputs)
     if "docx_notes" in outputs:
@@ -347,6 +449,61 @@ def essay_followup_questions() -> list[dict[str, Any]]:
     ]
 
 
+def online_essay_exam_followup_questions() -> list[dict[str, Any]]:
+    return [
+        {
+            "header": "Online Mat",
+            "id": "online_essay_online_materials_permission",
+            "question": "For this Online Essay Exam, are Online Materials required, optional, forbidden, or unclear before planning?",
+            "options": [
+                option("Use online materials (Recommended)", "Online Materials may be used in the evidence map when they are allowed or required by the exam rules."),
+                option("Do not use online materials", "Treat Online Materials as forbidden and draft only from confirmed non-online sources."),
+                option("Rule unclear", "Pause planning until the user confirms whether Online Materials are allowed."),
+            ],
+        },
+        {
+            "header": "Lecture",
+            "id": "online_essay_lecture_materials_permission",
+            "question": "How may Lecture Materials be used for the Online Essay Exam draft?",
+            "options": [
+                option("Primary evidence (Recommended)", "Use Lecture Materials as the main course evidence for claims and structure."),
+                option("Background only", "Use Lecture Materials for orientation but not as direct claim evidence."),
+                option("Not allowed or unclear", "Do not use Lecture Materials for planning until the rule is clarified."),
+            ],
+        },
+        {
+            "header": "Sources",
+            "id": "online_essay_allowed_source_set",
+            "question": "Which other materials may support the Online Essay Exam answer?",
+            "options": [
+                option("All confirmed sources (Recommended)", "Use Past Papers, rubrics, module handbooks, uploaded readings, and external academic sources when allowed."),
+                option("Uploaded sources only", "Use only files or links supplied by the user in this thread."),
+                option("Exam prompt only", "Use only the exact Online Essay Exam prompt and confirmed instructions."),
+            ],
+        },
+        {
+            "header": "Citations",
+            "id": "online_essay_citation_expectation",
+            "question": "What citation or reference expectation should the Online Essay Exam draft follow?",
+            "options": [
+                option("Citations required (Recommended)", "Use claim-level citations and a reference list where source metadata is available."),
+                option("Citations optional", "Use citations only where they materially improve evidence clarity."),
+                option("Not specified", "Record citation expectations as unclear and avoid inventing a citation style."),
+            ],
+        },
+        {
+            "header": "Output",
+            "id": "online_essay_output_format",
+            "question": "What final Online Essay Exam drafting output should be prepared?",
+            "options": [
+                option("DOCX draft (Recommended)", "Produce an exam-facing DOCX draft after the approved plan."),
+                option("Chat draft", "Produce the structured draft in chat only."),
+                option("Both", "Produce a chat draft and a DOCX draft after planning approval."),
+            ],
+        },
+    ]
+
+
 def mcq_followup_question() -> dict[str, Any]:
     return {
         "header": "MCQ Report",
@@ -402,15 +559,8 @@ def worked_solution_followup_question() -> dict[str, Any]:
 def route_followup_keys(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> list[str]:
     route = str(workflow_plan.get("route") or workflow_plan.get("auto_diagnosis", {}).get("route") or "exam_prep_notes")
     if route == "mixed_exam_preparation":
-        return ["essay", "mcq", "short_answer", "long_answer", "worked_solution"]
-    mapping = {
-        "essay_preparation": ["essay"],
-        "mcq_preparation": ["mcq"],
-        "short_answer_preparation": ["short_answer"],
-        "long_answer_preparation": ["long_answer"],
-        "worked_solution_preparation": ["worked_solution"],
-    }
-    keys = list(mapping.get(route, []))
+        return selected_mixed_followup_keys(workflow_plan)
+    keys = [FOLLOWUP_KEY_BY_ROUTE[route]] if route in FOLLOWUP_KEY_BY_ROUTE else []
     flags = question_flags(source_scan, workflow_plan)
     if flags.get("has_practical_worked_questions") and "worked_solution" not in keys:
         keys.append("worked_solution")
@@ -422,6 +572,8 @@ def route_specific_questions(workflow_plan: dict[str, Any], source_scan: dict[st
     for key in route_followup_keys(workflow_plan, source_scan):
         if key == "essay":
             questions.extend(essay_followup_questions())
+        elif key == "online_essay_exam":
+            questions.extend(online_essay_exam_followup_questions())
         elif key == "mcq":
             questions.append(mcq_followup_question())
         elif key == "short_answer":
@@ -446,7 +598,18 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
         material_question(workflow_plan, source_scan),
         output_question(workflow_plan, source_scan),
     ]
+    followup_keys = route_followup_keys(workflow_plan, source_scan)
     followups = route_specific_questions(workflow_plan, source_scan)
+    review_sequence = [
+        "Show this plan to the user before asking questions.",
+        "Ask the Exam type, Material type, and Notes questions.",
+    ]
+    if route == "online_essay_exam_drafting" or "online_essay_exam" in followup_keys:
+        review_sequence.append("For Online Essay Exam, ask Online Materials and Lecture Materials source-permission questions before planning.")
+    review_sequence.extend([
+        "Ask route-specific follow-up questions in batches of at most three.",
+        "Update the workflow plan from the user's answers before generating public output.",
+    ])
     return {
         "schema_version": 1,
         "call": "request_user_input",
@@ -457,13 +620,8 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
             "material_type_source_roles": roles,
             "question_material": question_flags(source_scan, workflow_plan),
             "proposed_outputs": outputs,
-            "notes_default": "generate_notes_first",
-            "review_sequence": [
-                "Show this plan to the user before asking questions.",
-                "Ask the Exam type, Material type, and Notes questions.",
-                "Ask route-specific follow-up questions in batches of at most three.",
-                "Update the workflow plan from the user's answers before generating public output.",
-            ],
+            "notes_default": "skip_notes_for_online_essay_exam_otherwise_generate_notes_first" if route == "online_essay_exam_drafting" else "generate_notes_first",
+            "review_sequence": review_sequence,
         },
         "questions": questions,
         "follow_up_question_batches": question_batches(followups),
@@ -477,6 +635,7 @@ def self_test() -> None:
     assert len(lecture["questions"]) == 3
     assert lecture["questions"][0]["id"] == "exam_type_route"
     assert lecture["questions"][0]["options"][0]["label"] == "Notes route (Recommended)"
+    assert "Online Essay Exam" in [item["label"] for item in lecture["questions"][0]["options"]]
     assert lecture["questions"][2]["id"] == "notes_output_choice"
     assert lecture["questions"][2]["options"][0]["label"] == "Generate Notes first (Recommended)"
 
@@ -498,6 +657,23 @@ def self_test() -> None:
     essay_ids = [item["id"] for batch in essay["follow_up_question_batches"] for item in batch]
     assert essay_ids == ["essay_example_essay_choice", "essay_example_essay_count", "essay_question_source"]
 
+    online_plan = {"route": "online_essay_exam_drafting", "proposed_outputs": ["online_essay_exam_draft", "online_essay_exam_draft_docx_if_requested"]}
+    online = build_payload(online_plan, lecture_scan)
+    assert online["auto_diagnosis_review_plan"]["exam_type"] == "Online Essay Exam"
+    assert online["auto_diagnosis_review_plan"]["notes_default"] == "skip_notes_for_online_essay_exam_otherwise_generate_notes_first"
+    assert online["questions"][0]["options"][0]["label"] == "Online Essay Exam route (Recommended)"
+    assert online["questions"][2]["options"][0]["label"] == "Skip Notes (Recommended)"
+    online_ids = [item["id"] for batch in online["follow_up_question_batches"] for item in batch]
+    assert online_ids == [
+        "online_essay_online_materials_permission",
+        "online_essay_lecture_materials_permission",
+        "online_essay_allowed_source_set",
+        "online_essay_citation_expectation",
+        "online_essay_output_format",
+    ]
+    assert "Online Materials" in online["follow_up_question_batches"][0][0]["question"]
+    assert "Lecture Materials" in online["follow_up_question_batches"][0][1]["question"]
+
     mcq = build_payload({"route": "mcq_preparation", "proposed_outputs": ["docx_notes", "mcq_exam_type_related_addon"]}, past_scan)
     assert mcq["follow_up_question_batches"][0][0]["id"] == "mcq_research_report_choice"
 
@@ -513,11 +689,29 @@ def self_test() -> None:
     assert mixed["auto_diagnosis_review_plan"]["title"] == "Auto-diagnosis review plan"
     assert mixed["questions"][1]["options"][0]["label"] == "Mixed roles (Recommended)"
     mixed_ids = [item["id"] for batch in mixed["follow_up_question_batches"] for item in batch]
-    assert "essay_example_essay_choice" in mixed_ids
-    assert "mcq_research_report_choice" in mixed_ids
-    assert "short_answer_research_report_choice" in mixed_ids
-    assert "long_answer_detailed_analysis_choice" in mixed_ids
-    assert "worked_solution_teaching_choice" in mixed_ids
+    assert mixed_ids == []
+
+    mixed_mcq_saq_plan = {
+        "route": "mixed_exam_preparation",
+        "proposed_outputs": ["docx_notes", "exam_type_related_addon_docx"],
+        "confirmed_mixed_routes": ["mcq_preparation", "short_answer_preparation"],
+        "auto_diagnosis": {"mixed_or_unclear": True},
+    }
+    mixed_mcq_saq = build_payload(mixed_mcq_saq_plan, mixed_scan)
+    mixed_mcq_saq_ids = [item["id"] for batch in mixed_mcq_saq["follow_up_question_batches"] for item in batch]
+    assert mixed_mcq_saq_ids == ["mcq_research_report_choice", "short_answer_research_report_choice"]
+    assert "online_essay_online_materials_permission" not in mixed_mcq_saq_ids
+
+    mixed_online_plan = {
+        "route": "mixed_exam_preparation",
+        "proposed_outputs": ["docx_notes", "exam_type_related_addon_docx"],
+        "confirmed_mixed_routes": ["online_essay_exam_drafting", "mcq_preparation"],
+        "auto_diagnosis": {"mixed_or_unclear": True},
+    }
+    mixed_online = build_payload(mixed_online_plan, mixed_scan)
+    mixed_online_ids = [item["id"] for batch in mixed_online["follow_up_question_batches"] for item in batch]
+    assert "online_essay_online_materials_permission" in mixed_online_ids
+    assert "mcq_research_report_choice" in mixed_online_ids
 
 
 def main() -> None:

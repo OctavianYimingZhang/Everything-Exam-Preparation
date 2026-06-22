@@ -7,15 +7,18 @@
 - Long Answer: explain, compare, evaluate, discuss, practical/data/problem questions, higher mark values.
 - Practical/Data/Problem: method interpretation, controls, readouts, calculations, graph/table interpretation, problem statements.
 - Essay: essay prompts, critically discuss, to what extent, argument-led questions, in-campus essay language.
+- Online Essay Exam: online essay exam wording; take-home, open-book, 48h, or timed wording may be detection signals but not separate public Types.
 - Mixed: more than one mode appears strongly; confirmed Mixed output covers each relevant component in the mix.
 
 ## Human review gate
 
 Exam type and route detection are preliminary and must pass human review. Before producing Notes, Specific Research Reports, or Worked Solutions, display the **Auto-diagnosis review plan** and call `request_user_input` to confirm three decisions:
 
-- Exam type/route: Notes, MCQ, Short Answer, Long Answer, Practical/Data/Problem, Worked Solutions, Essay, or Mixed.
+- Exam type/route: Notes, MCQ, Short Answer, Long Answer, Practical/Data/Problem, Worked Solutions, Essay, Online Essay Exam, Question Solving, Question Organization, or Mixed.
 - Material type/source roles: knowledge material, practice material, marking material, style reference, Extra Reading, or Mixed.
 - Notes generation choice: generate Notes first, skip Notes, or provide concise Notes in chat before the report.
+
+For Online Essay Exam, the human review gate must also confirm whether Online Materials are required, optional, forbidden, or unclear; whether Lecture Materials may be used as primary evidence, background only, forbidden, or unclear; which supporting source types are allowed; whether citations or references are expected; and whether the output is chat draft, DOCX draft, or both. These source-permission answers are plan-changing items and must be recorded before any evidence map, plan, Notes, report, or draft.
 
 Use the automatic diagnosis as evidence for the review decision. When Mixed signals appear, show the prompt signals, source-role counts, and question signals, then plan output that covers each relevant component after the user confirms the route, Material type, and Notes choice.
 
@@ -35,12 +38,15 @@ Slide triage is a Notes material-analysis step, not a report-priority system. `s
 | Practical/Data/Problem | source task, method aim, readout, control, calculation or interpretation path, limitation, conclusion, and academic analysis/prediction result |
 | Math/Physics/Practical Worked Solutions | every extracted calculation, derivation, estimate, proof, data, or problem question developed as worked-solution teaching notes with concise evidence status |
 | Essay | claims, course detail, evidence integration, analysis, broad module-covering questions, example essay plans and essays |
+| Online Essay Exam | locked brief, source-permission record for Online Materials and Lecture Materials, allowed-source evidence map, paragraph-level plan, CriticalAnalysisPlan, Planning Approval, draft generation, and QA rather than a Specific Research Report |
 | Question Solving | target question analysis, matching knowledge display and explanation, solution reasoning, strict same-knowledge-point Past Paper or Practice Material questions, and transfer-practice prompt |
 | Question Organization | Past Paper and Practice Material questions arranged by Lecture Slides or lecture knowledge-unit order in `organized_questions_docx` |
 
 ## Output relationship
 
 Every exam route first offers explanation-only Notes. If the user accepts Notes, generate Notes before the exam-specific report. If the user declines Notes, skip Notes and generate the confirmed Specific Research Report. MCQ, short-answer, long-answer, practical/data/problem, worked-solution, essay, and Mixed routes produce separate Exam Type Related Specific Research Reports. Practice material can still inform Notes coverage by revealing repeated concepts, methods, calculations, source difficulty, and knowledge density. Question/practice material calibrates report emphasis while the full lecture/course knowledge-unit map continues to drive Notes coverage, including when no practice material is supplied or when essay/scenario questions cover only part of the course.
+
+Online Essay Exam is the exception to the report relationship: Notes are optional support, and the main public output is a draft built from the locked brief, allowed-source evidence map, approved plan, and QA. It should not be narrowed into ordinary Essay Specific Research Report behavior.
 
 When Past Paper material contains extractable questions, produce a separate question-based Specific Research Report alongside Notes when Notes are accepted. Practical Materials trigger that report when they contain explicit question, task, data, calculation, interpretation, or problem signals.
 

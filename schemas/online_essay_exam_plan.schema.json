@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Online Essay Exam drafting plan",
+  "type": "object",
+  "required": [
+    "document_kind",
+    "route",
+    "locked_brief",
+    "source_permissions",
+    "evidence_map",
+    "paragraph_level_plan",
+    "critical_analysis_plan",
+    "planning_approval",
+    "qa"
+  ],
+  "properties": {
+    "document_kind": {
+      "const": "online_essay_exam_draft"
+    },
+    "route": {
+      "const": "online_essay_exam_drafting"
+    },
+    "locked_brief": {
+      "type": "object",
+      "required": ["question_or_title", "output_format", "unresolved_plan_changing_items"],
+      "additionalProperties": true
+    },
+    "source_permissions": {
+      "type": "object",
+      "required": [
+        "online_materials_status",
+        "lecture_materials_status",
+        "allowed_source_set",
+        "citation_expectation"
+      ],
+      "additionalProperties": true
+    },
+    "evidence_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_or_move", "allowed_source_type", "evidence_use"],
+        "additionalProperties": true
+      }
+    },
+    "paragraph_level_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["section_or_paragraph", "function", "claim_path"],
+        "additionalProperties": true
+      }
+    },
+    "critical_analysis_plan": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "planning_approval": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": true
+    },
+    "qa": {
+      "type": "object",
+      "required": [
+        "route_confirmed",
+        "source_permissions_recorded",
+        "claims_match_allowed_sources",
+        "draft_follows_approved_plan",
+        "conclusion_answers_question"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
