@@ -13,6 +13,8 @@ from typing import Any
 
 TEXT_SUFFIXES = {".txt", ".md", ".json", ".yaml", ".yml", ".csv"}
 MEDIA_PREFIXES = {".docx": "word/media/", ".pptx": "ppt/media/"}
+LECTURE_FILENAME_RE = re.compile(r"(?i)(?:^|[\s_\-])L(?:ecture)?\s*(\d{1,3})(?:\b|[\s_\-])")
+PPTX_SLIDE_XML_RE = re.compile(r"ppt/slides/slide(\d+)\.xml$")
 
 PRACTICE_KEYWORDS = ["past paper", "practice", "question paper", "exam paper", "answer all questions", "time allowed", "mcq", "sba", "short answer", "essay", "problem sheet"]
 STYLE_KEYWORDS = ["model answer", "example answer", "style", "sample essay"]
@@ -23,6 +25,32 @@ VISUAL_KEYWORDS = ["figure", "fig.", "diagram", "graph", "plot", "table", "chart
 QUESTION_KEYWORDS = ["?", "which of the following", "define", "state", "list", "outline", "explain", "compare", "evaluate", "discuss", "calculate", "interpret"]
 PRACTICAL_QUESTION_KEYWORDS = ["question", "task", "data", "problem", "calculate", "interpret", "graph", "table", "readout", "control"]
 PRACTICAL_WORKED_KEYWORDS = ["calculate", "derive", "show", "estimate", "prove", "data", "problem", "interpret", "graph", "table", "fit", "plot", "uncertainty", "error", "unit"]
+ADMIN_BOILERPLATE_KEYWORDS = ["copyright", "licensed under", "creative commons", "attendance", "password", "office hour", "email", "assessment deadline", "housekeeping"]
+READING_REFERENCE_KEYWORDS = ["reading:", "recommended reading", "further reading", "textbook", "edition", "publisher", "kortext", "doi", "pmid"]
+LOW_RELEVANCE_CONTEXT_KEYWORDS = ["sustainable development goals", "environmental awareness", "public awareness", "news article", "policy awareness"]
+EXAMPLE_KEYWORDS = ["for example", "e.g.", "case study", "example", "photo by", "image by"]
+STRUCTURE_SLIDE_KEYWORDS = [
+    "learning objective",
+    "learning objectives",
+    "intended learning outcome",
+    "intended learning outcomes",
+    "ilo",
+    "ilos",
+    "agenda",
+    "outline",
+    "overview",
+    "today's lecture",
+    "topic",
+    "section",
+    "part ",
+    "summary",
+    "conclusion",
+    "recap",
+    "take home",
+    "key points",
+]
+DECORATIVE_OR_CREDIT_KEYWORDS = ["photo by", "image by", "source:", "credit:", "copyright", "licensed under", "creative commons"]
+CONTINUATION_KEYWORDS = ["continued", "cont.", "same example", "case study continued", "example continued"]
 AUTHOR_YEAR_RE = re.compile(r"\b[A-Z][A-Za-z\-]+\s+et\s+al\.?\s*\(?\d{4}\)?|\b[A-Z][A-Za-z\-]+\s*\(\d{4}\)")
 DOI_RE = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Za-z0-9]+")
 PMID_RE = re.compile(r"\bPMID\s*:?\s*\d+", re.I)
@@ -67,6 +95,62 @@ ROLE_BY_SIGNAL: dict[str, str] = {
 
 def has_any(text: str, keywords: list[str]) -> bool:
     return any(keyword in text for keyword in keywords)
+
+
+def lecture_order_from_path(path: str | Path) -> int | None:
+    match = LECTURE_FILENAME_RE.search(Path(path).stem)
+    return int(match.group(1)) if match else None
+
+
+def is_lecture_source(path: str | Path, text: str = "") -> bool:
+    name = Path(path).name.lower().replace("_", " ").replace("-", " ")
+    sample = (text or "")[:2500].lower().replace("_", " ").replace("-", " ")
+    if Path(path).suffix.lower() in {".pptx", ".pdf", ".docx", ".md", ".txt"} and lecture_order_from_path(path) is not None:
+        return True
+    lecture_markers = [
+        "lecture ",
+        "learning objectives",
+        "intended learning outcomes",
+        "ilos",
+        "by the end of this session",
+        "by the end of today's lecture",
+        "module",
+        "slides",
+    ]
+    module_code = bool(re.search(r"\b[A-Z]{2,5}\s*\d{4,6}\b", text or "", flags=re.I))
+    return has_any(name + "\n" + sample, lecture_markers) or module_code
+
+
+def content_triage(text: str) -> str:
+    lower = (text or "").lower()
+    signals = set(knowledge_signals(text))
+    if has_any(lower, ADMIN_BOILERPLATE_KEYWORDS):
+        return "admin_or_boilerplate"
+    if has_any(lower, READING_REFERENCE_KEYWORDS) and not (signals & {"definition", "mechanism", "method", "comparison", "calculation", "data_interpretation"}):
+        return "reading_reference"
+    if has_any(lower, LOW_RELEVANCE_CONTEXT_KEYWORDS) and not (signals & {"definition", "mechanism", "method", "calculation", "data_interpretation"}):
+        return "low_exam_relevance_context"
+    if has_any(lower, EXAMPLE_KEYWORDS) and not (signals & {"definition", "mechanism", "method", "comparison", "calculation", "data_interpretation"}):
+        return "supporting_example"
+    return "core_lecture_content"
+
+
+def notes_obligation(content_role: str) -> str:
+    if content_role == "core_lecture_content":
+        return "must_cover"
+    if content_role == "supporting_example":
+        return "compress_if_repetitive"
+    return "exclude_unless_directly_examinable"
+
+
+def notes_obligation_for_slide(content_role: str, triage: dict[str, Any]) -> str:
+    if triage["slide_decision"] == "exclude":
+        return "exclude_unless_directly_examinable"
+    if triage["slide_decision"] == "merge_with_previous":
+        return "merge_with_previous_unit"
+    if not triage["detailed_explanation_allowed"]:
+        return "use_for_structure_no_detailed_explanation"
+    return notes_obligation(content_role)
 
 
 def has_visual_signal(text: str) -> bool:
@@ -118,6 +202,29 @@ def unique(items: list[str]) -> list[str]:
     return out
 
 
+def word_count(text: str) -> int:
+    return len(re.findall(r"[A-Za-z0-9][A-Za-z0-9\-]*", text or ""))
+
+
+def normalized_text_signature(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).strip()
+
+
+def high_text_overlap(text: str, previous_text: str) -> bool:
+    current = normalized_text_signature(text)
+    previous = normalized_text_signature(previous_text)
+    if not current or not previous:
+        return False
+    if current == previous:
+        return True
+    current_tokens = set(current.split())
+    previous_tokens = set(previous.split())
+    if min(len(current_tokens), len(previous_tokens)) < 5:
+        return False
+    overlap = len(current_tokens & previous_tokens) / max(1, len(current_tokens | previous_tokens))
+    return overlap >= 0.85
+
+
 def knowledge_signals(text: str) -> list[str]:
     signals: list[str] = []
     for signal, patterns in KNOWLEDGE_SIGNAL_PATTERNS.items():
@@ -151,11 +258,125 @@ def knowledge_unit_candidates(text: str, max_items: int = 8) -> list[dict[str, s
     return candidates
 
 
+def likely_slide_title(text: str) -> str:
+    for line in (text or "").splitlines():
+        clean = re.sub(r"\s+", " ", line).strip()
+        if clean:
+            return clean[:160]
+    clean = re.sub(r"\s+", " ", text or "").strip()
+    return clean[:160]
+
+
+def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
+    clean = re.sub(r"\s+", " ", text or "").strip()
+    lower = clean.lower()
+    signals = set(knowledge_signals(clean))
+    strong_signals = {"definition", "mechanism", "method", "comparison", "calculation", "application"}
+    direct_data_signals = {"data_interpretation", "evidence"}
+    content_role = content_triage(clean)
+    words = word_count(clean)
+
+    if not clean or words <= 2:
+        return {
+            "slide_decision": "exclude",
+            "notes_role": "non_teaching_material",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "empty_or_textless_slide",
+        }
+    if has_any(lower, ADMIN_BOILERPLATE_KEYWORDS) or (has_any(lower, DECORATIVE_OR_CREDIT_KEYWORDS) and not (signals & strong_signals)):
+        return {
+            "slide_decision": "exclude",
+            "notes_role": "non_teaching_material",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "administrative_copyright_or_source_credit",
+        }
+    if content_role == "reading_reference":
+        return {
+            "slide_decision": "exclude",
+            "notes_role": "non_teaching_material",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "reading_or_textbook_reference_without_teaching_content",
+        }
+    if content_role == "low_exam_relevance_context" and not (signals & (strong_signals | direct_data_signals)):
+        return {
+            "slide_decision": "exclude",
+            "notes_role": "non_teaching_material",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "generic_context_without_course_knowledge",
+        }
+    if high_text_overlap(clean, previous_text):
+        return {
+            "slide_decision": "merge_with_previous",
+            "notes_role": "example_or_summary_support",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "duplicate_or_near_duplicate_of_previous_slide",
+        }
+
+    title = likely_slide_title(text).lower()
+    structure_marker = has_any(title + "\n" + lower[:220], STRUCTURE_SLIDE_KEYWORDS)
+    if structure_marker and not (signals & strong_signals) and "data_interpretation" not in signals:
+        return {
+            "slide_decision": "use",
+            "notes_role": "structure_marker",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "structure_or_learning_outcome_slide_for_topic_order",
+        }
+    if has_any(lower, CONTINUATION_KEYWORDS) or (content_role == "supporting_example" and previous_text):
+        return {
+            "slide_decision": "merge_with_previous",
+            "notes_role": "example_or_summary_support",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "supporting_example_or_continuation_of_previous_unit",
+        }
+    if has_visual_signal(clean) and not (signals & (strong_signals | direct_data_signals)):
+        return {
+            "slide_decision": "merge_with_previous" if previous_text else "use",
+            "notes_role": "visual_or_data_support",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "visual_or_data_support_without_standalone_explanation_need",
+        }
+    if signals & strong_signals:
+        return {
+            "slide_decision": "use",
+            "notes_role": "knowledge_source",
+            "detailed_explanation_allowed": True,
+            "triage_reason": "substantive_course_knowledge",
+        }
+    if signals & direct_data_signals:
+        detailed = bool(re.search(r"\b(interprets?|trend|shows?|demonstrates?|control|readout|result|conclusion)\b", lower))
+        return {
+            "slide_decision": "use",
+            "notes_role": "visual_or_data_support",
+            "detailed_explanation_allowed": detailed,
+            "triage_reason": "data_or_evidence_support_for_nearby_knowledge_unit",
+        }
+    if "learning_objective" in signals or "heading_or_topic_boundary" in signals:
+        return {
+            "slide_decision": "use",
+            "notes_role": "structure_marker",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "topic_boundary_or_learning_objective",
+        }
+    if words <= 8:
+        return {
+            "slide_decision": "exclude",
+            "notes_role": "non_teaching_material",
+            "detailed_explanation_allowed": False,
+            "triage_reason": "pure_transition_or_decorative_short_slide",
+        }
+    return {
+        "slide_decision": "use",
+        "notes_role": "example_or_summary_support",
+        "detailed_explanation_allowed": False,
+        "triage_reason": "context_support_for_notes_structure",
+    }
+
+
 def classify_source(path: str | Path, text: str = "") -> str:
     name = Path(path).name.lower().replace("_", " ").replace("-", " ")
     sample = (text or "")[:6000].lower().replace("_", " ").replace("-", " ")
     haystack = name + "\n" + sample
-    lecture_named = any(word in name for word in ["lecture", "slides", "notes", "module"])
+    lecture_named = any(word in name for word in ["lecture", "slides", "notes", "module"]) or is_lecture_source(path, text)
     exam_like = has_any(haystack, ["past paper", "question paper", "exam paper", "answer all questions"]) or ("time allowed" in haystack and "examination" in haystack)
     course_like = lecture_named or has_any(sample[:1200], ["notes for", "contents", "chapter", "module"])
 
@@ -191,6 +412,20 @@ def clean_xml_text(raw: bytes) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def clean_pptx_slide_text(raw: bytes) -> str:
+    text = raw.decode("utf-8", errors="ignore")
+    runs = re.findall(r"<a:t[^>]*>(.*?)</a:t>", text, flags=re.S)
+    if runs:
+        cleaned = []
+        for run in runs:
+            value = html.unescape(re.sub(r"<[^>]+>", " ", run))
+            value = re.sub(r"\s+", " ", value).strip()
+            if value:
+                cleaned.append(value)
+        return "\n".join(cleaned).strip()
+    return clean_xml_text(raw)
+
+
 def read_docx_text(path: Path) -> str:
     chunks: list[str] = []
     with zipfile.ZipFile(path) as zf:
@@ -201,12 +436,26 @@ def read_docx_text(path: Path) -> str:
 
 
 def read_pptx_text(path: Path) -> str:
-    chunks: list[str] = []
+    return "\n\n".join(item["text"] for item in read_pptx_slide_texts(path) if item["text"]).strip()
+
+
+def read_pptx_slide_texts(path: Path) -> list[dict[str, Any]]:
+    slides: list[dict[str, Any]] = []
     with zipfile.ZipFile(path) as zf:
-        for name in sorted(zf.namelist()):
-            if name.startswith("ppt/slides/") and name.endswith(".xml"):
-                chunks.append(clean_xml_text(zf.read(name)))
-    return "\n".join(chunks).strip()
+        slide_names = []
+        for name in zf.namelist():
+            match = PPTX_SLIDE_XML_RE.fullmatch(name)
+            if match:
+                slide_names.append((int(match.group(1)), name))
+        for slide_number, name in sorted(slide_names):
+            text = clean_pptx_slide_text(zf.read(name))
+            slides.append({
+                "slide_number": slide_number,
+                "locator": f"slide {slide_number}",
+                "text": text,
+                "likely_slide_title": likely_slide_title(text),
+            })
+    return slides
 
 
 def read_pdf_text(path: Path) -> tuple[str, list[str]]:
@@ -225,12 +474,36 @@ def pdf_page_texts(path: Path) -> list[str]:
     try:
         import fitz  # type: ignore
     except Exception:
-        return []
+        try:
+            from pypdf import PdfReader  # type: ignore
+        except Exception:
+            return []
+        try:
+            reader = PdfReader(str(path))
+            return [page.extract_text() or "" for page in reader.pages]
+        except Exception:
+            return []
     try:
         with fitz.open(path) as doc:
             return [page.get_text("text") or "" for page in doc]
     except Exception:
         return []
+
+
+def slide_like_units(path: Path, page_texts: list[str]) -> list[dict[str, Any]]:
+    if path.suffix.lower() == ".pptx":
+        return read_pptx_slide_texts(path)
+    if path.suffix.lower() == ".pdf" and page_texts:
+        return [
+            {
+                "page_number": idx,
+                "locator": f"page {idx}",
+                "text": text,
+                "likely_slide_title": likely_slide_title(text),
+            }
+            for idx, text in enumerate(page_texts, 1)
+        ]
+    return []
 
 
 def read_source_text(path: Path) -> tuple[str, list[str]]:
@@ -445,50 +718,113 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
         if not text:
             notes = notes + ["no_text_extracted_automatically"]
         hint = classify_source(path, text)
+        lecture_order = lecture_order_from_path(path)
+        lecture_source = is_lecture_source(path, text)
+        doc_content_role = content_triage(text)
         doc_signals = knowledge_signals(text)
         doc_roles = knowledge_roles(doc_signals)
         doc_units = knowledge_unit_candidates(text)
         doc_question_signals = question_signals(path, text, hint)
+        slide_units = slide_like_units(path, page_texts) if (path.suffix.lower() == ".pptx" or (path.suffix.lower() == ".pdf" and lecture_source and hint == "knowledge_material")) else []
         documents.append({
             "id": source_id,
             "path": str(path),
             "name": path.name,
             "source_hint": hint,
             "category": hint,
+            "source_order": idx,
+            "lecture_order": lecture_order,
+            "lecture_source": lecture_source,
+            "content_triage": doc_content_role,
+            "notes_obligation": notes_obligation(doc_content_role),
             "text_chars": len(text),
             "knowledge_signals": doc_signals,
             "knowledge_roles": doc_roles,
             "knowledge_unit_candidates": doc_units,
             "question_signals": doc_question_signals,
+            "slide_like_fragment_count": len(slide_units),
             "extraction_notes": notes,
         })
         extraction_notes.extend(f"{source_id}:{note}" for note in notes)
-        for frag_idx, chunk in enumerate(chunk_text(text), 1):
-            frag_signals = knowledge_signals(chunk)
-            fragments.append({
-                "id": f"{source_id}_F{frag_idx}",
-                "source_id": source_id,
-                "source_name": path.name,
-                "source_hint": hint,
-                "category": hint,
-                "locator": f"chunk {frag_idx}",
-                "text": chunk,
-                "knowledge_signals": frag_signals,
-                "knowledge_roles": knowledge_roles(frag_signals),
-                "knowledge_unit_candidates": knowledge_unit_candidates(chunk),
-            })
+        previous_slide_text = ""
+        if slide_units:
+            for frag_idx, unit in enumerate(slide_units, 1):
+                chunk = str(unit.get("text") or "")
+                frag_signals = knowledge_signals(chunk)
+                frag_content_role = content_triage(chunk)
+                triage = slide_triage(chunk, previous_slide_text)
+                fragments.append({
+                    "id": f"{source_id}_F{frag_idx}",
+                    "source_id": source_id,
+                    "source_name": path.name,
+                    "source_hint": hint,
+                    "category": hint,
+                    "source_order": idx,
+                    "fragment_order": frag_idx,
+                    "lecture_order": lecture_order,
+                    "lecture_source": lecture_source,
+                    "content_triage": frag_content_role,
+                    "notes_obligation": notes_obligation_for_slide(frag_content_role, triage),
+                    "locator": unit.get("locator") or f"slide {frag_idx}",
+                    "slide_number": unit.get("slide_number"),
+                    "page_number": unit.get("page_number"),
+                    "likely_slide_title": unit.get("likely_slide_title") or likely_slide_title(chunk),
+                    "slide_decision": triage["slide_decision"],
+                    "notes_role": triage["notes_role"],
+                    "detailed_explanation_allowed": triage["detailed_explanation_allowed"],
+                    "triage_reason": triage["triage_reason"],
+                    "text": chunk,
+                    "knowledge_signals": frag_signals,
+                    "knowledge_roles": knowledge_roles(frag_signals),
+                    "knowledge_unit_candidates": knowledge_unit_candidates(chunk),
+                })
+                if triage["slide_decision"] in {"use", "merge_with_previous"}:
+                    previous_slide_text = chunk
+        else:
+            for frag_idx, chunk in enumerate(chunk_text(text), 1):
+                frag_signals = knowledge_signals(chunk)
+                frag_content_role = content_triage(chunk)
+                fragments.append({
+                    "id": f"{source_id}_F{frag_idx}",
+                    "source_id": source_id,
+                    "source_name": path.name,
+                    "source_hint": hint,
+                    "category": hint,
+                    "source_order": idx,
+                    "fragment_order": frag_idx,
+                    "lecture_order": lecture_order,
+                    "lecture_source": lecture_source,
+                    "content_triage": frag_content_role,
+                    "notes_obligation": notes_obligation(frag_content_role),
+                    "locator": f"chunk {frag_idx}",
+                    "text": chunk,
+                    "knowledge_signals": frag_signals,
+                    "knowledge_roles": knowledge_roles(frag_signals),
+                    "knowledge_unit_candidates": knowledge_unit_candidates(chunk),
+                })
         if visual_mode != "none":
             visuals.extend(extract_media(path, source_id, Path(asset_dir)))
             visuals.extend(extract_pdf_page_visuals(path, source_id, Path(asset_dir), page_texts))
     hints: dict[str, int] = {}
     signals: dict[str, int] = {}
     roles: dict[str, int] = {}
+    content_roles: dict[str, int] = {}
+    slide_decisions: dict[str, int] = {}
+    notes_roles: dict[str, int] = {}
     for doc in documents:
         hints[doc["source_hint"]] = hints.get(doc["source_hint"], 0) + 1
+        content_roles[doc["content_triage"]] = content_roles.get(doc["content_triage"], 0) + 1
         for signal in doc.get("knowledge_signals", []):
             signals[signal] = signals.get(signal, 0) + 1
         for role in doc.get("knowledge_roles", []):
             roles[role] = roles.get(role, 0) + 1
+    for frag in fragments:
+        if frag.get("slide_decision"):
+            slide_decision = str(frag["slide_decision"])
+            slide_decisions[slide_decision] = slide_decisions.get(slide_decision, 0) + 1
+        if frag.get("notes_role"):
+            notes_role = str(frag["notes_role"])
+            notes_roles[notes_role] = notes_roles.get(notes_role, 0) + 1
     return {
         "schema_version": 2,
         "documents": documents,
@@ -504,6 +840,11 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
             "practical_worked_question_source_count": sum(1 for doc in documents if doc.get("question_signals", {}).get("has_practical_worked_questions")),
             "solution_evidence_source_count": sum(1 for doc in documents if doc.get("question_signals", {}).get("has_solution_evidence")),
             "source_hints": hints,
+            "content_triage": content_roles,
+            "slide_decisions": slide_decisions,
+            "notes_roles": notes_roles,
+            "slide_like_fragment_count": sum(1 for frag in fragments if frag.get("slide_decision")),
+            "lecture_source_count": sum(1 for doc in documents if doc.get("lecture_source")),
             "knowledge_signals": signals,
             "knowledge_roles": roles,
             "knowledge_unit_candidate_count": sum(len(doc.get("knowledge_unit_candidates", [])) for doc in documents),
@@ -518,11 +859,33 @@ def self_test() -> None:
         p2 = Path(td) / "source_b.txt"
         p3 = Path(td) / "source_c.txt"
         p4 = Path(td) / "practical_sheet.txt"
+        p5 = Path(td) / "L1-Origin of Life.pptx"
         p1.write_text("Learning objectives\nDefine enzyme activity.\nThe mechanism leads to dose response changes.\nCompare treated and control results.", encoding="utf-8")
         p2.write_text("1. Which statement is correct? A) One B) Two", encoding="utf-8")
         p3.write_text("Abstract Methods Results DOI 10.1000/test", encoding="utf-8")
         p4.write_text("Practical task: calculate the rate from the graph and interpret the control data.", encoding="utf-8")
-        sources = [str(p1), str(p2), str(p3), str(p4)]
+        with zipfile.ZipFile(p5, "w") as zf:
+            zf.writestr(
+                "ppt/slides/slide1.xml",
+                "<p:sld><a:t>Lecture 1 Intended Learning Outcomes</a:t>"
+                "<a:t>By the end of this session you should be able to describe protocells.</a:t></p:sld>",
+            )
+            zf.writestr(
+                "ppt/slides/slide10.xml",
+                "<p:sld><a:t>Copyright and office hour</a:t>"
+                "<a:t>Email the lecturer for attendance and password housekeeping.</a:t></p:sld>",
+            )
+            zf.writestr(
+                "ppt/slides/slide2.xml",
+                "<p:sld><a:t>Protocell formation mechanism</a:t>"
+                "<a:t>The mechanism leads to membrane compartment formation and activates primitive metabolism.</a:t></p:sld>",
+            )
+            zf.writestr(
+                "ppt/slides/slide3.xml",
+                "<p:sld><a:t>Protocell formation mechanism</a:t>"
+                "<a:t>The mechanism leads to membrane compartment formation and activates primitive metabolism.</a:t></p:sld>",
+            )
+        sources = [str(p1), str(p2), str(p3), str(p4), str(p5)]
         try:
             import fitz  # type: ignore
             pdf_path = Path(td) / "lecture_visual.pdf"
@@ -552,6 +915,23 @@ def self_test() -> None:
         assert scan["summary"]["practical_question_source_count"] == 1
         assert scan["summary"]["practical_worked_question_source_count"] == 1
         assert any(doc["question_signals"]["has_practical_worked_questions"] for doc in scan["documents"])
+        lecture_doc = next(doc for doc in scan["documents"] if doc["name"] == "L1-Origin of Life.pptx")
+        assert lecture_doc["source_hint"] == "knowledge_material"
+        assert lecture_doc["lecture_order"] == 1
+        assert lecture_doc["lecture_source"] is True
+        lecture_frags = [frag for frag in scan["fragments"] if frag["source_name"] == "L1-Origin of Life.pptx"]
+        assert [frag["slide_number"] for frag in lecture_frags] == [1, 2, 3, 10]
+        assert lecture_frags[0]["slide_decision"] == "use"
+        assert lecture_frags[0]["notes_role"] == "structure_marker"
+        assert lecture_frags[0]["detailed_explanation_allowed"] is False
+        assert lecture_frags[1]["slide_decision"] == "use"
+        assert lecture_frags[1]["notes_role"] == "knowledge_source"
+        assert lecture_frags[1]["detailed_explanation_allowed"] is True
+        assert lecture_frags[2]["slide_decision"] == "merge_with_previous"
+        assert lecture_frags[3]["slide_decision"] == "exclude"
+        assert lecture_frags[3]["notes_role"] == "non_teaching_material"
+        assert scan["summary"]["slide_decisions"]["exclude"] >= 1
+        assert any(frag["content_triage"] == "core_lecture_content" for frag in lecture_frags)
         if any(Path(source).suffix.lower() == ".pdf" for source in sources):
             assert any(visual.get("extraction_method") == "pdf_page_visible_render" for visual in scan["visuals"])
             assert any(Path(visual["asset_path"]).exists() for visual in scan["visuals"])

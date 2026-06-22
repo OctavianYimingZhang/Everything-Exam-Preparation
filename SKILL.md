@@ -11,7 +11,11 @@ This Skill helps students prepare for exams from uploaded course material, pract
 
 Students provide course material, practice material, and optionally Extra Reading. The Skill reads the material, extracts open knowledge signals, groups connected signals into knowledge units, calibrates the required explanation for each unit, uses Extra Reading for essay-style enrichment when relevant, and produces student-facing exam preparation output.
 
-Student-facing Notes are explanation-only, knowledge-only teaching notes that show the lecture and exam-relevant knowledge a student needs to master. They explain concepts, mechanisms, methods, calculations, assumptions, interpretations, conceptual applications, academically useful source visuals, and calculation worked examples when those examples teach the relevant knowledge unit. Exam Type Related preparation is produced as a separate Specific Research Report for the relevant route.
+Student-facing Notes are explanation-only, knowledge-only teaching notes that show the lecture and exam-relevant knowledge a student needs to master. They are broad lecture reconstruction documents for students who may not have learned the material yet: use `coverage_policy: lecture_unit_complete`, preserve lecture/source order, explain most substantive lecture units, and avoid reducing Notes to high-frequency exam points. They explain concepts, mechanisms, methods, calculations, assumptions, interpretations, conceptual applications, academically useful source visuals, and calculation worked examples when those examples teach the relevant knowledge unit. Exam Type Related preparation is produced as a separate Specific Research Report for the relevant route.
+
+For slide decks and slide-like PDFs, run internal `exam-prep-slide-triage` material analysis before Notes generation. This is not a detail-level grading system. It records `slide_decision` as `use`, `merge_with_previous`, or `exclude`, records `notes_role`, `detailed_explanation_allowed`, and `triage_reason`, preserves useful ILO/topic/summary structure, and prevents non-teaching slides from becoming detailed public Notes explanations.
+
+Notes and Reports are intentionally separate outputs. Notes teach the lecture in course order. MCQ, Short Answer, and other Specific Research Reports provide concise exam-priority reinforcement from Past Papers, question formats, or route-specific evidence. Reports can guide revision emphasis, but they must not narrow, replace, or duplicate the broad Notes coverage.
 
 Automatic Exam type, Material type, and Notes-choice recognition is a preliminary diagnosis. Before generating Notes, Specific Research Reports, or Worked Solutions, display an **Auto-diagnosis review plan** and use `request_user_input` to confirm or correct Exam type/route, Material type/source roles, and whether Notes should be generated. Mixed exam signals mean the confirmed output should cover each relevant component in the mix.
 
@@ -26,6 +30,7 @@ This root Skill is the compatibility entrypoint. For new work, load `exam-prep-i
 | User request | Focused Skill |
 |---|---|
 | make notes, revise, prepare this course, go through lectures | [`exam-prep-notes`](skills/exam-prep-notes/SKILL.md) |
+| triage slides before Notes, exclude useless slides from Notes analysis | [`exam-prep-slide-triage`](skills/exam-prep-slide-triage/SKILL.md) |
 | identify exam format, classify assessment type, diagnose past-paper structure | [`exam-prep-index`](skills/exam-prep-index/SKILL.md) |
 | MCQ, SBA, multiple choice | [`exam-prep-mcq`](skills/exam-prep-mcq/SKILL.md) |
 | short answer, SAQ, definitions, state/list questions | [`exam-prep-short-answer`](skills/exam-prep-short-answer/SKILL.md) |
@@ -44,16 +49,17 @@ Notes are offered for every exam type and should be generated before the route-s
 
 1. Read the supplied files.
 2. Build a simple fragment index from readable content.
-3. Calibrate coverage from knowledge signals and knowledge units.
-4. Identify Extra Reading sources for essay-style enrichment when the user supplies them or the confirmed output calls for them.
-5. Match confirmed Extra Reading to essay claims or course points that need external enrichment.
-6. Make a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and source material.
-7. Display an **Auto-diagnosis review plan**, then call `request_user_input` with concrete options for Exam type, Material type, and whether to generate Notes.
-8. Ask route-specific follow-up questions for Essay, MCQ, Short Answer, Long Answer, Worked Solutions, or Mixed routes.
-9. Update the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
-10. Generate explanation-only teaching Notes from the confirmed coverage map when the user accepts Notes.
-11. Render visible formulas, tables, academic source visuals, worked examples, and explanations in the target output format style.
-12. Produce the confirmed MCQ, short-answer, long-answer, practical/data/problem, essay preparation, or Math/Physics/Practical Worked Solutions Specific Research Report as separate output. For mixed exam formats, produce every confirmed report.
+3. For slide decks or slide-like PDFs, apply slide triage so structure slides support ordering, substantive knowledge slides can be explained, merged slides support nearby units, and excluded non-teaching slides remain internal audit records.
+4. Calibrate coverage from knowledge signals and knowledge units.
+5. Identify Extra Reading sources for essay-style enrichment when the user supplies them or the confirmed output calls for them.
+6. Match confirmed Extra Reading to essay claims or course points that need external enrichment.
+7. Make a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and source material.
+8. Display an **Auto-diagnosis review plan**, then call `request_user_input` with concrete options for Exam type, Material type, and whether to generate Notes.
+9. Ask route-specific follow-up questions for Essay, MCQ, Short Answer, Long Answer, Worked Solutions, or Mixed routes.
+10. Update the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
+11. Generate explanation-only teaching Notes from the confirmed lecture-unit complete coverage map when the user accepts Notes.
+12. Render visible formulas, tables, academic source visuals, worked examples, and explanations in the target output format style.
+13. Produce the confirmed MCQ, short-answer, long-answer, practical/data/problem, essay preparation, or Math/Physics/Practical Worked Solutions Specific Research Report as separate output. For mixed exam formats, produce every confirmed report.
 
 ## Extra Reading workflow
 
@@ -72,6 +78,10 @@ Write like a strong tutor preparing a student for an exam. Explain what each top
 Formula-heavy content must be visible in the final document. Use Word equation/OMML rendering where possible. Use a domain-neutral formula normalization pipeline and readable Unicode mathematical fallback when equation conversion is unavailable.
 
 Render Notes as knowledge explanations with integrated formula, method, calculation, worked example, mechanism, comparison, visual, and interpretation support.
+
+For Notes, classify source fragments by teaching role before writing: cover `core_lecture_content`, include or compress `supporting_example`, and exclude `reading_reference`, `admin_or_boilerplate`, or `low_exam_relevance_context` unless directly needed for examinable course knowledge.
+
+For slide-like sources, keep `slide_triage_audit` internal. ILOs, agendas, topic boundaries, section dividers, summaries, non-core visuals, non-essential data, and supporting examples may be used for structure or merged context without detailed public explanation. Administrative, copyright/license, reading-list-only, decorative, empty, pure transition, duplicate, and generic awareness slides should be excluded from detailed Notes.
 
 Specific Research Report writing:
 

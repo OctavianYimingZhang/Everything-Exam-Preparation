@@ -12,7 +12,7 @@ Render DOCX Notes with Arial, 2.5 cm margins, 1.5 line spacing, centered main ti
 
 Readable DOCX styling should remain academic. Use moderate font sizes, black academic text, restrained heading style, compact captions, centered display formulas, and black-and-white academic paper tables when they improve scanability. Tables should use compact editable cells, concise titles above, restrained horizontal rules, portrait-friendly width, and notes below for symbols, abbreviations, units, statistical notation, or source details.
 
-Notes are explanation-only teaching documents and remain knowledge-only teaching notes. They teach the lecture and exam-relevant knowledge a student needs to master by explaining concepts, mechanisms, methods, calculations, assumptions, interpretations, evidence, and conceptual applications. Formulas, visuals, and worked examples are part of knowledge explanation when they help teach a knowledge unit. Exam Type Related preparation is handled as a separate Specific Research Report by `references/exam_mode_and_addons_protocol.md`.
+Notes are explanation-only teaching documents and remain knowledge-only teaching notes. They are broad lecture reconstruction documents for students who may not have learned the lecture well yet. Notes should let the student work through the lecture and exam-relevant knowledge and master most substantive lecture material before using MCQ, SAQ, or other Specific Research Reports for exam-priority reinforcement. Formulas, visuals, and worked examples are part of knowledge explanation when they help teach a knowledge unit. Exam Type Related preparation is handled as a separate Specific Research Report by `references/exam_mode_and_addons_protocol.md`.
 
 ## Core Notes Content
 
@@ -28,9 +28,60 @@ Student-facing Notes may contain:
 - worked interpretation or calculation examples with step-by-step academic solutions when they teach reusable reasoning;
 - essay-style external enrichment when the confirmed output calls for it and the source strengthens a course point or essay claim.
 
-Student-facing Notes should present course knowledge explanation, exam-relevant understanding, academic source visuals, worked examples, and confirmed Specific Research Report content. Workflow artifacts, route planning, source intake narration, coverage calibration narration, QA state, and subagent narration belong to the internal workflow record.
+Student-facing Notes should present course knowledge explanation, exam-relevant understanding, academic source visuals, and worked examples. They should not collapse into a Past Paper priority list, MCQ trap list, SAQ template, prediction report, or answer-walkthrough report. Workflow artifacts, route planning, source intake narration, coverage calibration narration, QA state, and subagent narration belong to the internal workflow record.
 
 Notes coverage comes from the full set of lecture and course knowledge units. Question and practice material calibrate Specific Research Report emphasis and can reveal repeated concepts, methods, calculations, source difficulty, and knowledge density, but they do not narrow the Notes coverage. When no question or practice material is supplied, build Notes from the lecture/course knowledge units. Essay questions and scenario questions should guide report emphasis while preserving full course knowledge coverage in Notes.
+
+## Notes and Reports Separation
+
+Notes and Reports are intentionally separate outputs:
+
+- Notes are lecture-unit complete teaching notes. They reconstruct and explain the lecture in course order so a weakly prepared student can learn most substantive material.
+- MCQ and Short Answer reports are concise exam-priority reinforcement. They use Past Papers or question formats to highlight recurring exam-needed knowledge points.
+- Reports may point back to the broad Notes knowledge map, but Reports must not replace, narrow, or determine Notes coverage.
+- Notes may mention exam relevance when it clarifies why a concept matters, but they should not become a recurrence report, answer key, prediction list, or high-frequency-only summary.
+
+## Lecture-Unit Complete Coverage
+
+Use `coverage_policy: lecture_unit_complete` for Exam Prep Notes plans. This means near slide-by-slide coverage at the level of substantive lecture units, not literal commentary on every slide or image. The public Notes should cover most substantive lecture-slide content through coherent units, while compressing or excluding non-teaching material.
+
+For each lecture or course file, build a coverage map before writing:
+
+1. Preserve lecture/source order for Notes. Do not sort the public Notes primarily by exam frequency or signal score.
+2. Identify intended learning outcomes, topic boundaries, definitions, mechanisms, pathways, methods, comparisons, data or diagram meanings, important examples, and conceptual applications.
+3. Group slide or fragment signals into lecture units that a student can learn from in sequence.
+4. Expand dense or novel units enough that a weakly prepared student can reconstruct the reasoning.
+5. Maintain a `coverage_audit` in the internal plan showing which lecture sources are represented and which fragments were compressed or excluded.
+
+Content triage for Notes:
+
+- `core_lecture_content`: must be covered in the Notes through explanation.
+- `supporting_example`: include when it teaches reusable reasoning; compress when examples repeat the same point.
+- `reading_reference`: exclude unless the reading itself is directly needed to explain examinable course knowledge.
+- `admin_or_boilerplate`: exclude unless it changes assessed content.
+- `low_exam_relevance_context`: compress or exclude unless it directly explains a course mechanism, method, concept, or application.
+
+## Slide Triage Before Notes
+
+For slide decks and slide-like PDFs, run internal `exam-prep-slide-triage` material analysis before writing Notes. Slide triage is not a detail-level grading system and is not used to save time by dropping legitimate course knowledge. Its function is to exclude useless slides from detailed public explanation and to keep structural slides available for topic order, lecture flow, and coverage audit.
+
+Each slide-like fragment should carry:
+
+- `slide_decision`: `use`, `merge_with_previous`, or `exclude`;
+- `notes_role`: `knowledge_source`, `structure_marker`, `visual_or_data_support`, `example_or_summary_support`, or `non_teaching_material`;
+- `detailed_explanation_allowed`: boolean;
+- `triage_reason`: concise internal reason;
+- provenance fields such as source name, lecture order, slide or page number, and likely slide title.
+
+Use `use` with `detailed_explanation_allowed: true` for substantive knowledge slides: definitions, concepts, mechanisms, pathways, methods, assays, comparisons, formulas, calculations, direct graph interpretation, direct data interpretation, and conceptual applications.
+
+Use `use` with `detailed_explanation_allowed: false` for ILOs, agendas, topic boundaries, section dividers, summaries, conclusions, and recaps. These slides should help topic splitting and lecture order, but they should not become long public explanations unless they contain substantive knowledge signals.
+
+Use `merge_with_previous` for repeated examples, continuation slides, supporting cases, non-core visuals, non-essential data, and recap material that should support a nearby knowledge unit without becoming its own Notes section.
+
+Use `exclude` for administrative, contact, deadline, copyright/license, source-credit, reading-list-only, textbook-reference-only, decorative, empty, pure transition, duplicate-with-no-new-knowledge, and generic awareness/social-framing slides that do not teach course knowledge.
+
+Maintain `slide_triage_audit` internally with retained, merged, and excluded slide counts plus exclusion reasons. Excluded slides should not become public Notes sections, detailed paragraphs, visual explanations, or exam-priority claims. Specific Research Reports must not use slide triage to narrow or replace their Past Paper-driven or route-specific analysis.
 
 ## Coverage Calibration
 

@@ -7,6 +7,8 @@
   "multi_skill_system": true,
   "index_skill": "skills/exam-prep-index/SKILL.md",
   "default_output": "docx_notes",
+  "notes_coverage_policy": "lecture_unit_complete",
+  "slide_triage_policy": "notes_material_analysis_use_merge_or_exclude_not_detail_level_grading",
   "output_name_policy": "user_requested_or_generated_from_context",
   "human_review_required": true,
   "human_review_targets": [
@@ -39,6 +41,11 @@
       "name": "exam-prep-notes",
       "path": "skills/exam-prep-notes/SKILL.md",
       "route": "exam_prep_notes"
+    },
+    {
+      "name": "exam-prep-slide-triage",
+      "path": "skills/exam-prep-slide-triage/SKILL.md",
+      "route": "notes_material_analysis"
     },
     {
       "name": "exam-prep-mcq",

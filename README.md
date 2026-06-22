@@ -11,21 +11,22 @@ The default output type is DOCX notes. If the user requests filenames or a multi
 1. Reads supplied course files, practice material, mark schemes, examples, Extra Reading, and other useful files.
 2. Uses rough source hints as provenance labels.
 3. Builds a fragment index from readable content.
-4. Extracts open knowledge signals and groups connected signals into knowledge units.
-5. Calibrates Notes coverage from the knowledge units and required explanation.
-6. Identifies Extra Reading only when the confirmed Exam type includes essay.
-7. Matches confirmed Extra Reading to essay claims or course points that need external enrichment.
-8. Makes a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and practice material.
-9. Displays an **Auto-diagnosis review plan** and uses `request_user_input` for human review of Exam type, Material type, and whether Notes should be generated.
-10. Updates the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
-11. Produces explanation-only teaching Notes first when the user accepts Notes.
-12. Produces the confirmed Specific Research Report for MCQ, short answer, long answer, practical/data/problem, worked-solution, essay, or mixed exams.
-13. When Past Paper or question-containing Practical Materials are supplied and confirmed, produces a separate question-based Specific Research Report alongside Notes when Notes are accepted.
-14. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
-15. When the user asks how to solve a supplied question, produces a `question_solution_report` that explains the target question, shows the matching knowledge unit, and retrieves strict same-knowledge-point questions from the supplied Past Paper or Practice Material.
-16. When the user asks to organize Past Paper or Practice Material, produces `organized_questions_docx` sorted by Lecture Slides or lecture knowledge-unit order and containing questions plus minimal provenance.
+4. Applies slide triage before Notes generation for slide decks and slide-like PDFs so useless slides are excluded from detailed public explanation while ILO, topic, visual, example, and summary slides can still support lecture order.
+5. Extracts open knowledge signals and groups connected signals into knowledge units.
+6. Calibrates Notes coverage from the knowledge units and required explanation.
+7. Identifies Extra Reading only when the confirmed Exam type includes essay.
+8. Matches confirmed Extra Reading to essay claims or course points that need external enrichment.
+9. Makes a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and practice material.
+10. Displays an **Auto-diagnosis review plan** and uses `request_user_input` for human review of Exam type, Material type, and whether Notes should be generated.
+11. Updates the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
+12. Produces explanation-only teaching Notes first when the user accepts Notes.
+13. Produces the confirmed Specific Research Report for MCQ, short answer, long answer, practical/data/problem, worked-solution, essay, or mixed exams.
+14. When Past Paper or question-containing Practical Materials are supplied and confirmed, produces a separate question-based Specific Research Report alongside Notes when Notes are accepted.
+15. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
+16. When the user asks how to solve a supplied question, produces a `question_solution_report` that explains the target question, shows the matching knowledge unit, and retrieves strict same-knowledge-point questions from the supplied Past Paper or Practice Material.
+17. When the user asks to organize Past Paper or Practice Material, produces `organized_questions_docx` sorted by Lecture Slides or lecture knowledge-unit order and containing questions plus minimal provenance.
 
-Student-facing Notes explain the lecture and exam-relevant knowledge the student needs to master. Source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, and similar workflow records remain internal.
+Student-facing Notes explain the lecture and exam-relevant knowledge the student needs to master. They are broad lecture reconstruction documents for students who may not have learned the material yet. MCQ, SAQ, and other Specific Research Reports remain separate concise exam-priority reinforcement outputs. Source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, and similar workflow records remain internal.
 
 ## Multiple Skill system
 
@@ -35,6 +36,7 @@ Focused Skills:
 
 - `exam-prep-index`: routes broad requests to the right focused Skill.
 - `exam-prep-notes`: generates explanation-only DOCX Notes.
+- `exam-prep-slide-triage`: internal Notes material analysis for excluding non-teaching slides and preserving useful slide structure without detailed explanation.
 - `exam-prep-mcq`: produces MCQ/SBA Specific Research Reports.
 - `exam-prep-short-answer`: produces SAQ and short-answer Specific Research Reports.
 - `exam-prep-long-answer`: produces long-answer, practical, data, scenario, and problem Specific Research Reports.
@@ -84,7 +86,9 @@ Before public output is generated, automatic routing remains a preliminary diagn
 
 ### 1. Coverage calibration
 
-`references/input_and_evidence_protocol.md` defines open knowledge signals. `references/exam_prep_notes_protocol.md` defines how those signals become a coverage map before Notes are written. Coverage planning is internal; the final document is a knowledge-explanation document. Formulas, visuals, worked examples, and confirmed Specific Research Report content function as parts of knowledge explanation; exam advice, workflow display, Skill explanation, and high-frequency-analysis process stay in the internal workflow record.
+`references/input_and_evidence_protocol.md` defines open knowledge signals. `references/exam_prep_notes_protocol.md` defines how those signals become a coverage map before Notes are written. Coverage planning is internal; the final document is a knowledge-explanation document. Formulas, visuals, and worked examples function as parts of knowledge explanation; exam advice, workflow display, Skill explanation, and high-frequency-analysis process stay in the internal workflow record.
+
+Exam Prep Notes use `coverage_policy: lecture_unit_complete`. They should preserve lecture/source order and reconstruct most substantive lecture content through coherent knowledge units. This is near slide-by-slide coverage at the level of lecture units, not a literal explanation of every slide or image. The aim is that a weakly prepared student can read the Notes once and understand most of the lecture before using the separate report to reinforce exam priorities.
 
 Coverage is driven by:
 
@@ -100,6 +104,14 @@ Coverage is driven by:
 - worked-example signals when a calculation, derivation, estimate, proof, data, or problem example teaches reusable reasoning.
 
 Examples are used when they clarify knowledge, mechanism, method, calculation, interpretation, or conceptual application.
+
+Content triage keeps Notes broad without becoming a dump of every slide artifact:
+
+- `core_lecture_content` is covered.
+- `supporting_example` is included when useful and compressed when repetitive.
+- `reading_reference`, `admin_or_boilerplate`, and `low_exam_relevance_context` are excluded unless directly needed for examinable course knowledge.
+
+Slide triage adds page-level material analysis for slide decks and slide-like PDFs. It is not a detail-level grading system. Each slide-like fragment can be marked with `slide_decision: use`, `merge_with_previous`, or `exclude`; `notes_role`; `detailed_explanation_allowed`; and `triage_reason`. ILOs, agendas, topic boundaries, section dividers, summaries, non-core visuals, non-essential data, and examples may guide topic order or merge with nearby units without becoming long explanations. Administrative, copyright/license, reading-list-only, decorative, empty, pure transition, duplicate, and generic awareness slides remain in `slide_triage_audit` and do not become public Notes sections.
 
 ### 2. Teaching depth and formula visibility
 
@@ -133,7 +145,9 @@ Examples are used when they clarify knowledge, mechanism, method, calculation, i
 
 ### 4. Separate question-based Specific Research Report
 
-`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer reports are result-only Past Paper-driven recurrence reports: they use Past Papers, Mock Papers, and official exam papers to find recurring exam-needed knowledge points, then present those points in Lecture Slides order. Ordinary Practice Material can provide context but does not count toward high-frequency recurrence. SAQ subquestions are treated as independent question records. Public MCQ and Short Answer reports do not show evidence tables, recurrence calculations, source locators, matching debug, or workflow steps.
+`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer reports are result-only Past Paper-driven recurrence reports: they use Past Papers, Mock Papers, and official exam papers to find recurring exam-needed knowledge points, then present those points in Lecture Slides order. Ordinary Practice Material can provide context but does not count toward high-frequency recurrence. SAQ subquestions are treated as independent question records. Public MCQ and Short Answer reports do not show evidence tables, recurrence calculations, source locators, matching debug, or workflow steps. These reports must not narrow or replace broad lecture reconstruction in Notes.
+
+Slide triage is not used to narrow Specific Research Reports. MCQ, SAQ, Long Answer, Worked Solutions, Essay, Question Solving, and Question Organization keep their route-specific evidence logic.
 
 Complete worked-solution notes are generated as a separate DOCX when Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions. Available solutions or mark schemes are used as evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Exam Prep Slide Triage"
+  short_description: "Filter non-teaching slides before Notes"
+  default_prompt: "Use $exam-prep-slide-triage to triage lecture slides before generating Exam Prep Notes."

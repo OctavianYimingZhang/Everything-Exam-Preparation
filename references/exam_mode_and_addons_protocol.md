@@ -25,6 +25,8 @@ After the user confirms or corrects the review questions, update the route, conf
 
 Exam Type Related Specific Research Reports are separate outputs from explanation-only Notes. They use the same knowledge map and source evidence, but shape the content around the requested exam mode. Extra Reading is used only when the confirmed Exam type includes Essay.
 
+Slide triage is a Notes material-analysis step, not a report-priority system. `slide_decision`, `notes_role`, `detailed_explanation_allowed`, and `slide_triage_audit` must not narrow Past Paper-driven MCQ or Short Answer recurrence, Long Answer analysis, Worked Solutions, Essay reports, Question Solving, or Question Organization.
+
 | Mode | Preparation content |
 |---|---|
 | MCQ | result-only Past Paper-driven recurrence report in lecture order, written as concise exam-needed knowledge points rather than a field-by-field template, answer walkthrough, or Notes-style teaching document |
@@ -53,6 +55,8 @@ Question-based Specific Research Reports should be academic exam-preparation out
 For MCQ and Short Answer recurrence, each question record should preserve a matched lecture knowledge unit, direct exam demand, tested knowledge terms, answer-operation type, MCQ question pattern or SAQ answer pattern, source year, paper key, and locator in the internal workflow record. Cluster questions into the same recurring knowledge point only when the same or clearly explicit lecture knowledge unit, direct exam demand, shared specific terms, and compatible question or answer-operation pattern all match. Broad topic similarity is not enough.
 
 Public MCQ and Short Answer reports are result-only. They should follow the user's reference-document style by using lecture headings, numbered knowledge-point titles, concise exam-needed knowledge-point content, and a short exam scope line when useful. Do not render template labels such as distractor logic, option selection, elimination steps, definition core, expected mark points, answer wording, or missing-mark traps. Do not render evidence tables, source locators, recurrence scores, frequency calculations, matching methods, debug fields, verification fields, or Codex workflow steps.
+
+MCQ and Short Answer reports are concise exam-priority reinforcement, not lecture walkthrough Notes. Their recurrence results must not narrow the broad lecture reconstruction required for `docx_notes`. When Notes are generated alongside a report, Notes keep `coverage_policy: lecture_unit_complete`; the report separately highlights high-frequency or question-format-driven knowledge points.
 
 Default public output language is English. Use Chinese, bilingual, or multiple-language output only when the user explicitly asks for it. User-provided bilingual examples are format references and do not change the default language.
 

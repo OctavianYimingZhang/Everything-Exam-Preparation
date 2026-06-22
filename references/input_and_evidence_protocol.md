@@ -4,6 +4,8 @@ This Skill reads supplied files through rough source hints and open knowledge si
 
 Source hints describe provenance and routing context. Notes coverage is calibrated from the knowledge signals and knowledge units found in the material.
 
+Lecture files remain course-facing `knowledge_material` when they are named like lecture files, contain lecture titles, include ILOs or learning objectives, or show module-code lecture context. Textbook references, recommended reading, citations, or embedded book-source captions inside lecture slides do not by themselves turn the lecture file into `extra_reading_source`.
+
 ## Source Hints
 
 Use source hints as open, coarse provenance labels. Treat the labels below as examples that can be expanded when the source context requires it:
@@ -66,6 +68,16 @@ Knowledge units can be formed by:
 - a sequence of related fragments that build one explanation.
 
 Each knowledge unit should keep its source grounding and record the explanation it requires. A unit can require several explanation types at once, such as definition plus mechanism plus data interpretation.
+
+For Exam Prep Notes, preserve lecture/source order when building the Notes coverage map. Scoring can still identify density or report priority, but it should not reorder the public Notes away from the course sequence.
+
+Use content triage before writing Notes:
+
+- `core_lecture_content`: substantive lecture material that should be covered.
+- `supporting_example`: examples or cases that should be included when they teach reusable reasoning and compressed when repetitive.
+- `reading_reference`: reading lists, book references, DOI/PMID pointers, or source citations that should be excluded unless directly needed for examinable course knowledge.
+- `admin_or_boilerplate`: housekeeping, licensing, contact, or administrative material that should be excluded unless it changes assessed content.
+- `low_exam_relevance_context`: broad contextual framing that should be compressed or excluded unless it teaches a course concept, mechanism, method, or application.
 
 ## Extra Reading Intake
 

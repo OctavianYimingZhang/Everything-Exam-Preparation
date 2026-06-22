@@ -6,6 +6,7 @@ multi_skill_system:
   focused_skills:
     - exam-prep-index
     - exam-prep-notes
+    - exam-prep-slide-triage
     - exam-prep-mcq
     - exam-prep-short-answer
     - exam-prep-long-answer
@@ -60,6 +61,28 @@ coverage_calibration:
     - explanatory_example
 student_surface:
   goal: explanation-only teaching Notes that show the lecture and exam-relevant knowledge students need to master, with academic source visuals, calculation worked examples, and Exam Type Related preparation as separate add-on output
+  notes_coverage_policy: lecture_unit_complete
+  notes_role: broad lecture reconstruction in source order for weakly prepared students
+  report_role: concise exam-priority reinforcement from Past Papers, question formats, or route-specific evidence
+  content_triage:
+    core_lecture_content: cover in Notes
+    supporting_example: include when useful and compress when repetitive
+    reading_reference: exclude unless directly examinable
+    admin_or_boilerplate: exclude unless it changes assessed content
+    low_exam_relevance_context: compress or exclude unless it teaches course knowledge
+  slide_triage:
+    purpose: internal Notes material analysis, not a detail-level grading system or report-priority system
+    slide_decision_values:
+      - use
+      - merge_with_previous
+      - exclude
+    fields:
+      - slide_decision
+      - notes_role
+      - detailed_explanation_allowed
+      - triage_reason
+      - slide_triage_audit
+    policy: preserve ILO, topic boundary, summary, visual, data, and example slides for structure or merged context when useful, but exclude non-teaching slides from detailed public Notes explanation
   public_content:
     - course knowledge explanation
     - exam-relevant understanding

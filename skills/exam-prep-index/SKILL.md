@@ -11,15 +11,16 @@ Use this Skill as the controller for the Everything Exam Prep multiple Skill sys
 
 1. Analyze all material the user supplied before choosing a public route.
 2. Build a source map, fragment index, preliminary source-role diagnosis, and preliminary Exam type diagnosis.
-3. Display the Auto-diagnosis review plan.
-4. Use `request_user_input` to ask the user to confirm or correct:
+3. When Notes may be generated from slide decks or slide-like PDFs, run [`exam-prep-slide-triage`](../exam-prep-slide-triage/SKILL.md) as internal material analysis before Notes drafting.
+4. Display the Auto-diagnosis review plan.
+5. Use `request_user_input` to ask the user to confirm or correct:
    - Exam type or route.
    - Material type and source roles when source roles are uncertain or materially affect output.
    - Whether to generate explanation Notes before the exam-specific output.
-5. Ask route-specific follow-up questions for the confirmed Exam type.
-6. Apply the user's answers. If the user confirms a mixed exam format, activate every selected exam-type Sub Skill in the order that best fits the material.
-7. Generate Notes first when the user chooses Notes. If the user declines Notes, skip this step explicitly.
-8. Route to the confirmed exam-type Sub Skill or Sub Skills and generate the corresponding Specific Research Report.
+6. Ask route-specific follow-up questions for the confirmed Exam type.
+7. Apply the user's answers. If the user confirms a mixed exam format, activate every selected exam-type Sub Skill in the order that best fits the material.
+8. Generate Notes first when the user chooses Notes. If the user declines Notes, skip this step explicitly.
+9. Route to the confirmed exam-type Sub Skill or Sub Skills and generate the corresponding Specific Research Report.
 
 For every case, offer Notes as the default first output. Do not silently skip Notes unless the user says they do not want Notes.
 
@@ -61,6 +62,7 @@ Load the focused Sub Skill that owns each confirmed exam type:
 | Confirmed exam type | Sub Skill |
 | --- | --- |
 | Notes accepted | [`exam-prep-notes`](../exam-prep-notes/SKILL.md) |
+| Slide decks or slide-like PDFs before Notes | [`exam-prep-slide-triage`](../exam-prep-slide-triage/SKILL.md) |
 | MCQ, SBA, multiple choice, distractor reasoning | [`exam-prep-mcq`](../exam-prep-mcq/SKILL.md) |
 | Short answer, SAQ, definition/list/state questions | [`exam-prep-short-answer`](../exam-prep-short-answer/SKILL.md) |
 | Long answer, scenario, practical, data, non-calculation problem walkthrough | [`exam-prep-long-answer`](../exam-prep-long-answer/SKILL.md) |
@@ -78,6 +80,7 @@ All focused Skills use the same source and evidence layer:
 
 - Read `references/input_and_evidence_protocol.md` for source-role handling, source signals, human review, and the Auto-diagnosis review plan.
 - Read `references/exam_prep_notes_protocol.md` before writing explanation Notes.
+- Use `exam-prep-slide-triage` before Notes generation for slide decks and slide-like PDFs. It is not a report-priority system and must not narrow Specific Research Reports.
 - Read `references/exam_mode_and_addons_protocol.md` before writing exam-specific Specific Research Reports.
 - Read `references/essay_exam_prep_protocol.md` before essay work.
 - Read `references/extra_reading_workflow.md` only when the confirmed Exam type includes essay. Extra Reading is not a general Notes feature.

@@ -2,5 +2,181 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Exam preparation notes plan shape",
   "type": "object",
-  "additionalProperties": true
+  "additionalProperties": true,
+  "required": [
+    "document_kind",
+    "coverage_policy",
+    "title",
+    "sections",
+    "coverage_audit"
+  ],
+  "properties": {
+    "document_kind": {
+      "const": "docx_notes"
+    },
+    "coverage_policy": {
+      "const": "lecture_unit_complete"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["heading", "blocks"],
+        "properties": {
+          "heading": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lecture_order": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          },
+          "blocks": {
+            "type": "array",
+            "minItems": 1
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "coverage_audit": {
+      "type": "object",
+      "required": [
+        "lecture_sources",
+        "coverage_policy",
+        "content_triage",
+        "slide_triage_audit"
+      ],
+      "properties": {
+        "coverage_policy": {
+          "const": "lecture_unit_complete"
+        },
+        "lecture_sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["source_name", "represented"],
+            "properties": {
+              "source_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_order": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lecture_order": {
+                "type": ["integer", "null"],
+                "minimum": 0
+              },
+              "represented": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "content_triage": {
+          "type": "object",
+          "properties": {
+            "core_lecture_content": {
+              "type": "string"
+            },
+            "supporting_example": {
+              "type": "string"
+            },
+            "reading_reference": {
+              "type": "string"
+            },
+            "admin_or_boilerplate": {
+              "type": "string"
+            },
+            "low_exam_relevance_context": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        "slide_triage_audit": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source_name",
+              "use_count",
+              "merge_with_previous_count",
+              "exclude_count"
+            ],
+            "properties": {
+              "source_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lecture_order": {
+                "type": ["integer", "null"],
+                "minimum": 0
+              },
+              "use_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "merge_with_previous_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "exclude_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "excluded_reasons": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "excluded_slides": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "locator": {
+                      "type": ["string", "null"]
+                    },
+                    "slide_number": {
+                      "type": ["integer", "null"],
+                      "minimum": 0
+                    },
+                    "page_number": {
+                      "type": ["integer", "null"],
+                      "minimum": 0
+                    },
+                    "likely_slide_title": {
+                      "type": ["string", "null"]
+                    },
+                    "triage_reason": {
+                      "type": ["string", "null"]
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
 }
