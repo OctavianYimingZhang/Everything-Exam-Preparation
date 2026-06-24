@@ -72,3 +72,65 @@ presets:
       - exam_ready_paragraphs
       - module_covering_essay_questions
       - example_essays
+  worked_solution_preparation:
+    output: practical_worked_solutions_docx
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: worked_solution_teaching_report
+    formula_policy: domain_neutral_visible_formula_blocks
+    actions:
+      - source_inventory
+      - fragment_index
+      - human_review_exam_material_output_confirmation
+      - coverage_calibration
+      - worked_solution_question_extraction
+      - worked_solution_teaching_notes
+  online_essay_exam_drafting:
+    output: online_essay_exam_draft
+    optional_output: online_essay_exam_draft_docx_if_requested
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: online_essay_exam_draft
+    actions:
+      - source_inventory
+      - fragment_index
+      - human_review_exam_material_output_confirmation
+      - online_materials_permission_review
+      - lecture_materials_permission_review
+      - online_essay_exam_brief_lock
+      - allowed_source_evidence_map
+      - paragraph_level_structure_plan
+      - planning_approval
+      - online_essay_exam_draft_generation
+      - online_essay_exam_qa
+  mixed_exam_preparation:
+    output: exam_type_related_addon_docx
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: selected_route_reports
+    actions:
+      - source_inventory
+      - fragment_index
+      - human_review_exam_material_output_confirmation
+      - confirmed_mixed_routes
+      - selected_route_follow_up_questions
+      - run_selected_sub_skills
+  question_solving:
+    output: question_solution_report
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: source_grounded_question_solution
+    actions:
+      - source_inventory
+      - fragment_index
+      - target_question_analysis
+      - match_question_to_knowledge_unit
+      - strict_same_knowledge_point_question_retrieval
+      - question_solution_report
+  question_organizing:
+    output: organized_questions_docx
+    output_name_policy: user_requested_or_generated_from_context
+    student_surface: organized_question_list
+    actions:
+      - source_inventory
+      - fragment_index
+      - lecture_order_knowledge_map
+      - past_paper_practice_question_extraction
+      - sort_questions_by_latest_matching_lecture
+      - organized_questions_docx

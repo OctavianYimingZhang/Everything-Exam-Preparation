@@ -5,6 +5,11 @@
   "branch": "main",
   "entrypoint": "SKILL.md",
   "multi_skill_system": true,
+  "plugin_router_skill": {
+    "name": "everything-exam-preparation",
+    "path": "skills/everything-exam-preparation/SKILL.md",
+    "route": "plugin_router"
+  },
   "index_skill": "skills/exam-prep-index/SKILL.md",
   "default_output": "docx_notes",
   "notes_coverage_policy": "lecture_unit_complete",
@@ -16,7 +21,9 @@
     "exam_type_route",
     "material_type_source_roles",
     "notes_output_choice",
-    "route_specific_follow_up_choices"
+    "confirmed_mixed_routes",
+    "route_specific_follow_up_choices",
+    "online_essay_exam_source_permissions"
   ],
   "routes": [
     "exam_prep_notes",

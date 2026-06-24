@@ -21,6 +21,10 @@ Use `scripts/exam_mode_tools.py`, `scripts/plan_workflow.py`, and `scripts/build
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Short Answer output. Confirm the Short Answer route, Material type/source roles, Notes generation choice, and Short Answer report choice before writing.
+
 ## Workflow
 
 1. Extract SAQ-style prompts, subquestions, mark schemes, answer fragments, definitions, and source context.
@@ -29,7 +33,7 @@ When this Skill is read from the source checkout instead of an installed local s
 4. Match each question record to the most direct lecture knowledge unit and exam demand that decide the answer.
 5. Cluster recurring questions only when the same or clearly explicit knowledge unit, direct exam demand, shared specific terms, and compatible answer-operation pattern all match.
 6. Build a result-only report in lecture order, written as concise exam-needed knowledge points rather than a field-by-field template, answer walkthrough, or Notes-style teaching document. Keep source evidence, recurrence calculation, matching debug, and workflow steps internal.
-7. Confirm Exam type, Material type, and output set before writing public output if this Skill was invoked directly without `exam-prep-index`.
+7. Use the confirmed review state before writing public output if this Skill was invoked directly without `exam-prep-index`.
 
 ## Output Contract
 

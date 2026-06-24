@@ -28,6 +28,12 @@ The options must be concrete to the source pack, such as treating lecture files 
 
 For Online Essay Exam, material collection has an additional source-permission gate before any plan, evidence map, Notes, report, or draft. Ask whether Online Materials are required, optional, forbidden, or unclear; whether Lecture Materials may be used as primary evidence, background only, forbidden, or unclear; whether Past Papers, rubrics, module handbooks, uploaded readings, and external academic sources may be used; whether citations or references are required; and whether the final output should be a chat draft, DOCX draft, or both. Missing source-permission answers remain plan-changing unresolved items unless explicitly recorded as a user-confirmed default.
 
+## Direct Invocation Gate
+
+When a focused Skill is opened directly and no `exam-prep-index` review state is available, first create the same confirmed review state before public output. Use `scripts/plan_workflow.py` and `scripts/build_review_questions.py` or an equivalent `request_user_input` payload.
+
+The confirmed review state records the fields that affect the route: Exam type or route, Material type and source roles, Notes generation choice for report-style routes, selected component routes for Mixed, route-specific follow-up choices, and Online Materials or Lecture Materials permissions for Online Essay Exam. Treat an explicit fixed-route user instruction as confirmation only for the fields it states; ask for the remaining plan-changing fields before generating Notes, Specific Research Reports, Worked Solutions, Question Solving output, organized question DOCX files, evidence maps, plans, or drafts.
+
 ## Intake
 
 For each file, record:

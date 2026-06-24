@@ -7,6 +7,10 @@ description: Route broad Everything Exam Prep requests after analyzing all suppl
 
 Use this Skill as the controller for the Everything Exam Prep multiple Skill system. Treat direct invocation of this index as intent to use the exam-prep skill family.
 
+## Direct Invocation Gate
+
+Direct invocation of this index starts the full Auto-diagnosis review workflow. Build the confirmed review state described in `references/input_and_evidence_protocol.md` before generating public Notes, Specific Research Reports, Worked Solutions, Question Solving output, organized question DOCX files, evidence maps, plans, or drafts.
+
 ## Required Workflow
 
 1. Analyze all material the user supplied before choosing a public route.

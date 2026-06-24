@@ -18,6 +18,10 @@ Use `scripts/exam_mode_tools.py` for question extraction, lecture knowledge-unit
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Question Organization output. Confirm the Question Organization route, Material type/source roles, and lecture-order basis before rendering the organized DOCX.
+
 ## Workflow
 
 1. Read all user-supplied Lecture Slides, course material, Past Papers, and Practice Material.

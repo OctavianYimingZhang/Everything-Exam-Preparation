@@ -19,13 +19,17 @@ Use `scripts/exam_mode_tools.py`, `scripts/plan_workflow.py`, `scripts/build_rev
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Worked Solutions output. Confirm the worked-solution route, Material type/source roles, Notes generation choice, and teaching-depth choice before writing.
+
 ## Workflow
 
 1. Extract every calculation, derivation, estimate, proof, data, or problem question.
 2. Collect mark schemes, solution fragments, answer keys, units, assumptions, diagrams, and source context.
 3. Use available solution evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
 4. Where evidence is incomplete, state the evidence status and derive from course principles rather than inventing source-backed certainty.
-5. Confirm the output set before writing public Worked Solutions if this Skill was invoked directly without `exam-prep-index`.
+5. Use the confirmed review state before writing public Worked Solutions if this Skill was invoked directly without `exam-prep-index`.
 
 ## Output Contract
 

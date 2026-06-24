@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 TEXT_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".json", ".toml", ".txt"}
 SKIP_PARTS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", "outputs"}
@@ -36,6 +38,23 @@ def json_readable(path: Path) -> bool:
         return True
     except Exception:
         return False
+
+
+def yaml_readable(path: Path) -> bool:
+    try:
+        yaml.safe_load(path.read_text(encoding="utf-8"))
+        return True
+    except Exception:
+        return False
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def read_yaml(path: Path) -> dict[str, Any]:
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else {}
 
 
 def tracked_files() -> list[Path]:
@@ -119,12 +138,28 @@ def manifest_sync_failures() -> list[str]:
     if not manifest_path.exists():
         return ["skill_manifest.json missing"]
     try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = read_json(manifest_path)
     except Exception as exc:
         return [f"skill_manifest.json unreadable: {exc}"]
     failures: list[str] = []
     plan_text = read_text(ROOT / "scripts/plan_workflow.py")
     questions_text = read_text(ROOT / "scripts/build_review_questions.py")
+    plugin_router = manifest.get("plugin_router_skill") or {}
+    router_path = str(plugin_router.get("path") or "")
+    if not router_path:
+        failures.append("plugin_router_skill missing from skill_manifest.json")
+    elif not (ROOT / router_path).exists():
+        failures.append(f"plugin router skill path missing: {router_path}")
+    plugin_path = ROOT / ".codex-plugin" / "plugin.json"
+    if plugin_path.exists():
+        try:
+            plugin = read_json(plugin_path)
+            if plugin.get("skills") != "./skills/":
+                failures.append(".codex-plugin/plugin.json skills must point to ./skills/")
+        except Exception as exc:
+            failures.append(f".codex-plugin/plugin.json unreadable: {exc}")
+    else:
+        failures.append(".codex-plugin/plugin.json missing")
     for route in manifest.get("routes", []) or []:
         route = str(route)
         if route not in plan_text:
@@ -141,6 +176,63 @@ def manifest_sync_failures() -> list[str]:
             failures.append(f"focused skill name missing from manifest text: {name}")
         if route and route != "index" and route not in plan_text and route not in questions_text and route != "extra_reading_enrichment" and route != "notes_material_analysis":
             failures.append(f"focused skill route {route} for {name} is not referenced by route scripts")
+    return failures
+
+
+def agent_registry_failures() -> list[str]:
+    failures: list[str] = []
+    try:
+        manifest = read_json(ROOT / "skill_manifest.json")
+    except Exception as exc:
+        return [f"skill_manifest.json unreadable for agent registry checks: {exc}"]
+    focused_names = [str(skill.get("name") or "") for skill in manifest.get("focused_skills", []) or []]
+    routes = {str(route) for route in manifest.get("routes", []) or []}
+    human_review_targets = {str(target) for target in manifest.get("human_review_targets", []) or []}
+    yaml_files = [
+        "agents/openai.yaml",
+        "agents/prompt_cards.yaml",
+        "agents/presets.yaml",
+        "agents/setup_wizard.yaml",
+        "skills/exam-prep-slide-triage/agents/openai.yaml",
+    ]
+    for name in yaml_files:
+        path = ROOT / name
+        if not path.exists():
+            failures.append(f"{name} missing")
+        elif not yaml_readable(path):
+            failures.append(f"{name} unreadable as YAML")
+    if failures:
+        return failures
+
+    openai = read_yaml(ROOT / "agents/openai.yaml")
+    multi = openai.get("multi_skill_system") or {}
+    if multi.get("plugin_router_skill") != (manifest.get("plugin_router_skill") or {}).get("path"):
+        failures.append("agents/openai.yaml plugin_router_skill is not synchronized with skill_manifest.json")
+    if list(multi.get("focused_skills") or []) != focused_names:
+        failures.append("agents/openai.yaml focused_skills is not synchronized with skill_manifest.json")
+    if list(multi.get("removed_focused_skills") or []) != list(manifest.get("removed_focused_skills") or []):
+        failures.append("agents/openai.yaml removed_focused_skills is not synchronized with skill_manifest.json")
+    examples = ((openai.get("source_hints") or {}).get("examples")) or []
+    if len(examples) < 7 or not all(isinstance(item, str) for item in examples):
+        failures.append("agents/openai.yaml source_hints.examples must be a flat list of source-hint strings")
+
+    prompt_cards = read_yaml(ROOT / "agents/prompt_cards.yaml").get("prompt_cards") or []
+    prompt_routes = {str(item.get("route") or "") for item in prompt_cards if isinstance(item, dict)}
+    missing_prompt_routes = sorted(routes - prompt_routes)
+    if missing_prompt_routes:
+        failures.append(f"agents/prompt_cards.yaml missing routes: {', '.join(missing_prompt_routes)}")
+
+    presets = read_yaml(ROOT / "agents/presets.yaml").get("presets") or {}
+    preset_routes = set(presets.keys()) if isinstance(presets, dict) else set()
+    missing_preset_routes = sorted(routes - preset_routes)
+    if missing_preset_routes:
+        failures.append(f"agents/presets.yaml missing routes: {', '.join(missing_preset_routes)}")
+
+    setup = read_yaml(ROOT / "agents/setup_wizard.yaml").get("setup_wizard") or {}
+    setup_targets = set(((setup.get("human_review") or {}).get("targets")) or [])
+    missing_targets = sorted(human_review_targets - setup_targets)
+    if missing_targets:
+        failures.append(f"agents/setup_wizard.yaml missing human-review targets: {', '.join(missing_targets)}")
     return failures
 
 
@@ -199,6 +291,7 @@ def check_all() -> dict[str, Any]:
                 "online_essay_exam_drafting",
                 "Online Materials and Lecture Materials permissions",
                 "drafting branch rather than a Specific Research Report",
+                "confirmed_mixed_routes",
             ],
         ),
         "references/online_essay_exam_protocol.md": require_terms(
@@ -211,6 +304,7 @@ def check_all() -> dict[str, Any]:
                 "Online Materials are required, optional, forbidden, or unclear",
                 "Lecture Materials may be used as primary evidence",
                 "Missing source-permission answers remain plan-changing unresolved items",
+                "after source permissions are confirmed",
                 "locked brief",
                 "evidence map",
                 "Planning Approval",
@@ -308,6 +402,7 @@ def check_all() -> dict[str, Any]:
                 "online_material",
                 "Online Materials are required, optional, forbidden, or unclear",
                 "Lecture Materials may be used as primary evidence",
+                "Direct Invocation Gate",
                 "strict same-knowledge-point retrieval",
                 "latest matching unit",
             ],
@@ -395,6 +490,9 @@ def check_all() -> dict[str, Any]:
                 "lecture_materials_permission_review",
                 "online_essay_exam_source_permissions",
                 "48h essay",
+                "confirmed_mixed_routes",
+                "how do i answer",
+                "sort practice",
             ],
         ),
         "scripts/build_review_questions.py": require_terms(
@@ -417,6 +515,8 @@ def check_all() -> dict[str, Any]:
                 "online_essay_allowed_source_set",
                 "online_essay_citation_expectation",
                 "online_essay_output_format",
+                "confirmed_mixed_routes",
+                "mixed_component_routes_question",
             ],
         ),
         "scripts/exam_mode_tools.py": require_terms(
@@ -460,6 +560,7 @@ def check_all() -> dict[str, Any]:
             "skill_manifest.json",
             [
                 "multi_skill_system",
+                "plugin_router_skill",
                 "focused_skills",
                 "removed_focused_skills",
                 "exam-prep-index",
@@ -497,6 +598,7 @@ def check_all() -> dict[str, Any]:
                 "Online Materials and Lecture Materials permissions",
                 "question_solution_report",
                 "organized_questions_docx",
+                "plugin_router_skill",
             ],
         ),
         "scripts/publish_skill.py": require_terms(
@@ -504,9 +606,12 @@ def check_all() -> dict[str, Any]:
             [
                 "discover_focused_skills",
                 "sync_focused_skill",
+                "copy_child_local_resources",
                 "cleanup_removed_focused_skills",
                 "focused_skills",
                 "DEFAULT_LOCAL_SKILL_ROOT",
+                "is_package_root",
+                "\"outputs\"",
             ],
         ),
     }
@@ -516,6 +621,7 @@ def check_all() -> dict[str, Any]:
             [
                 "description:",
                 "When this Skill is read from the source checkout",
+                "Direct Invocation Gate",
             ],
         )
     missing_terms = {name: terms for name, terms in missing_terms.items() if terms}
@@ -530,6 +636,7 @@ def check_all() -> dict[str, Any]:
             script_self_test("scripts/plan_workflow.py"),
             script_self_test("scripts/build_review_questions.py"),
             script_self_test("scripts/exam_mode_tools.py"),
+            script_self_test("scripts/publish_skill.py"),
         ]
         if failure
     ]
@@ -538,6 +645,7 @@ def check_all() -> dict[str, Any]:
         "invalid_schemas": invalid_schemas,
         "missing_terms": missing_terms,
         "manifest_sync_failures": manifest_sync_failures(),
+        "agent_registry_failures": agent_registry_failures(),
         "script_self_tests": script_self_tests,
         "non_english_cjk_locations": cjk,
         "fixed_filename_locations": prohibited_names,

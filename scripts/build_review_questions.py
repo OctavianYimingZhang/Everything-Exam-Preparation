@@ -98,6 +98,15 @@ FOLLOWUP_ALIASES = {
     "worked_solution_preparation": "worked_solution",
 }
 
+MIXED_FOLLOWUP_SCAN_PATTERNS = [
+    ("online_essay_exam", ["online_essay_exam", "online essay exam", "online essay", "take-home", "take home", "open-book", "open book", "48h", "48-hour", "48 hour"]),
+    ("mcq", ["mcq_preparation", "mcq", "sba", "multiple choice", "single best"]),
+    ("short_answer", ["short_answer", "short answer", "saq"]),
+    ("long_answer", ["long_answer", "long answer", "practical/data", "practical data", "scenario"]),
+    ("worked_solution", ["worked_solution", "worked solution", "worked solutions", "calculation", "derivation", "estimate", "proof"]),
+    ("essay", ["essay_preparation", "essay question", "essay", "example essay"]),
+]
+
 
 def load_json(path: str | None) -> dict[str, Any]:
     if not path:
@@ -238,6 +247,18 @@ def normalize_followup_key(value: Any) -> str | None:
     return FOLLOWUP_ALIASES.get(key)
 
 
+def normalize_followup_keys(value: Any) -> list[str]:
+    exact = normalize_followup_key(value)
+    if exact:
+        return [exact]
+    text = str(value).strip().lower().replace("_", " ")
+    keys: list[str] = []
+    for key, patterns in MIXED_FOLLOWUP_SCAN_PATTERNS:
+        if any(pattern in text for pattern in patterns) and key not in keys:
+            keys.append(key)
+    return keys
+
+
 def selected_mixed_followup_keys(workflow_plan: dict[str, Any]) -> list[str]:
     selected_values: list[Any] = []
     for field in [
@@ -253,9 +274,9 @@ def selected_mixed_followup_keys(workflow_plan: dict[str, Any]) -> list[str]:
             selected_values.extend(flatten_selection_values(workflow_plan.get(field)))
     keys: list[str] = []
     for value in selected_values:
-        key = normalize_followup_key(value)
-        if key and key not in keys:
-            keys.append(key)
+        for key in normalize_followup_keys(value):
+            if key not in keys:
+                keys.append(key)
     return keys
 
 
@@ -379,8 +400,8 @@ def output_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) 
             "question": "Should Notes be generated as optional support before the Online Essay Exam draft?",
             "options": [
                 option("Skip Notes (Recommended)", "Go directly to brief lock, evidence map, planning approval, and drafting after source permissions are confirmed."),
-                option("Generate Notes first", "Create lecture walkthrough Notes before drafting the Online Essay Exam response."),
-                option("Notes in chat", "Use a concise lecture recap in chat before drafting instead of a separate Notes DOCX."),
+                option("Generate Notes first", "Create lecture walkthrough Notes after source permissions are confirmed and before drafting the Online Essay Exam response."),
+                option("Notes in chat", "Use a concise lecture recap in chat after source permissions are confirmed instead of a separate Notes DOCX."),
             ],
         }
     report_outputs = [output for output in outputs if output != "docx_notes"]
@@ -556,6 +577,29 @@ def worked_solution_followup_question() -> dict[str, Any]:
     }
 
 
+def mixed_component_routes_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> dict[str, Any]:
+    flags = question_flags(source_scan, workflow_plan)
+    return {
+        "header": "Mixed",
+        "id": "confirmed_mixed_routes",
+        "question": "Which component routes should this Mixed output include before route-specific questions are asked?",
+        "options": [
+            option(
+                "Provide component routes (Recommended)",
+                "List one or more route names or IDs, such as MCQ, Short Answer, Long Answer, Worked Solutions, Essay, Online Essay Exam, Question Solving, or Question Organization.",
+            ),
+            option(
+                "MCQ + Short Answer",
+                f"Use the two result-only recurrence reports when question signals support them; detected question flags are {flags}.",
+            ),
+            option(
+                "Long Answer + Worked Solutions",
+                "Use long-answer/practical analysis and worked-solution teaching when scenario, data, calculation, derivation, or problem signals are visible.",
+            ),
+        ],
+    }
+
+
 def route_followup_keys(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> list[str]:
     route = str(workflow_plan.get("route") or workflow_plan.get("auto_diagnosis", {}).get("route") or "exam_prep_notes")
     if route == "mixed_exam_preparation":
@@ -593,19 +637,23 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
     route = str(workflow_plan.get("route") or workflow_plan.get("auto_diagnosis", {}).get("route") or "exam_prep_notes")
     roles = count_source_roles(source_scan, workflow_plan)
     outputs = proposed_outputs(workflow_plan)
-    questions = [
-        exam_type_question(workflow_plan, source_scan),
+    followup_keys = route_followup_keys(workflow_plan, source_scan)
+    questions = [exam_type_question(workflow_plan, source_scan)]
+    if route == "mixed_exam_preparation" and not followup_keys:
+        questions.append(mixed_component_routes_question(workflow_plan, source_scan))
+    questions.extend([
         material_question(workflow_plan, source_scan),
         output_question(workflow_plan, source_scan),
-    ]
-    followup_keys = route_followup_keys(workflow_plan, source_scan)
+    ])
     followups = route_specific_questions(workflow_plan, source_scan)
     review_sequence = [
         "Show this plan to the user before asking questions.",
         "Ask the Exam type, Material type, and Notes questions.",
     ]
+    if route == "mixed_exam_preparation" and not followup_keys:
+        review_sequence.append("For Mixed routes, ask the confirmed_mixed_routes component question before route-specific follow-up questions.")
     if route == "online_essay_exam_drafting" or "online_essay_exam" in followup_keys:
-        review_sequence.append("For Online Essay Exam, ask Online Materials and Lecture Materials source-permission questions before planning.")
+        review_sequence.append("For Online Essay Exam, ask Online Materials and Lecture Materials source-permission questions before Notes support, evidence mapping, planning, reports, or drafting.")
     review_sequence.extend([
         "Ask route-specific follow-up questions in batches of at most three.",
         "Update the workflow plan from the user's answers before generating public output.",
@@ -687,9 +735,11 @@ def self_test() -> None:
     mixed_plan = {"route": "mixed_exam_preparation", "proposed_outputs": ["docx_notes", "exam_type_related_addon_docx"], "auto_diagnosis": {"mixed_or_unclear": True}}
     mixed = build_payload(mixed_plan, mixed_scan)
     assert mixed["auto_diagnosis_review_plan"]["title"] == "Auto-diagnosis review plan"
-    assert mixed["questions"][1]["options"][0]["label"] == "Mixed roles (Recommended)"
+    assert mixed["questions"][1]["id"] == "confirmed_mixed_routes"
+    assert mixed["questions"][2]["options"][0]["label"] == "Mixed roles (Recommended)"
     mixed_ids = [item["id"] for batch in mixed["follow_up_question_batches"] for item in batch]
     assert mixed_ids == []
+    assert "confirmed_mixed_routes" in mixed["auto_diagnosis_review_plan"]["review_sequence"][2]
 
     mixed_mcq_saq_plan = {
         "route": "mixed_exam_preparation",
@@ -701,6 +751,16 @@ def self_test() -> None:
     mixed_mcq_saq_ids = [item["id"] for batch in mixed_mcq_saq["follow_up_question_batches"] for item in batch]
     assert mixed_mcq_saq_ids == ["mcq_research_report_choice", "short_answer_research_report_choice"]
     assert "online_essay_online_materials_permission" not in mixed_mcq_saq_ids
+
+    mixed_label_plan = {
+        "route": "mixed_exam_preparation",
+        "proposed_outputs": ["docx_notes", "exam_type_related_addon_docx"],
+        "confirmed_mixed_routes": ["MCQ + Short Answer"],
+        "auto_diagnosis": {"mixed_or_unclear": True},
+    }
+    mixed_label = build_payload(mixed_label_plan, mixed_scan)
+    mixed_label_ids = [item["id"] for batch in mixed_label["follow_up_question_batches"] for item in batch]
+    assert mixed_label_ids == ["mcq_research_report_choice", "short_answer_research_report_choice"]
 
     mixed_online_plan = {
         "route": "mixed_exam_preparation",

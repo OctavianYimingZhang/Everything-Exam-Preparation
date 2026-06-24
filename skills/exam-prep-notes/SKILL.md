@@ -19,6 +19,10 @@ Read these shared resources before drafting:
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Notes generation. A user request for Notes confirms the Notes route only; still confirm Material type/source roles and any plan-changing route or output fields that remain unresolved.
+
 ## Workflow
 
 1. Reuse the source map, fragment index, confirmed source roles, and confirmed Notes decision from `exam-prep-index` when available.

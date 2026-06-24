@@ -20,6 +20,10 @@ Use `scripts/plan_workflow.py` and `scripts/build_review_questions.py` to keep r
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before any public Online Essay Exam output. Confirm the Online Essay Exam route, Material type/source roles, optional Notes choice, Online Materials permission, Lecture Materials permission, allowed supporting source set, citation expectation, and output format before Notes support, evidence mapping, planning, reports, or drafting.
+
 ## Workflow
 
 1. Display the Auto-diagnosis review plan and confirm the exam branch as `Online Essay Exam`.

@@ -6,6 +6,8 @@ import json
 import re
 import shutil
 import subprocess
+import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -16,8 +18,19 @@ DEFAULT_LOCAL_SKILL_DIR = DEFAULT_LOCAL_SKILL_ROOT / LEGACY_SKILL_ID
 MULTI_SKILL_SOURCE_DIR = ROOT / "skills"
 SHARED_RESOURCE_DIRS = ("references", "scripts", "schemas")
 SHARED_RESOURCE_FILES = ("requirements.txt", "LICENSE", "skill_manifest.json")
-SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
-SKIP_SUFFIXES = {".pyc", ".pyo"}
+SKIP_DIRS = {
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "outputs",
+    "out",
+    "qa",
+    "tmp",
+    ".skill_assets",
+}
+SKIP_SUFFIXES = {".pyc", ".pyo", ".docx", ".pdf", ".pptx", ".xlsx", ".zip", ".jsonl"}
 PLUGIN_ROUTER_SKILLS = {"everything-exam-preparation"}
 
 
@@ -43,7 +56,21 @@ def ignore(_: str, names: list[str]) -> set[str]:
     return ignored
 
 
+def is_package_root() -> bool:
+    return (
+        (ROOT / "SKILL.md").exists()
+        and (ROOT / "skills" / "exam-prep-index" / "SKILL.md").exists()
+        and (ROOT / "skill_manifest.json").exists()
+    )
+
+
 def sync_local_skill(destination: Path, dry_run: bool) -> dict[str, Any]:
+    if not is_package_root():
+        return {
+            "legacy_destination": str(destination),
+            "status": "error",
+            "error": "sync_local_skill must be run from the Everything Exam Preparation package root, not from a focused installed Skill.",
+        }
     if dry_run:
         focused = [
             {"name": item["name"], "destination": str(destination.parent / item["name"])}
@@ -112,6 +139,7 @@ def sync_focused_skill(skill: dict[str, Any], local_skill_root: Path, dry_run: b
         shutil.rmtree(destination)
     destination.mkdir(parents=True, exist_ok=True)
     shutil.copy2(skill["source"] / "SKILL.md", destination / "SKILL.md")
+    copy_child_local_resources(skill["source"], destination)
     for dirname in SHARED_RESOURCE_DIRS:
         source = ROOT / dirname
         if source.exists():
@@ -121,6 +149,17 @@ def sync_focused_skill(skill: dict[str, Any], local_skill_root: Path, dry_run: b
         if source.exists():
             shutil.copy2(source, destination / filename)
     return {"name": skill["name"], "destination": str(destination), "status": "ok"}
+
+
+def copy_child_local_resources(source_dir: Path, destination: Path) -> None:
+    for item in source_dir.iterdir():
+        if item.name == "SKILL.md" or item.name in SKIP_DIRS or item.suffix in SKIP_SUFFIXES or item.name == ".DS_Store":
+            continue
+        target = destination / item.name
+        if item.is_dir():
+            shutil.copytree(item, target, ignore=ignore)
+        elif item.is_file():
+            shutil.copy2(item, target)
 
 
 def basic_status() -> dict[str, Any]:
@@ -147,14 +186,43 @@ def publish(push: bool, sync_local: bool, destination: Path, dry_run: bool) -> d
     return result
 
 
+def has_error(result: Any) -> bool:
+    if isinstance(result, dict):
+        if result.get("status") == "error":
+            return True
+        return any(has_error(value) for value in result.values())
+    if isinstance(result, list):
+        return any(has_error(item) for item in result)
+    return False
+
+
+def self_test() -> None:
+    assert is_package_root()
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "skills"
+        legacy = root / LEGACY_SKILL_ID
+        result = sync_local_skill(legacy, dry_run=False)
+        assert result["status"] == "ok", result
+        assert not (legacy / "outputs").exists()
+        assert not any(legacy.rglob("*.docx"))
+        assert (root / "exam-prep-slide-triage" / "agents" / "openai.yaml").exists()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Minimal publish/update helper for Everything Exam Preparation.")
     parser.add_argument("--push", action="store_true", help="Run git push from the repository root.")
     parser.add_argument("--sync-local-skill", action="store_true", help="Copy this repository into the local Codex skill directory.")
     parser.add_argument("--local-skill-dir", default=str(DEFAULT_LOCAL_SKILL_DIR))
     parser.add_argument("--dry-run", action="store_true", help="Print planned actions without changing anything.")
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(publish(args.push, args.sync_local_skill, Path(args.local_skill_dir), args.dry_run), indent=2, ensure_ascii=False))
+    if args.self_test:
+        self_test()
+        return
+    result = publish(args.push, args.sync_local_skill, Path(args.local_skill_dir), args.dry_run)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    if has_error(result):
+        sys.exit(1)
 
 
 if __name__ == "__main__":

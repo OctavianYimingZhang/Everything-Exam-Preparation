@@ -19,12 +19,16 @@ Use `scripts/exam_mode_tools.py`, `scripts/plan_workflow.py`, and `scripts/build
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Long Answer or Practical/Data/Problem output. Confirm the route, Material type/source roles, Notes generation choice, and detailed-analysis choice before writing.
+
 ## Workflow
 
 1. Extract source questions, practical tasks, scenarios, data prompts, and marking or solution evidence.
 2. Separate answer-structure tasks from calculation, derivation, estimate, proof, data, or problem tasks that should route to `exam-prep-worked-solutions`.
 3. Map each item to relevant knowledge, method aim, readout, control, interpretation, limitation, conclusion, and analysis/prediction result as applicable.
-4. Confirm the output set before public document generation if this Skill was invoked directly without `exam-prep-index`.
+4. Use the confirmed review state before public document generation if this Skill was invoked directly without `exam-prep-index`.
 
 ## Output Contract
 

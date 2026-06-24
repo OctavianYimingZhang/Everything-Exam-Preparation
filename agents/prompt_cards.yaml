@@ -27,3 +27,19 @@ prompt_cards:
     title: Essay Exam Type Related Add-on
     purpose: Confirm the Essay route and source roles, then build a separate essay add-on with plans, claims, evidence integration, and example essays.
     route: essay_preparation
+  - id: online_essay_exam_drafting
+    title: Online Essay Exam Drafting
+    purpose: Confirm Online Essay Exam, Online Materials and Lecture Materials permissions, allowed sources, citation expectation, and output format before evidence mapping, planning, drafting, or optional Notes support.
+    route: online_essay_exam_drafting
+  - id: mixed_exam_preparation
+    title: Mixed Exam Preparation
+    purpose: Confirm the selected component routes, Material type, and Notes choice, then run every selected route-specific follow-up and output branch.
+    route: mixed_exam_preparation
+  - id: question_solving
+    title: Question Solving
+    purpose: Confirm the target question and supplied source roles, then produce a source-grounded solution with strict same-knowledge-point transfer practice.
+    route: question_solving
+  - id: question_organizing
+    title: Question Organization
+    purpose: Confirm supplied question sources and lecture-order basis, then organize Past Paper and Practice Material questions by lecture knowledge-unit order.
+    route: question_organizing

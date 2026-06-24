@@ -14,14 +14,14 @@ Before any plan, evidence map, Notes, report, or draft, display the Auto-diagnos
 
 - Exam branch: Online Essay Exam as a peer option beside MCQ, SAQ, Long Answer Question, Essay Question, and existing route options.
 - Material type and source roles.
-- Whether Notes are needed as optional support.
+- Whether Notes are needed as optional support after source permissions are confirmed.
 - Whether Online Materials are required, optional, forbidden, or unclear.
 - Whether Lecture Materials may be used as primary evidence, background only, forbidden, or unclear.
 - Whether Past Papers, rubrics, module handbooks, uploaded readings, and external academic sources may be used.
 - Whether citations or references are required, optional, forbidden, or not specified.
 - Whether the final output should be a chat draft, DOCX draft, or both.
 
-Missing source-permission answers remain plan-changing unresolved items. Do not generate the essay plan or draft until the rule is resolved or explicitly recorded as a user-confirmed default.
+Missing source-permission answers remain plan-changing unresolved items. Generate optional Notes, the essay plan, evidence map, report, or draft only after the relevant source-use rule is resolved or explicitly recorded as a user-confirmed default.
 
 ## Locked Brief
 

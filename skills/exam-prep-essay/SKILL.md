@@ -23,12 +23,16 @@ Use `scripts/essay_exam_tools.py`, `scripts/extra_reading_tools.py`, `scripts/pl
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Essay output. Confirm the ordinary Essay route, Material type/source roles, Notes generation choice, Example Essay choices, and Extra Reading source role before writing.
+
 ## Workflow
 
 1. Identify essay question demand, course knowledge, conceptual scope, and assessment expectations.
 2. Determine whether Extra Reading is supplied, requested, or required by the confirmed output.
 3. Match Extra Reading to claims or course points that need mechanism depth, molecular evidence, experimental evidence, counterargument, or evaluation.
-4. Use human review to confirm Exam type, Material type, and output set before public generation if this Skill was invoked directly without `exam-prep-index`.
+4. Use the confirmed review state before public generation if this Skill was invoked directly without `exam-prep-index`.
 5. Produce the requested essay-preparation output.
 
 ## Output Contract

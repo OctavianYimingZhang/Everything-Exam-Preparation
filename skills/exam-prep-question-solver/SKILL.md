@@ -19,6 +19,10 @@ Use `scripts/exam_mode_tools.py` for question extraction, knowledge-unit matchin
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Question Solving output. Confirm the Question Solving route, supplied target question, and Material type/source roles for the question and source pack before answering.
+
 ## Workflow
 
 1. Identify the user's target question exactly.

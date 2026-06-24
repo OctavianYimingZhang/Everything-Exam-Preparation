@@ -107,45 +107,97 @@ ROUTE_LABELS = {
 }
 
 
+def prompt_has_any(prompt: str, signals: list[str]) -> bool:
+    return any(signal in prompt for signal in signals)
+
+
 def detect_route(prompt: str) -> str:
     p = (prompt or "").lower()
-    if any(k in p for k in ["organize past paper", "organise past paper", "sort past paper", "organize practice", "organise practice", "question organizer", "question list"]):
+    if prompt_has_any(p, [
+        "organize past paper",
+        "organise past paper",
+        "organize past-paper",
+        "organise past-paper",
+        "sort past paper",
+        "sort past-paper",
+        "organize practice",
+        "organise practice",
+        "sort practice",
+        "collect practice",
+        "compile practice",
+        "collect past paper",
+        "compile past paper",
+        "question organizer",
+        "question organiser",
+        "question organization",
+        "question organisation",
+        "question list",
+        "questions by lecture order",
+        "questions by lecture",
+    ]):
         return "question_organizing"
-    if any(k in p for k in ["solve this question", "how to solve", "how do i solve", "work through this question", "question walkthrough", "same knowledge point"]):
+    if prompt_has_any(p, [
+        "solve this question",
+        "solve question",
+        "answer this question",
+        "how to solve",
+        "how do i solve",
+        "how to answer",
+        "how do i answer",
+        "work through this question",
+        "work through question",
+        "question walkthrough",
+        "same knowledge point",
+    ]):
         return "question_solving"
     online_essay_signals = [
         "online essay exam",
         "online exam essay",
         "online essay",
+        "online essay draft",
+        "draft online essay",
+        "draft this online essay",
+        "write online essay answer",
         "take-home essay exam",
         "take home essay exam",
         "take-home exam essay",
         "take home exam essay",
+        "take-home essay",
+        "take home essay",
         "open-book essay exam",
         "open book essay exam",
         "open-book exam essay",
         "open book exam essay",
-        "draft this essay",
-        "essay draft",
-        "draft an essay answer",
-        "write an essay answer",
+        "open-book essay",
+        "open book essay",
         "48h essay",
         "48-hour essay",
         "48 hour essay",
     ]
-    if any(k in p for k in online_essay_signals):
+    if prompt_has_any(p, online_essay_signals):
         return "online_essay_exam_drafting"
-    if any(k in p for k in ["essay", "in-campus", "in campus", "model essay", "example essay", "thesis"]):
+    if prompt_has_any(p, [
+        "essay",
+        "essay draft",
+        "draft this essay",
+        "draft an essay answer",
+        "write an essay answer",
+        "in-campus",
+        "in campus",
+        "model essay",
+        "example essay",
+        "thesis",
+    ]):
         return "essay_preparation"
-    if any(k in p for k in ["mcq", "sba", "single best", "multiple choice", "true/false"]):
+    if prompt_has_any(p, ["mcq", "sba", "single best", "multiple choice", "true/false"]):
         return "mcq_preparation"
-    if any(k in p for k in ["short answer", "saq", "definition", "define", "state", "list question"]):
+    if prompt_has_any(p, ["short answer", "saq", "definition", "define", "state", "list question"]):
         return "short_answer_preparation"
-    if any(k in p for k in ["worked answer", "worked solution", "calculate", "derive", "derivation", "estimate", "prove", "proof", "problem"]):
+    if prompt_has_any(p, ["worked answer", "worked solution", "calculate", "derive", "derivation", "estimate", "prove", "proof", "problem"]):
         return "worked_solution_preparation"
-    if any(k in p for k in ["long answer", "walkthrough", "practical", "data"]):
+    if prompt_has_any(p, ["long answer", "walkthrough", "practical", "data"]):
         return "long_answer_preparation"
-    if any(k in p for k in ["exam mode", "exam format", "how is", "diagnose", "identify format", "mixed"]):
+    if prompt_has_any(p, ["exam mode", "exam format", "how is", "diagnose", "identify format", "mixed"]):
         return "mixed_exam_preparation"
     return "exam_prep_notes"
 
@@ -200,6 +252,8 @@ def auto_diagnosis(route: str, outputs: list[str], summary: dict[str, Any]) -> d
     )
     if route == "online_essay_exam_drafting":
         review_requirement = "Confirm or correct route, source roles, route-specific follow-up choices, Online Materials and Lecture Materials permissions, and whether Notes should be generated before generating any Online Essay Exam plan or draft."
+    elif route == "mixed_exam_preparation":
+        review_requirement = "Confirm or correct route, selected Mixed component routes, source roles, route-specific follow-up choices, and whether Notes should be generated before generating public Notes, Specific Research Reports, add-ons, or worked solutions."
     else:
         review_requirement = "Confirm or correct route, source roles, route-specific follow-up choices, and whether Notes should be generated before generating public Notes, Specific Research Reports, add-ons, or worked solutions."
     return {
@@ -303,6 +357,11 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
             "id": "online_essay_exam_source_permissions",
             "purpose": "for Online Essay Exam, confirm whether Online Materials and Lecture Materials may be used before planning or drafting",
         })
+    if route == "mixed_exam_preparation":
+        review_targets.append({
+            "id": "confirmed_mixed_routes",
+            "purpose": "for Mixed routes, confirm the exact component routes before route-specific follow-up questions or output generation",
+        })
     return {
         "schema_version": 2,
         "route": route,
@@ -330,8 +389,14 @@ def self_test() -> None:
     assert detect_route("make MCQ notes") == "mcq_preparation"
     assert detect_route("short answer definitions") == "short_answer_preparation"
     assert detect_route("give essay plans") == "essay_preparation"
+    assert detect_route("draft this essay") == "essay_preparation"
+    assert detect_route("essay draft") == "essay_preparation"
     assert detect_route("Online Essay Exam draft") == "online_essay_exam_drafting"
+    assert detect_route("draft this online essay") == "online_essay_exam_drafting"
     assert detect_route("48h essay") == "online_essay_exam_drafting"
+    assert detect_route("how do I answer this question") == "question_solving"
+    assert detect_route("sort Practice Material by lecture order") == "question_organizing"
+    assert detect_route("compile practice questions by lecture order") == "question_organizing"
     out = plan("prepare this course", {"documents": [{"source_hint": "knowledge_material", "knowledge_signals": ["definition"]}], "fragments": [{"knowledge_signals": ["mechanism"], "knowledge_roles": ["mechanism"]}]})
     assert out["route"] == "exam_prep_notes"
     assert "exam_habit_analysis_if_practice_material_exists" not in [action["id"] for action in out["actions"]]
@@ -399,6 +464,7 @@ def self_test() -> None:
     assert plan("prepare this course")["auto_diagnosis"]["mixed_or_unclear"] is False
     assert plan("identify exam format")["route"] == "mixed_exam_preparation"
     assert any(action["id"] == "human_review_exam_material_output_confirmation" for action in plan("identify exam format")["actions"])
+    assert "confirmed_mixed_routes" in [target["id"] for target in plan("identify exam format")["review_targets"]]
     assert out["source_summary"]["coverage_profile"]["knowledge_signal_counts"]["mechanism"] == 1
 
 

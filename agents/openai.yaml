@@ -2,6 +2,7 @@ name: Everything Exam Preparation
 entrypoint: SKILL.md
 multi_skill_system:
   enabled: true
+  plugin_router_skill: skills/everything-exam-preparation/SKILL.md
   index_skill: skills/exam-prep-index/SKILL.md
   focused_skills:
     - exam-prep-index
@@ -42,10 +43,10 @@ source_hints:
   coverage_driver: knowledge_signals
   policy: infer useful source hints from content when they help routing, treat them as preliminary until human review, then calibrate public notes coverage from confirmed source roles, knowledge signals, and knowledge units
   examples:
-  - course-facing knowledge source
-  - practice or question source
-  - answer or marking source
-  - style or example-answer source
+    - course-facing knowledge source
+    - practice or question source
+    - answer or marking source
+    - style or example-answer source
     - extra reading source
     - online material source
     - mixed or unclear source

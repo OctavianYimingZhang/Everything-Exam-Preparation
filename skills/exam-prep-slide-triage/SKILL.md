@@ -44,3 +44,7 @@ Keep ILOs, topic boundaries, non-core visuals, non-essential data, examples, and
 Excluded slides remain in the internal `slide_triage_audit`. They should not become public Notes sections, detailed paragraphs, visual explanations, or exam-priority claims.
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
+
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before any public Notes output. This Skill may produce internal slide-triage records, but public Notes generation still needs confirmed Material type/source roles and Notes choice.

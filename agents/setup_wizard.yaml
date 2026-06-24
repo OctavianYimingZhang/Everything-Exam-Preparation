@@ -19,11 +19,17 @@ setup_wizard:
     targets:
       - exam_type_route
       - material_type_source_roles
-      - output_file_set
+      - notes_output_choice
+      - confirmed_mixed_routes
+      - route_specific_follow_up_choices
+      - online_essay_exam_source_permissions
   output:
     type: docx_notes
     conditional_addon: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
     conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
+    conditional_question_solution: question_solution_report_when_user_asks_how_to_solve_a_supplied_question
+    conditional_question_organization: organized_questions_docx_when_user_asks_to_sort_past_paper_or_practice_questions_by_lecture_order
+    online_essay_exam: online_essay_exam_draft_after_source_permissions_brief_lock_evidence_map_planning_approval_and_qa
     naming: user_requested_or_generated_from_context
     student_surface: explanation_only_notes
     formula_policy: domain_neutral_visible_formula_blocks

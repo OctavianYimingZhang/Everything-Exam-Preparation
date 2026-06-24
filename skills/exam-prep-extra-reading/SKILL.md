@@ -20,6 +20,10 @@ Use `scripts/extra_reading_tools.py` and `scripts/essay_exam_tools.py` when stru
 
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
+## Direct Invocation Gate
+
+If this Skill is invoked directly without a confirmed `exam-prep-index`, `exam-prep-essay`, or `exam-prep-online-essay-exam` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Extra Reading output. Confirm that the branch includes Essay Question or Online Essay Exam and that source permissions allow the Extra Reading use.
+
 ## Workflow
 
 1. Identify lecture topics, course claims, essay questions, and enrichment needs.
