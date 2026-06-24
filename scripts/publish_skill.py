@@ -18,6 +18,7 @@ SHARED_RESOURCE_DIRS = ("references", "scripts", "schemas")
 SHARED_RESOURCE_FILES = ("requirements.txt", "LICENSE", "skill_manifest.json")
 SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 SKIP_SUFFIXES = {".pyc", ".pyo"}
+PLUGIN_ROUTER_SKILLS = {"everything-exam-preparation"}
 
 
 def run(cmd: list[str], dry_run: bool) -> dict[str, Any]:
@@ -72,6 +73,8 @@ def discover_focused_skills() -> list[dict[str, Any]]:
         return []
     focused = []
     for skill_dir in sorted(path for path in MULTI_SKILL_SOURCE_DIR.iterdir() if path.is_dir()):
+        if skill_dir.name in PLUGIN_ROUTER_SKILLS:
+            continue
         skill_md = skill_dir / "SKILL.md"
         if skill_md.exists():
             focused.append({"name": read_skill_name(skill_md), "source": skill_dir})

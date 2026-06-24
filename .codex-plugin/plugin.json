@@ -1,0 +1,44 @@
+{
+  "name": "everything-exam-preparation",
+  "version": "0.1.0",
+  "description": "Multiple-skill exam preparation and Online Essay Exam drafting plugin for course material, practice papers, Online Materials, and Extra Reading.",
+  "author": {
+    "name": "Octavian Yiming Zhang"
+  },
+  "homepage": "https://github.com/OctavianYimingZhang/Everything-Exam-Preparation",
+  "repository": "https://github.com/OctavianYimingZhang/Everything-Exam-Preparation",
+  "license": "MIT",
+  "keywords": [
+    "exam-preparation",
+    "lecture-notes",
+    "past-papers",
+    "online-essay-exam",
+    "mcq",
+    "short-answer",
+    "worked-solutions",
+    "extra-reading"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Everything Exam Preparation",
+    "shortDescription": "Prepare exams with notes, reports, worked solutions, and online essay drafting.",
+    "longDescription": "Everything Exam Preparation routes course material, lecture files, practice papers, Online Materials, and Extra Reading into focused exam-prep workflows. It supports explanation notes, MCQ and short-answer reports, long-answer and practical preparation, worked solutions, essay enrichment, Online Essay Exam drafting, question solving, and question organization while preserving the existing review gates.",
+    "developerName": "Octavian Yiming Zhang",
+    "category": "Education",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/OctavianYimingZhang/Everything-Exam-Preparation",
+    "privacyPolicyURL": "https://openai.com/policies/privacy-policy/",
+    "termsOfServiceURL": "https://openai.com/policies/terms-of-use/",
+    "defaultPrompt": [
+      "Prepare exam notes and reports from these lecture and past-paper files.",
+      "Draft an Online Essay Exam answer using the allowed source materials.",
+      "Organize these past-paper questions by lecture knowledge unit."
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}
