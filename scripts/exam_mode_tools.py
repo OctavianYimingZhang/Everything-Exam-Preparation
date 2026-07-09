@@ -157,6 +157,19 @@ def legacy_question_records_from_text(text: str, source_name: str = "input", sou
     return records
 
 
+def fragment_provenance(frag: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    nested = frag.get("provenance") if isinstance(frag.get("provenance"), dict) else {}
+    return {
+        "source_id": nested.get("source_id") or frag.get("source_id") or source.get("id"),
+        "source_name": nested.get("source_name") or frag.get("source_name") or source.get("name"),
+        "locator": nested.get("locator") or frag.get("locator"),
+        "page_number": nested.get("page_number") or frag.get("page_number"),
+        "slide_number": nested.get("slide_number") or frag.get("slide_number"),
+        "time_offset_seconds": nested.get("time_offset_seconds") or frag.get("time_offset_seconds"),
+        "time_range": nested.get("time_range") or frag.get("time_range"),
+    }
+
+
 def question_records_from_scan(scan: dict[str, Any]) -> list[dict[str, Any]]:
     docs = {doc.get("id"): doc for doc in scan.get("documents", [])}
     records: list[dict[str, Any]] = []
@@ -166,13 +179,17 @@ def question_records_from_scan(scan: dict[str, Any]) -> list[dict[str, Any]]:
         question_flags = source.get("question_signals", {})
         if category not in {"practice_material", "marking_material"} and not question_flags.get("has_questions"):
             continue
-        records.extend(question_records_from_text(
+        fragment_records = question_records_from_text(
             str(frag.get("text") or ""),
             source_name=str(frag.get("source_name") or source.get("name") or "source"),
             source_order=source_order,
             locator=str(frag.get("locator") or ""),
             source_id=str(frag.get("source_id") or ""),
-        ))
+        )
+        provenance = fragment_provenance(frag, source)
+        for record in fragment_records:
+            record["provenance"] = provenance
+        records.extend(fragment_records)
     records.sort(key=lambda item: (item["source_order"], item["question_order"]))
     return records
 
@@ -225,6 +242,7 @@ def past_paper_question_records_from_scan(scan: dict[str, Any], modes: set[str] 
             locator=str(frag.get("locator") or ""),
             source_id=str(frag.get("source_id") or ""),
         ):
+            record["provenance"] = fragment_provenance(frag, source)
             if modes and record.get("mode") not in modes:
                 continue
             record["source_year"] = source_year(record)
@@ -1017,6 +1035,8 @@ def self_test() -> None:
                 "source_name": "Physiology Past Paper 2022",
                 "category": "practice_material",
                 "locator": "page 1",
+                "page_number": 1,
+                "provenance": {"source_name": "Physiology Past Paper 2022", "locator": "page 1", "page_number": 1},
                 "text": "1. Which of the following describes resting membrane potential and potassium permeability?",
             },
             {
@@ -1037,6 +1057,7 @@ def self_test() -> None:
     }
     past_records = past_paper_question_records_from_scan(recurrence_scan)
     assert all("Practice Material" not in str(record.get("source_name")) for record in past_records)
+    assert next(record for record in past_records if record.get("source_name") == "Physiology Past Paper 2022")["provenance"]["page_number"] == 1
     saq_records = past_paper_question_records_from_scan(recurrence_scan, modes={"Short Answer", "Mixed"})
     assert len([record for record in saq_records if record.get("subquestion_order")]) == 2
     mcq_report = build_mcq_saq_recurrence_report(recurrence_scan, "mcq")

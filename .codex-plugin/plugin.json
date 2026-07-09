@@ -1,7 +1,7 @@
 {
   "name": "everything-exam-preparation",
-  "version": "0.1.0",
-  "description": "Multiple-skill exam preparation and Online Essay Exam drafting plugin for course material, practice papers, Online Materials, and Extra Reading.",
+  "version": "2.0.0",
+  "description": "Context-aware exam preparation with assessment blueprints, answer evaluation, timed practice, mastery history, reports, and Online Essay Exam drafting.",
   "author": {
     "name": "Octavian Yiming Zhang"
   },
@@ -16,13 +16,16 @@
     "mcq",
     "short-answer",
     "worked-solutions",
-    "extra-reading"
+    "extra-reading",
+    "assessment-blueprint",
+    "answer-evaluation",
+    "timed-practice"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Everything Exam Preparation",
-    "shortDescription": "Prepare exams with notes, reports, worked solutions, and online essay drafting.",
-    "longDescription": "Everything Exam Preparation routes course material, lecture files, practice papers, Online Materials, and Extra Reading into focused exam-prep workflows. It supports explanation notes, MCQ and short-answer reports, long-answer and practical preparation, worked solutions, essay enrichment, Online Essay Exam drafting, question solving, and question organization while preserving the existing review gates.",
+    "shortDescription": "Prepare exams with blueprints, evaluation, timed practice, notes, reports, and drafting.",
+    "longDescription": "Everything Exam Preparation consumes AcademicTaskContext v1 and routes course material, source fragments, relevant course memory, practice papers, Online Materials, and Extra Reading into focused workflows. It supports assessment blueprints, answer evaluation, timed practice, default-enabled per-course mastery history controls, explanation notes, reports, worked solutions, essay enrichment, Online Essay Exam drafting, question solving, and question organization while preserving Mixed, direct-invocation, and Online Essay permission gates.",
     "developerName": "Octavian Yiming Zhang",
     "category": "Education",
     "capabilities": [
@@ -36,7 +39,8 @@
     "defaultPrompt": [
       "Prepare exam notes and reports from these lecture and past-paper files.",
       "Draft an Online Essay Exam answer using the allowed source materials.",
-      "Organize these past-paper questions by lecture knowledge unit."
+      "Organize these past-paper questions by lecture knowledge unit.",
+      "Build an assessment blueprint, evaluate my answer, or create a timed practice session."
     ],
     "brandColor": "#2563EB",
     "screenshots": []

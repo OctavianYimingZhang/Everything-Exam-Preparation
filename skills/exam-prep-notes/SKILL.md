@@ -7,6 +7,8 @@ description: Generate explanation-only DOCX exam-preparation notes from lecture,
 
 Create student-facing Notes that teach the lecture and exam-relevant knowledge the student needs to master. Notes are broad lecture reconstruction documents for weakly prepared students, not concise Past Paper priority reports. Use this Skill after `exam-prep-index` has analyzed the material and the user has accepted Notes, or when the user explicitly asks for Notes with no exam-specific report.
 
+Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Load First
 
 Read these shared resources before drafting:

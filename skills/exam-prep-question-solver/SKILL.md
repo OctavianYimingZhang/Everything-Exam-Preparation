@@ -7,6 +7,8 @@ description: Solve a user-supplied exam or practice question using the user's su
 
 Use this Skill when the user asks how to solve a specific question, asks for a question walkthrough, or wants to test whether they can transfer the same knowledge to other questions.
 
+Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Load First
 
 Read:
@@ -17,11 +19,15 @@ Read:
 
 Use `scripts/exam_mode_tools.py` for question extraction, knowledge-unit matching, strict same-point retrieval, and transfer-practice grouping.
 
+Use `scripts/assessment_tools.py` for the owned `answer_evaluation` and `timed_practice` routes. Answer Evaluation requires the supplied student answer and source-grounded criteria. Timed Practice requires a confirmed assessment blueprint and explicit duration. Both preserve page, slide, and time provenance; mastery history updates only when the default-enabled per-course service remains enabled.
+
 When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
 
 ## Direct Invocation Gate
 
 If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Question Solving output. Confirm the Question Solving route, supplied target question, and Material type/source roles for the question and source pack before answering.
+
+For direct Answer Evaluation, also confirm the student answer and evaluation criteria. For direct Timed Practice, also confirm the blueprint and duration. An explicit `AcademicTaskContext.route_selection` locks the selected route but does not bypass these unresolved route-specific gates.
 
 ## Workflow
 

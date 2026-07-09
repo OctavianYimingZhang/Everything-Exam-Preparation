@@ -26,6 +26,9 @@ The default output type is DOCX notes. If the user requests filenames or a multi
 16. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
 17. When the user asks how to solve a supplied question, produces a `question_solution_report` that explains the target question, shows the matching knowledge unit, and retrieves strict same-knowledge-point questions from the supplied Past Paper or Practice Material.
 18. When the user asks to organize Past Paper or Practice Material, produces `organized_questions_docx` sorted by Lecture Slides or lecture knowledge-unit order and containing questions plus minimal provenance.
+19. Preserves page, slide, timestamp, and time-range provenance from source fragments.
+20. Builds a source-grounded `assessment_blueprint`, evaluates supplied answers against confirmed criteria, and creates timed practice from an explicit duration when those routes are selected.
+21. Uses default-enabled per-course mastery and weakness history with explicit enable, disable, export, and delete controls.
 
 Student-facing Notes explain the lecture and exam-relevant knowledge the student needs to master. They are broad lecture reconstruction documents for students who may not have learned the material yet. MCQ, SAQ, and other Specific Research Reports remain separate concise exam-priority reinforcement outputs. Source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, and similar workflow records remain internal.
 
@@ -51,6 +54,30 @@ Focused Skills:
 `python3 scripts/publish_skill.py --sync-local-skill` installs both the legacy `everything-exam-preparation` local Skill and the focused sibling Skills under `~/.codex/skills/`.
 
 The routing workflow is: analyze all supplied material, ask the user to choose or correct the Exam type, ask whether to generate Notes, ask route-specific follow-up questions, generate Notes first if accepted, then run the confirmed exam-type Sub Skill or Sub Skills to produce the Specific Research Report. Online Essay Exam is a parallel branch: ask Online Materials and Lecture Materials permissions before planning, then produce a draft workflow instead of a Specific Research Report. Mixed exam format activates every selected exam-type Sub Skill. Exam-mode diagnosis now lives inside `exam-prep-index`, not in a separate Skill.
+
+## Soleil v2 adapter and state
+
+`plugin_capability_manifest.json` declares each route's owning Skill, required inputs, gates, outputs, adapter entrypoint, and supported context version. `scripts/soleil_adapter.py` accepts `AcademicTaskContext` v1 under `academic_task_context` and returns `TaskRunState` v1. It preserves `original_prompt`, an explicit `route_selection`, supplied `source_fragments`, and `relevant_memory` references instead of re-detecting the route from empty input.
+
+All focused routes default to English (`en`) unless the user explicitly overrides output language for the current task. The adapter does not infer a language change from examples written in another language.
+
+Assessment utilities:
+
+```bash
+python3 scripts/soleil_adapter.py --input tests/fixtures/academic_task_context_answer_evaluation.json
+python3 scripts/assessment_tools.py blueprint --fragments source_fragments.json --memory relevant_memory.json
+python3 scripts/assessment_tools.py evaluate --input answer_evaluation_input.json
+python3 scripts/assessment_tools.py timed --blueprint assessment_blueprint.json --duration-minutes 45
+```
+
+Per-course mastery and weakness history is enabled by default. Disabling stops new history records without deleting existing data; export and delete are separate explicit operations:
+
+```bash
+python3 scripts/mastery_history.py status --course-id BIO101
+python3 scripts/mastery_history.py disable --course-id BIO101
+python3 scripts/mastery_history.py export --course-id BIO101 --out BIO101-history.json
+python3 scripts/mastery_history.py delete --course-id BIO101
+```
 
 ## Extra Reading
 
@@ -84,7 +111,7 @@ Expected Extra Reading output shape:
 
 This version focuses on signal-driven coverage, teaching depth, domain-neutral formula visibility, academic source visuals, calculation worked examples, output language style, output format style, and student-facing coverage of exam-relevant knowledge.
 
-Before public output is generated, automatic routing remains a preliminary diagnosis. `scripts/plan_workflow.py` marks `human_review_required: true`, stores automatic files under `proposed_outputs`, and inserts `human_review_exam_material_output_confirmation` before writing. `scripts/build_review_questions.py` builds the `request_user_input` payload for Exam type/route, Material type/source roles, and whether Notes should be generated.
+Before public output is generated, automatic routing remains a preliminary diagnosis unless `AcademicTaskContext.route_selection` is explicitly confirmed. `scripts/plan_workflow.py` marks `human_review_required: true`, stores automatic files under `proposed_outputs`, and inserts `human_review_exam_material_output_confirmation` before writing. `scripts/build_review_questions.py` asks only for unresolved Exam type/route, Material type/source roles, Notes choices where the route supports Notes, and route-specific gates.
 
 ### 1. Coverage calibration
 

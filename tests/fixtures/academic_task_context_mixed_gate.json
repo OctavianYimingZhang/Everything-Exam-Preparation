@@ -1,0 +1,25 @@
+{
+  "academic_task_context": {
+    "contract": "AcademicTaskContext",
+    "version": 1,
+    "context_id": "ctx-exam-mixed-001",
+    "created_at": "2026-07-09T12:00:00Z",
+    "original_prompt": "Prepare the confirmed mixed assessment components.",
+    "route_selection": {
+      "route_id": "mixed_exam_preparation",
+      "status": "explicitly_confirmed"
+    },
+    "course_or_case": {
+      "kind": "course",
+      "stable_id": "CHEM201",
+      "label": "Chemistry"
+    },
+    "source_references": [],
+    "relevant_memory": [],
+    "permissions": [],
+    "decisions": [],
+    "requested_output_language": "en",
+    "metadata": {}
+  },
+  "source_fragments": []
+}

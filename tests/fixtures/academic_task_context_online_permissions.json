@@ -1,0 +1,38 @@
+{
+  "academic_task_context": {
+    "contract": "AcademicTaskContext",
+    "version": 1,
+    "context_id": "ctx-exam-online-001",
+    "created_at": "2026-07-09T12:00:00Z",
+    "original_prompt": "Draft the confirmed online essay exam answer.",
+    "route_selection": {
+      "route_id": "online_essay_exam_drafting",
+      "status": "explicitly_confirmed"
+    },
+    "course_or_case": {
+      "kind": "course",
+      "stable_id": "HIST301",
+      "label": "History"
+    },
+    "source_references": [],
+    "relevant_memory": [],
+    "permissions": [
+      {
+        "permission_id": "online_materials_use",
+        "scope": "Online Materials may be used as supporting evidence.",
+        "status": "explicitly_confirmed",
+        "confirmed_at": "2026-07-09T12:00:00Z"
+      },
+      {
+        "permission_id": "lecture_materials_use",
+        "scope": "Lecture Materials may be used as primary evidence.",
+        "status": "explicitly_confirmed",
+        "confirmed_at": "2026-07-09T12:00:00Z"
+      }
+    ],
+    "decisions": [],
+    "requested_output_language": "en",
+    "metadata": {}
+  },
+  "source_fragments": []
+}

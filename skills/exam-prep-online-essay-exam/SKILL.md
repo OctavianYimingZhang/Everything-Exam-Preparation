@@ -7,6 +7,8 @@ description: Draft Online Essay Exam answers as a first-class Everything Exam Pr
 
 Use this Skill after `exam-prep-index` confirms the `online_essay_exam_drafting` route. Treat Online Essay Exam as the only new Exam Type, parallel to MCQ, Short Answer, Long Answer, Worked Solutions, and Essay Question. Do not route it through ordinary `essay_preparation`.
 
+Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Load First
 
 Read:

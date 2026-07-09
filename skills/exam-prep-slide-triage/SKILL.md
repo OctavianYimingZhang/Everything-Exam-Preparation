@@ -7,6 +7,8 @@ description: Internal material-analysis Skill for Exam Prep Notes. Use before No
 
 Use this Skill inside the Everything Exam Prep multiple Skill system before generating Exam Prep Notes from slides or slide-like PDFs.
 
+Any student-facing output derived from this route defaults to English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Core Purpose
 
 Decide whether each slide should be used, merged into the previous knowledge unit, or excluded from Notes analysis. This is not a detail-level grading system. The goal is to stop public Notes from explaining non-knowledge slides in detail while still preserving useful lecture structure.

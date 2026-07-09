@@ -21,6 +21,19 @@ multi_skill_system:
     - exam-prep-exam-mode
 default_route: exam_prep_notes
 default_output: docx_notes
+default_output_language: en
+supported_context_versions:
+  - 1
+academic_task_context_adapter: scripts/soleil_adapter.py
+mastery_history:
+  default_enabled: true
+  scope: per_course
+  operations:
+    - enable
+    - disable
+    - export
+    - delete
+  entrypoint: scripts/mastery_history.py
 default_workflow: analyze_all_materials_then_ask_exam_type_and_notes_then_generate_notes_then_specific_research_report
 online_essay_exam_workflow: ask_exam_branch_then_online_and_lecture_materials_permissions_then_lock_brief_then_evidence_map_then_planning_approval_then_draft_and_qa
 conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
@@ -116,6 +129,9 @@ student_surface:
     - Mixed
     - Question Solving
     - Question Organization
+    - Assessment Blueprint
+    - Answer Evaluation
+    - Timed Practice
 mcq_saq_recurrence_policy: MCQ and Short Answer reports are result-only Past Paper-driven recurrence reports. Use Past Papers, Mock Papers, and official exam papers for recurrence; ordinary Practice Material can provide context but does not count. Treat each SAQ subquestion as an independent question record. Public output shows only lecture-order exam-needed knowledge points in the reference-document style, not evidence, calculations, source locators, matching debug, template labels, answer walkthroughs, or Notes-style teaching.
 extra_reading_policy: Extra Reading is only used when the confirmed branch includes Essay or Online Essay Exam and source permissions allow it.
 online_essay_exam_policy: Online Essay Exam is a parallel branch, not ordinary Essay preparation. Confirm Online Materials and Lecture Materials permissions before any evidence map, plan, Notes, report, or draft; then use locked brief, allowed-source evidence map, paragraph-level plan, CriticalAnalysisPlan, Planning Approval, draft generation, and QA.

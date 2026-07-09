@@ -32,6 +32,18 @@ For Online Essay Exam, material collection has an additional source-permission g
 
 When a focused Skill is opened directly and no `exam-prep-index` review state is available, first create the same confirmed review state before public output. Use `scripts/plan_workflow.py` and `scripts/build_review_questions.py` or an equivalent `request_user_input` payload.
 
+An `AcademicTaskContext` v1 payload may satisfy already-confirmed parts of this gate. Preserve its non-empty `original_prompt` and `route_selection`; an explicitly confirmed route must not be re-detected from an empty or reconstructed prompt. Continue to ask only for unresolved source-role, Notes, Mixed-component, Online Essay permission, assessment-blueprint scope, answer-evaluation criteria, or timed-practice duration decisions. `scripts/soleil_adapter.py` produces `TaskRunState` v1 while retaining those unresolved gates.
+
+## Cross-plugin context and course history
+
+Consume only the `relevant_memory` records named in the current `AcademicTaskContext`. Everything University memory may provide prior course mastery or weakness references, but it does not override the current user's explicit route, source permissions, answer, criteria, or duration.
+
+Per-course mastery and weakness history is enabled by default. The user can enable, disable, export, or delete it through `scripts/mastery_history.py`. Disabling prevents new attempt records while preserving existing records until the user exports or deletes them. Answer Evaluation and Timed Practice may update this history only after their own route gates are satisfied.
+
+## Locator provenance
+
+Preserve source name and locator plus available `page_number`, `slide_number`, `time_offset_seconds`, and `time_range` fields from extraction through fragment indexing, assessment blueprints, answer evaluation evidence, timed-practice slots, and public outputs where provenance belongs. Missing locators remain missing; do not infer page, slide, or time values.
+
 The confirmed review state records the fields that affect the route: Exam type or route, Material type and source roles, Notes generation choice for report-style routes, selected component routes for Mixed, route-specific follow-up choices, and Online Materials or Lecture Materials permissions for Online Essay Exam. Treat an explicit fixed-route user instruction as confirmation only for the fields it states; ask for the remaining plan-changing fields before generating Notes, Specific Research Reports, Worked Solutions, Question Solving output, organized question DOCX files, evidence maps, plans, or drafts.
 
 ## Intake

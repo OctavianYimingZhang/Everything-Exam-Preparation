@@ -7,6 +7,8 @@ description: Route broad Everything Exam Prep requests after analyzing all suppl
 
 Use this Skill as the controller for the Everything Exam Prep multiple Skill system. Treat direct invocation of this index as intent to use the exam-prep skill family.
 
+Default public output for every focused route is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Direct Invocation Gate
 
 Direct invocation of this index starts the full Auto-diagnosis review workflow. Build the confirmed review state described in `references/input_and_evidence_protocol.md` before generating public Notes, Specific Research Reports, Worked Solutions, Question Solving output, organized question DOCX files, evidence maps, plans, or drafts.
@@ -25,6 +27,7 @@ Direct invocation of this index starts the full Auto-diagnosis review workflow. 
 7. Apply the user's answers. If the user confirms a mixed exam format, activate every selected exam-type Sub Skill in the order that best fits the material.
 8. Generate Notes first when the user chooses Notes. If the user declines Notes, skip this step explicitly.
 9. Route to the confirmed exam-type Sub Skill or Sub Skills and generate the corresponding Specific Research Report. For Online Essay Exam, route to the drafting Skill and generate the locked-brief plan, evidence map, approved structure, draft, and QA instead of a Specific Research Report.
+10. Own the `assessment_blueprint` route: confirm blueprint scope, use source fragments plus relevant Everything University memory references, preserve page/slide/time provenance, and avoid inventing assessment weights not supported by the sources.
 
 For every report-style exam case, offer Notes as the default first output. Do not silently skip Notes unless the user says they do not want Notes. For Online Essay Exam, treat Notes as optional support and do not force them before drafting unless the user asks to review lecture content first.
 
@@ -43,6 +46,9 @@ Then ask the route-specific questions:
 - MCQ or Short Answer: ask whether to generate the Exam Specific Research Report.
 - Long Answer: ask whether to generate detailed analysis.
 - Worked Solutions: ask whether the user wants question-by-question teaching.
+- Assessment Blueprint: ask which confirmed assessment scope the blueprint should represent.
+- Answer Evaluation: ask which supplied rubric, mark scheme, or expected-concept criteria should be used.
+- Timed Practice: ask for the explicit duration and confirmed blueprint.
 - Mixed: ask every relevant route-specific question for the selected routes.
 
 Because `request_user_input` supports small question batches, ask these in staged batches when more than three questions are needed.

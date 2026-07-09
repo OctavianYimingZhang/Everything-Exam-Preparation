@@ -134,3 +134,36 @@ presets:
       - past_paper_practice_question_extraction
       - sort_questions_by_latest_matching_lecture
       - organized_questions_docx
+  assessment_blueprint:
+    output: assessment_blueprint
+    output_language: en_unless_explicit_task_override
+    student_surface: source_grounded_assessment_coverage
+    actions:
+      - source_inventory
+      - fragment_index
+      - human_review_exam_material_output_confirmation
+      - relevant_everything_university_memory_load
+      - assessment_blueprint_generation
+      - assessment_blueprint_qa
+  answer_evaluation:
+    output: answer_evaluation_report
+    output_language: en_unless_explicit_task_override
+    student_surface: source_grounded_answer_feedback
+    actions:
+      - source_inventory
+      - fragment_index
+      - human_review_exam_material_output_confirmation
+      - answer_and_evaluation_criteria_confirmation
+      - source_grounded_answer_evaluation
+      - mastery_history_update_if_enabled
+  timed_practice:
+    output: timed_practice_session
+    output_language: en_unless_explicit_task_override
+    student_surface: timed_assessment_practice
+    actions:
+      - source_inventory
+      - fragment_index
+      - human_review_exam_material_output_confirmation
+      - assessment_blueprint_load_or_generation
+      - timed_practice_duration_confirmation
+      - timed_practice_generation

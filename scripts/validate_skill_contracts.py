@@ -30,6 +30,18 @@ FOCUSED_SKILL_FILES = [
     "skills/exam-prep-question-solver/SKILL.md",
     "skills/exam-prep-question-organizer/SKILL.md",
 ]
+CANONICAL_CONTRACT_FILES = [
+    "contracts/plugin-capability-manifest-v2.schema.json",
+    "contracts/academic-task-context-v1.schema.json",
+    "contracts/task-run-state-v1.schema.json",
+    "contracts/source-record-v1.schema.json",
+    "contracts/local-bridge-protocol-v1.schema.json",
+]
+CONTEXT_FIXTURES = [
+    "tests/fixtures/academic_task_context_answer_evaluation.json",
+    "tests/fixtures/academic_task_context_mixed_gate.json",
+    "tests/fixtures/academic_task_context_online_permissions.json",
+]
 
 
 def json_readable(path: Path) -> bool:
@@ -156,6 +168,8 @@ def manifest_sync_failures() -> list[str]:
             plugin = read_json(plugin_path)
             if plugin.get("skills") != "./skills/":
                 failures.append(".codex-plugin/plugin.json skills must point to ./skills/")
+            if plugin.get("version") != manifest.get("plugin_version"):
+                failures.append(".codex-plugin/plugin.json version is not synchronized with skill_manifest.json")
         except Exception as exc:
             failures.append(f".codex-plugin/plugin.json unreadable: {exc}")
     else:
@@ -176,6 +190,95 @@ def manifest_sync_failures() -> list[str]:
             failures.append(f"focused skill name missing from manifest text: {name}")
         if route and route != "index" and route not in plan_text and route not in questions_text and route != "extra_reading_enrichment" and route != "notes_material_analysis":
             failures.append(f"focused skill route {route} for {name} is not referenced by route scripts")
+    capability_path = ROOT / str(manifest.get("capability_manifest") or "")
+    if not manifest.get("capability_manifest"):
+        failures.append("capability_manifest missing from skill_manifest.json")
+    elif not capability_path.exists():
+        failures.append(f"capability manifest missing: {capability_path.relative_to(ROOT)}")
+    else:
+        try:
+            capability = read_json(capability_path)
+        except Exception as exc:
+            failures.append(f"capability manifest unreadable: {exc}")
+            capability = {}
+        if capability.get("contract") != "PluginCapabilityManifest" or capability.get("version") != 2:
+            failures.append("plugin capability manifest must use PluginCapabilityManifest v2")
+        if capability.get("plugin_id") != manifest.get("skill_id"):
+            failures.append("plugin capability manifest plugin_id is not synchronized with skill_manifest.json")
+        if capability.get("plugin_version") != manifest.get("plugin_version"):
+            failures.append("plugin capability manifest plugin_version is not synchronized with skill_manifest.json")
+        if capability.get("default_output_language") != "en":
+            failures.append("plugin capability manifest default_output_language must be en")
+        if 1 not in (capability.get("supported_context_versions") or []):
+            failures.append("plugin capability manifest must support AcademicTaskContext v1")
+        route_contracts = capability.get("routes") or []
+        contract_route_ids = [str(item.get("route_id") or "") for item in route_contracts if isinstance(item, dict)]
+        if contract_route_ids != list(manifest.get("routes") or []):
+            failures.append("plugin capability manifest routes are not synchronized with skill_manifest.json")
+        focused_names = {str(skill.get("name") or "") for skill in manifest.get("focused_skills", []) or []}
+        for item in route_contracts:
+            if not isinstance(item, dict):
+                failures.append("plugin capability manifest contains a non-object route")
+                continue
+            route_id = str(item.get("route_id") or "")
+            if item.get("owning_skill") not in focused_names:
+                failures.append(f"route {route_id} has unknown owning_skill {item.get('owning_skill')}")
+            if not item.get("required_inputs"):
+                failures.append(f"route {route_id} has no required_inputs declaration")
+            if not item.get("gates"):
+                failures.append(f"route {route_id} has no gates declaration")
+            if not item.get("outputs"):
+                failures.append(f"route {route_id} has no outputs declaration")
+            adapter = item.get("adapter_entrypoint") or {}
+            if adapter.get("type") != "python" or adapter.get("value") != "scripts/soleil_adapter.py":
+                failures.append(f"route {route_id} has an invalid adapter_entrypoint")
+            if 1 not in (item.get("supported_context_versions") or []):
+                failures.append(f"route {route_id} does not support AcademicTaskContext v1")
+            triggers = item.get("triggers") or {}
+            if triggers.get("direct_invocation") is not True:
+                failures.append(f"route {route_id} must declare direct invocation support")
+        required_new_routes = {"assessment_blueprint", "answer_evaluation", "timed_practice"}
+        missing_new_routes = sorted(required_new_routes - set(contract_route_ids))
+        if missing_new_routes:
+            failures.append(f"plugin capability manifest missing new routes: {', '.join(missing_new_routes)}")
+    if manifest.get("default_output_language") != "en":
+        failures.append("skill_manifest.json default_output_language must be en")
+    if 1 not in (manifest.get("supported_context_versions") or []):
+        failures.append("skill_manifest.json must support AcademicTaskContext v1")
+    if manifest.get("route_adapter") != "scripts/soleil_adapter.py":
+        failures.append("skill_manifest.json route_adapter must be scripts/soleil_adapter.py")
+    mastery = manifest.get("mastery_history") or {}
+    if mastery.get("default_enabled") is not True or mastery.get("scope") != "per_course":
+        failures.append("mastery_history must be default-enabled and per-course")
+    if set(mastery.get("operations") or []) != {"enable", "disable", "export", "delete"}:
+        failures.append("mastery_history must expose enable, disable, export, and delete")
+    if mastery.get("entrypoint") != "scripts/mastery_history.py":
+        failures.append("mastery_history entrypoint must be scripts/mastery_history.py")
+    for contract_path in CANONICAL_CONTRACT_FILES:
+        if not (ROOT / contract_path).exists() or not json_readable(ROOT / contract_path):
+            failures.append(f"canonical contract missing or unreadable: {contract_path}")
+    return failures
+
+
+def context_fixture_failures() -> list[str]:
+    failures: list[str] = []
+    for name in CONTEXT_FIXTURES:
+        path = ROOT / name
+        if not path.exists():
+            failures.append(f"{name} missing")
+            continue
+        try:
+            payload = read_json(path)
+            context = payload.get("academic_task_context") or {}
+            if context.get("contract") != "AcademicTaskContext" or context.get("version") != 1:
+                failures.append(f"{name} does not contain AcademicTaskContext v1")
+            route = str((context.get("route_selection") or {}).get("route_id") or "")
+            if route not in {"assessment_blueprint", "answer_evaluation", "timed_practice", "mixed_exam_preparation", "online_essay_exam_drafting"}:
+                failures.append(f"{name} has an unexpected route fixture: {route}")
+            if not str(context.get("original_prompt") or "").strip():
+                failures.append(f"{name} has an empty original_prompt")
+        except Exception as exc:
+            failures.append(f"{name} unreadable: {exc}")
     return failures
 
 
@@ -251,6 +354,12 @@ def check_all() -> dict[str, Any]:
         "scripts/publish_skill.py",
         "scripts/build_review_questions.py",
         "scripts/exam_mode_tools.py",
+        "scripts/assessment_tools.py",
+        "scripts/mastery_history.py",
+        "scripts/soleil_adapter.py",
+        "plugin_capability_manifest.json",
+        *CANONICAL_CONTRACT_FILES,
+        *CONTEXT_FIXTURES,
         *FOCUSED_SKILL_FILES,
     ]
     schemas = sorted(str(path.relative_to(ROOT)) for path in (ROOT / "schemas").glob("*.schema.json"))
@@ -447,6 +556,11 @@ def check_all() -> dict[str, Any]:
                 "slide_decision",
                 "merge_with_previous",
                 "detailed_explanation_allowed",
+                "TIMECODE_RE",
+                "timed_text_units",
+                "time_offset_seconds",
+                "time_range",
+                "provenance_record",
             ],
         ),
         "scripts/build_fragment_index.py": require_terms(
@@ -459,6 +573,9 @@ def check_all() -> dict[str, Any]:
                 "slide_triage_audit",
                 "notes_generation_fragments",
                 "detailed_knowledge_fragments",
+                "time_offset_seconds",
+                "time_range",
+                "provenance",
             ],
         ),
         "scripts/generate_exam_prep_notes_docx.py": require_terms(
@@ -493,6 +610,17 @@ def check_all() -> dict[str, Any]:
                 "confirmed_mixed_routes",
                 "how do i answer",
                 "sort practice",
+                "academic_task_context",
+                "original_prompt",
+                "route_selection",
+                "source_fragments",
+                "relevant_memory",
+                "assessment_blueprint",
+                "answer_evaluation",
+                "timed_practice",
+                "mastery_history",
+                "time_range",
+                "default_output_language",
             ],
         ),
         "scripts/build_review_questions.py": require_terms(
@@ -517,6 +645,9 @@ def check_all() -> dict[str, Any]:
                 "online_essay_output_format",
                 "confirmed_mixed_routes",
                 "mixed_component_routes_question",
+                "assessment_blueprint_scope",
+                "answer_evaluation_criteria",
+                "timed_practice_duration",
             ],
         ),
         "scripts/exam_mode_tools.py": require_terms(
@@ -530,6 +661,9 @@ def check_all() -> dict[str, Any]:
                 "organize-questions",
                 "build_mcq_saq_recurrence_report",
                 "past_paper_question_records_from_scan",
+                "fragment_provenance",
+                "time_offset_seconds",
+                "time_range",
             ],
         ),
         "README.md": require_terms(
@@ -574,6 +708,13 @@ def check_all() -> dict[str, Any]:
                 "notes_material_analysis",
                 "question_solving",
                 "question_organizing",
+                "plugin_capability_manifest.json",
+                "supported_context_versions",
+                "route_adapter",
+                "mastery_history",
+                "assessment_blueprint",
+                "answer_evaluation",
+                "timed_practice",
             ],
         ),
         "agents/openai.yaml": require_terms(
@@ -614,6 +755,34 @@ def check_all() -> dict[str, Any]:
                 "\"outputs\"",
             ],
         ),
+        "plugin_capability_manifest.json": require_terms(
+            "plugin_capability_manifest.json",
+            [
+                "PluginCapabilityManifest",
+                "default_output_language",
+                "owning_skill",
+                "required_inputs",
+                "gates",
+                "outputs",
+                "adapter_entrypoint",
+                "supported_context_versions",
+                "assessment_blueprint",
+                "answer_evaluation",
+                "timed_practice",
+            ],
+        ),
+        "scripts/assessment_tools.py": require_terms(
+            "scripts/assessment_tools.py",
+            ["build_assessment_blueprint", "evaluate_answer", "build_timed_practice", "page_number", "slide_number", "time_range"],
+        ),
+        "scripts/mastery_history.py": require_terms(
+            "scripts/mastery_history.py",
+            ["default_enabled", "per-course", "enable", "disable", "export", "delete"],
+        ),
+        "scripts/soleil_adapter.py": require_terms(
+            "scripts/soleil_adapter.py",
+            ["AcademicTaskContext", "TaskRunState", "original_prompt", "route_selection", "source_fragments", "relevant_memory"],
+        ),
     }
     for focused_path in FOCUSED_SKILL_FILES:
         missing_terms[focused_path] = require_terms(
@@ -622,6 +791,7 @@ def check_all() -> dict[str, Any]:
                 "description:",
                 "When this Skill is read from the source checkout",
                 "Direct Invocation Gate",
+                "English",
             ],
         )
     missing_terms = {name: terms for name, terms in missing_terms.items() if terms}
@@ -637,6 +807,13 @@ def check_all() -> dict[str, Any]:
             script_self_test("scripts/build_review_questions.py"),
             script_self_test("scripts/exam_mode_tools.py"),
             script_self_test("scripts/publish_skill.py"),
+            script_self_test("scripts/essay_exam_tools.py"),
+            script_self_test("scripts/extra_reading_tools.py"),
+            script_self_test("scripts/generate_exam_prep_notes_docx.py"),
+            script_self_test("scripts/input_readiness_check.py"),
+            script_self_test("scripts/assessment_tools.py"),
+            script_self_test("scripts/mastery_history.py"),
+            script_self_test("scripts/soleil_adapter.py"),
         ]
         if failure
     ]
@@ -646,6 +823,7 @@ def check_all() -> dict[str, Any]:
         "missing_terms": missing_terms,
         "manifest_sync_failures": manifest_sync_failures(),
         "agent_registry_failures": agent_registry_failures(),
+        "context_fixture_failures": context_fixture_failures(),
         "script_self_tests": script_self_tests,
         "non_english_cjk_locations": cjk,
         "fixed_filename_locations": prohibited_names,

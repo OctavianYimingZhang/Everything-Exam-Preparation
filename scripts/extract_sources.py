@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-TEXT_SUFFIXES = {".txt", ".md", ".json", ".yaml", ".yml", ".csv"}
+TEXT_SUFFIXES = {".txt", ".md", ".json", ".yaml", ".yml", ".csv", ".vtt", ".srt"}
 MEDIA_PREFIXES = {".docx": "word/media/", ".pptx": "ppt/media/"}
 LECTURE_FILENAME_RE = re.compile(r"(?i)(?:^|[\s_\-])L(?:ecture)?\s*(\d{1,3})(?:\b|[\s_\-])")
 PPTX_SLIDE_XML_RE = re.compile(r"ppt/slides/slide(\d+)\.xml$")
@@ -54,6 +54,9 @@ CONTINUATION_KEYWORDS = ["continued", "cont.", "same example", "case study conti
 AUTHOR_YEAR_RE = re.compile(r"\b[A-Z][A-Za-z\-]+\s+et\s+al\.?\s*\(?\d{4}\)?|\b[A-Z][A-Za-z\-]+\s*\(\d{4}\)")
 DOI_RE = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Za-z0-9]+")
 PMID_RE = re.compile(r"\bPMID\s*:?\s*\d+", re.I)
+TIMECODE_RE = re.compile(
+    r"(?P<start>\d{1,2}:\d{2}(?::\d{2})?[,.]\d{3})\s*-->\s*(?P<end>\d{1,2}:\d{2}(?::\d{2})?[,.]\d{3})"
+)
 
 KNOWLEDGE_SIGNAL_PATTERNS: dict[str, list[str]] = {
     "heading_or_topic_boundary": [
@@ -265,6 +268,62 @@ def likely_slide_title(text: str) -> str:
             return clean[:160]
     clean = re.sub(r"\s+", " ", text or "").strip()
     return clean[:160]
+
+
+def timecode_seconds(value: str) -> float:
+    normalized = value.replace(",", ".")
+    parts = normalized.split(":")
+    if len(parts) == 2:
+        minutes, seconds = parts
+        return round(int(minutes) * 60 + float(seconds), 3)
+    hours, minutes, seconds = parts
+    return round(int(hours) * 3600 + int(minutes) * 60 + float(seconds), 3)
+
+
+def timed_text_units(path: Path) -> list[dict[str, Any]]:
+    if path.suffix.lower() not in {".vtt", ".srt"}:
+        return []
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    matches = list(TIMECODE_RE.finditer(text))
+    units: list[dict[str, Any]] = []
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        body = text[start:end]
+        lines = [line.strip() for line in body.splitlines() if line.strip() and not line.strip().isdigit()]
+        content = re.sub(r"<[^>]+>", " ", " ".join(lines))
+        content = re.sub(r"\s+", " ", content).strip()
+        if not content:
+            continue
+        start_seconds = timecode_seconds(match.group("start"))
+        end_seconds = timecode_seconds(match.group("end"))
+        units.append({
+            "locator": f"{match.group('start')} --> {match.group('end')}",
+            "time_offset_seconds": start_seconds,
+            "time_range": {"start_seconds": start_seconds, "end_seconds": end_seconds},
+            "text": content,
+        })
+    return units
+
+
+def provenance_record(
+    source_id: str,
+    source_name: str,
+    locator: str | None = None,
+    page_number: int | None = None,
+    slide_number: int | None = None,
+    time_offset_seconds: float | None = None,
+    time_range: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "source_id": source_id,
+        "source_name": source_name,
+        "locator": locator,
+        "page_number": page_number,
+        "slide_number": slide_number,
+        "time_offset_seconds": time_offset_seconds,
+        "time_range": time_range,
+    }
 
 
 def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
@@ -569,6 +628,7 @@ def extract_media(path: Path, source_id: str, asset_dir: Path) -> list[dict[str,
                     "asset_path": str(out),
                     "media_name": Path(name).name,
                     "locator": name,
+                    "provenance": provenance_record(source_id, path.name, locator=name),
                 })
     except Exception:
         return []
@@ -693,12 +753,19 @@ def extract_pdf_page_visuals(path: Path, source_id: str, asset_dir: Path, page_t
                         "asset_path": str(out),
                         "media_name": out.name,
                         "page": page_index + 1,
+                        "page_number": page_index + 1,
                         "bbox": [round(crop.x0, 2), round(crop.y0, 2), round(crop.x1, 2), round(crop.y1, 2)],
                         "locator": f"page {page_index + 1}",
                         "caption": (caption_match.group(0).strip() if caption_match else ""),
                         "nearby_text": re.sub(r"\s+", " ", page_text).strip(),
                         "extraction_method": "pdf_page_visible_render",
                         "knowledge_signals": knowledge_signals(page_text),
+                        "provenance": provenance_record(
+                            source_id,
+                            path.name,
+                            locator=f"page {page_index + 1}",
+                            page_number=page_index + 1,
+                        ),
                     })
     except Exception:
         return visuals
@@ -726,6 +793,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
         doc_units = knowledge_unit_candidates(text)
         doc_question_signals = question_signals(path, text, hint)
         slide_units = slide_like_units(path, page_texts) if (path.suffix.lower() == ".pptx" or (path.suffix.lower() == ".pdf" and lecture_source and hint == "knowledge_material")) else []
+        time_units = timed_text_units(path)
         documents.append({
             "id": source_id,
             "path": str(path),
@@ -769,6 +837,13 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
                     "slide_number": unit.get("slide_number"),
                     "page_number": unit.get("page_number"),
                     "likely_slide_title": unit.get("likely_slide_title") or likely_slide_title(chunk),
+                    "provenance": provenance_record(
+                        source_id,
+                        path.name,
+                        locator=str(unit.get("locator") or f"slide {frag_idx}"),
+                        page_number=unit.get("page_number"),
+                        slide_number=unit.get("slide_number"),
+                    ),
                     "slide_decision": triage["slide_decision"],
                     "notes_role": triage["notes_role"],
                     "detailed_explanation_allowed": triage["detailed_explanation_allowed"],
@@ -780,6 +855,38 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
                 })
                 if triage["slide_decision"] in {"use", "merge_with_previous"}:
                     previous_slide_text = chunk
+        elif time_units:
+            for frag_idx, unit in enumerate(time_units, 1):
+                chunk = str(unit.get("text") or "")
+                frag_signals = knowledge_signals(chunk)
+                frag_content_role = content_triage(chunk)
+                fragments.append({
+                    "id": f"{source_id}_F{frag_idx}",
+                    "source_id": source_id,
+                    "source_name": path.name,
+                    "source_hint": hint,
+                    "category": hint,
+                    "source_order": idx,
+                    "fragment_order": frag_idx,
+                    "lecture_order": lecture_order,
+                    "lecture_source": lecture_source,
+                    "content_triage": frag_content_role,
+                    "notes_obligation": notes_obligation(frag_content_role),
+                    "locator": unit.get("locator"),
+                    "time_offset_seconds": unit.get("time_offset_seconds"),
+                    "time_range": unit.get("time_range"),
+                    "provenance": provenance_record(
+                        source_id,
+                        path.name,
+                        locator=str(unit.get("locator") or ""),
+                        time_offset_seconds=unit.get("time_offset_seconds"),
+                        time_range=unit.get("time_range"),
+                    ),
+                    "text": chunk,
+                    "knowledge_signals": frag_signals,
+                    "knowledge_roles": knowledge_roles(frag_signals),
+                    "knowledge_unit_candidates": knowledge_unit_candidates(chunk),
+                })
         else:
             for frag_idx, chunk in enumerate(chunk_text(text), 1):
                 frag_signals = knowledge_signals(chunk)
@@ -797,6 +904,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
                     "content_triage": frag_content_role,
                     "notes_obligation": notes_obligation(frag_content_role),
                     "locator": f"chunk {frag_idx}",
+                    "provenance": provenance_record(source_id, path.name, locator=f"chunk {frag_idx}"),
                     "text": chunk,
                     "knowledge_signals": frag_signals,
                     "knowledge_roles": knowledge_roles(frag_signals),
@@ -860,10 +968,15 @@ def self_test() -> None:
         p3 = Path(td) / "source_c.txt"
         p4 = Path(td) / "practical_sheet.txt"
         p5 = Path(td) / "L1-Origin of Life.pptx"
+        p6 = Path(td) / "lecture_recording.vtt"
         p1.write_text("Learning objectives\nDefine enzyme activity.\nThe mechanism leads to dose response changes.\nCompare treated and control results.", encoding="utf-8")
         p2.write_text("1. Which statement is correct? A) One B) Two", encoding="utf-8")
         p3.write_text("Abstract Methods Results DOI 10.1000/test", encoding="utf-8")
         p4.write_text("Practical task: calculate the rate from the graph and interpret the control data.", encoding="utf-8")
+        p6.write_text(
+            "WEBVTT\n\n00:01:00.000 --> 00:01:10.000\nThe receptor activates a signalling mechanism.\n",
+            encoding="utf-8",
+        )
         with zipfile.ZipFile(p5, "w") as zf:
             zf.writestr(
                 "ppt/slides/slide1.xml",
@@ -885,7 +998,7 @@ def self_test() -> None:
                 "<p:sld><a:t>Protocell formation mechanism</a:t>"
                 "<a:t>The mechanism leads to membrane compartment formation and activates primitive metabolism.</a:t></p:sld>",
             )
-        sources = [str(p1), str(p2), str(p3), str(p4), str(p5)]
+        sources = [str(p1), str(p2), str(p3), str(p4), str(p5), str(p6)]
         try:
             import fitz  # type: ignore
             pdf_path = Path(td) / "lecture_visual.pdf"
@@ -910,6 +1023,7 @@ def self_test() -> None:
         assert scan["fragments"]
         assert scan["summary"]["knowledge_signals"]
         assert any("mechanism" in frag["knowledge_roles"] for frag in scan["fragments"])
+        assert all("provenance" in frag for frag in scan["fragments"])
         assert any(doc["source_hint"] == "extra_reading_source" for doc in scan["documents"])
         assert scan["summary"]["question_source_count"] >= 1
         assert scan["summary"]["practical_question_source_count"] == 1
@@ -932,6 +1046,9 @@ def self_test() -> None:
         assert lecture_frags[3]["notes_role"] == "non_teaching_material"
         assert scan["summary"]["slide_decisions"]["exclude"] >= 1
         assert any(frag["content_triage"] == "core_lecture_content" for frag in lecture_frags)
+        timed_frag = next(frag for frag in scan["fragments"] if frag["source_name"] == "lecture_recording.vtt")
+        assert timed_frag["time_range"] == {"start_seconds": 60.0, "end_seconds": 70.0}
+        assert timed_frag["provenance"]["time_offset_seconds"] == 60.0
         if any(Path(source).suffix.lower() == ".pdf" for source in sources):
             assert any(visual.get("extraction_method") == "pdf_page_visible_render" for visual in scan["visuals"])
             assert any(Path(visual["asset_path"]).exists() for visual in scan["visuals"])

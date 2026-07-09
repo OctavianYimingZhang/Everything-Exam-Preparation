@@ -7,6 +7,8 @@ description: Produce Math, Physics, Practical, calculation, derivation, estimate
 
 Create a worked-solutions Specific Research Report for calculation-heavy or reasoning-heavy questions after `exam-prep-index` has confirmed this route. Use this Skill when the material contains calculations, derivations, estimates, proofs, data analysis, physics/math problems, or practical problem-solving tasks.
 
+Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Load First
 
 Read:

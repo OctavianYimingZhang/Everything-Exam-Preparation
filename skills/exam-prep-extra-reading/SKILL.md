@@ -7,6 +7,8 @@ description: Find, classify, and match Extra Reading sources only for confirmed 
 
 Use this Skill only after `exam-prep-index`, `exam-prep-essay`, or `exam-prep-online-essay-exam` confirms the branch includes Essay Question or Online Essay Exam. For Online Essay Exam, first confirm whether Online Materials, Lecture Materials, uploaded readings, and external academic sources are allowed. Do not use Extra Reading for MCQ, short-answer, long-answer, practical/data/problem, worked-solution, or general Notes routes unless the user also confirms an essay-style output.
 
+Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Load First
 
 Read:

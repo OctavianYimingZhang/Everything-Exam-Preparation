@@ -23,6 +23,9 @@ setup_wizard:
       - confirmed_mixed_routes
       - route_specific_follow_up_choices
       - online_essay_exam_source_permissions
+      - assessment_blueprint_scope
+      - answer_evaluation_criteria
+      - timed_practice_duration
   output:
     type: docx_notes
     conditional_addon: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
@@ -30,6 +33,9 @@ setup_wizard:
     conditional_question_solution: question_solution_report_when_user_asks_how_to_solve_a_supplied_question
     conditional_question_organization: organized_questions_docx_when_user_asks_to_sort_past_paper_or_practice_questions_by_lecture_order
     online_essay_exam: online_essay_exam_draft_after_source_permissions_brief_lock_evidence_map_planning_approval_and_qa
+    assessment_blueprint: assessment_blueprint_with_page_slide_time_provenance
+    answer_evaluation: answer_evaluation_report_with_optional_mastery_history_update
+    timed_practice: timed_practice_session_from_confirmed_duration_and_blueprint
     naming: user_requested_or_generated_from_context
     student_surface: explanation_only_notes
     formula_policy: domain_neutral_visible_formula_blocks

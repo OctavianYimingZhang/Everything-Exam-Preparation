@@ -1,0 +1,66 @@
+{
+  "academic_task_context": {
+    "contract": "AcademicTaskContext",
+    "version": 1,
+    "context_id": "ctx-exam-evaluate-001",
+    "created_at": "2026-07-09T12:00:00Z",
+    "original_prompt": "Evaluate my response using the selected route and supplied marking criteria.",
+    "route_selection": {
+      "route_id": "answer_evaluation",
+      "status": "explicitly_confirmed"
+    },
+    "course_or_case": {
+      "kind": "course",
+      "stable_id": "BIO101",
+      "label": "Biology"
+    },
+    "source_references": [
+      {
+        "source_id": "source-lecture-001",
+        "locator_ids": ["page-4"],
+        "trust_status": "trusted"
+      }
+    ],
+    "relevant_memory": [
+      {
+        "store": "everything-university/mastery",
+        "record_ids": ["BIO101-transport"],
+        "purpose": "Reuse prior weakness history for this course."
+      }
+    ],
+    "permissions": [],
+    "decisions": [
+      {
+        "decision_id": "output_language",
+        "value": "en",
+        "status": "explicitly_confirmed",
+        "confirmed_at": "2026-07-09T12:00:00Z"
+      }
+    ],
+    "requested_output_language": "en",
+    "metadata": {
+      "student_answer": "The receptor activates a kinase cascade.",
+      "evaluation_criteria": ["receptor activation", "kinase cascade"]
+    }
+  },
+  "source_fragments": [
+    {
+      "id": "fragment-lecture-001",
+      "source_id": "source-lecture-001",
+      "source_name": "Lecture 1.pdf",
+      "locator": "page 4",
+      "page_number": 4,
+      "text": "Receptor activation initiates a kinase cascade.",
+      "knowledge_roles": ["mechanism"],
+      "provenance": {
+        "source_id": "source-lecture-001",
+        "source_name": "Lecture 1.pdf",
+        "locator": "page 4",
+        "page_number": 4,
+        "slide_number": null,
+        "time_offset_seconds": null,
+        "time_range": null
+      }
+    }
+  ]
+}

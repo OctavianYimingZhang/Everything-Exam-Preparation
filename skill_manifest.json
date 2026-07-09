@@ -1,5 +1,6 @@
 {
-  "schema_version": 2,
+    "schema_version": 2,
+    "plugin_version": "2.0.0",
   "skill_id": "everything-exam-preparation",
   "repo": "OctavianYimingZhang/Everything-Exam-Preparation",
   "branch": "main",
@@ -11,7 +12,37 @@
     "route": "plugin_router"
   },
   "index_skill": "skills/exam-prep-index/SKILL.md",
-  "default_output": "docx_notes",
+    "default_output": "docx_notes",
+    "default_output_language": "en",
+    "capability_manifest": "plugin_capability_manifest.json",
+    "supported_context_versions": [
+        1
+    ],
+    "context_contracts": {
+        "academic_task_context": "contracts/academic-task-context-v1.schema.json",
+        "task_run_state": "contracts/task-run-state-v1.schema.json",
+        "source_record": "contracts/source-record-v1.schema.json",
+        "local_bridge_protocol": "contracts/local-bridge-protocol-v1.schema.json",
+        "plugin_capability_manifest": "contracts/plugin-capability-manifest-v2.schema.json"
+    },
+    "route_adapter": "scripts/soleil_adapter.py",
+    "mastery_history": {
+        "default_enabled": true,
+        "scope": "per_course",
+        "operations": [
+            "enable",
+            "disable",
+            "export",
+            "delete"
+        ],
+        "entrypoint": "scripts/mastery_history.py"
+    },
+    "source_provenance": [
+        "page_number",
+        "slide_number",
+        "time_offset_seconds",
+        "time_range"
+    ],
   "notes_coverage_policy": "lecture_unit_complete",
   "slide_triage_policy": "notes_material_analysis_use_merge_or_exclude_not_detail_level_grading",
   "online_essay_exam_policy": "parallel_drafting_branch_with_online_and_lecture_materials_permission_gate",
@@ -21,9 +52,12 @@
     "exam_type_route",
     "material_type_source_roles",
     "notes_output_choice",
-    "confirmed_mixed_routes",
-    "route_specific_follow_up_choices",
-    "online_essay_exam_source_permissions"
+        "confirmed_mixed_routes",
+        "route_specific_follow_up_choices",
+        "online_essay_exam_source_permissions",
+        "assessment_blueprint_scope",
+        "answer_evaluation_criteria",
+        "timed_practice_duration"
   ],
   "routes": [
     "exam_prep_notes",
@@ -34,8 +68,11 @@
     "essay_preparation",
     "online_essay_exam_drafting",
     "mixed_exam_preparation",
-    "question_solving",
-    "question_organizing"
+        "question_solving",
+        "question_organizing",
+        "assessment_blueprint",
+        "answer_evaluation",
+        "timed_practice"
   ],
   "removed_focused_skills": [
     "exam-prep-exam-mode"

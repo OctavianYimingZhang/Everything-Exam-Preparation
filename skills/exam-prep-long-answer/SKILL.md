@@ -7,6 +7,8 @@ description: Produce long-answer, practical, data, scenario, or problem Exam Typ
 
 Create a long-answer, practical, data, scenario, or problem-focused Specific Research Report after `exam-prep-index` has confirmed this route. Use this Skill when the user needs answer structure, relevant knowledge selection, method interpretation, analysis, or prediction rather than calculation-heavy step-by-step worked solutions.
 
+Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Load First
 
 Read:

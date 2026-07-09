@@ -117,6 +117,17 @@ def build_index(source_scan: dict[str, Any] | None, route: str = "exam_prep_note
             "locator": frag.get("locator"),
             "slide_number": frag.get("slide_number"),
             "page_number": frag.get("page_number"),
+            "time_offset_seconds": frag.get("time_offset_seconds"),
+            "time_range": frag.get("time_range"),
+            "provenance": frag.get("provenance") or {
+                "source_id": frag.get("source_id"),
+                "source_name": frag.get("source_name") or source.get("name"),
+                "locator": frag.get("locator"),
+                "page_number": frag.get("page_number"),
+                "slide_number": frag.get("slide_number"),
+                "time_offset_seconds": frag.get("time_offset_seconds"),
+                "time_range": frag.get("time_range"),
+            },
             "likely_slide_title": frag.get("likely_slide_title"),
             "source_order": frag.get("source_order") or source.get("source_order") or 0,
             "fragment_order": frag.get("fragment_order") or 0,
@@ -211,6 +222,8 @@ def self_test() -> None:
             "source_order": 1,
             "fragment_order": 3,
             "slide_number": 2,
+            "time_range": {"start_seconds": 12, "end_seconds": 20},
+            "provenance": {"source_name": "notes", "slide_number": 2, "time_range": {"start_seconds": 12, "end_seconds": 20}},
             "slide_decision": "use",
             "notes_role": "knowledge_source",
             "detailed_explanation_allowed": True,
@@ -245,6 +258,8 @@ def self_test() -> None:
     assert out["coverage_profile"]["notes_obligation_counts"]["exclude_unless_directly_examinable"] == 1
     assert out["coverage_profile"]["slide_decision_counts"]["exclude"] == 1
     assert out["coverage_profile"]["slide_triage_audit"][0]["exclude_count"] == 1
+    assert out["fragments"][0]["provenance"]["slide_number"] == 2
+    assert out["fragments"][0]["time_range"]["start_seconds"] == 12
 
 
 def main() -> None:

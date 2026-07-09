@@ -7,6 +7,8 @@ description: Organize user-supplied Past Paper and Practice Material questions i
 
 Use this Skill when the user asks to organize, collect, sort, or compile Past Paper and Practice Material questions by lecture order.
 
+Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 ## Load First
 
 Read:

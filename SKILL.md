@@ -13,6 +13,8 @@ Students provide course material, practice material, Online Materials, and optio
 
 Student-facing Notes are explanation-only, knowledge-only teaching notes that show the lecture and exam-relevant knowledge a student needs to master. They are broad lecture reconstruction documents for students who may not have learned the material yet: use `coverage_policy: lecture_unit_complete`, preserve lecture/source order, explain most substantive lecture units, and avoid reducing Notes to high-frequency exam points. They explain concepts, mechanisms, methods, calculations, assumptions, interpretations, conceptual applications, academically useful source visuals, and calculation worked examples when those examples teach the relevant knowledge unit. Exam Type Related preparation is produced as a separate Specific Research Report for the relevant route.
 
+The Soleil v2 adapter accepts `AcademicTaskContext` v1 and preserves its `original_prompt`, explicit `route_selection`, supplied source fragments, and `relevant_memory` references. Do not re-detect a route from empty input when an explicit route is present. Source-grounded assessment blueprints, answer evaluation, and timed practice preserve page, slide, and time provenance. Per-course mastery and weakness history is enabled by default and has explicit enable, disable, export, and delete controls through `scripts/mastery_history.py`.
+
 For slide decks and slide-like PDFs, run internal `exam-prep-slide-triage` material analysis before Notes generation. This is not a detail-level grading system. It records `slide_decision` as `use`, `merge_with_previous`, or `exclude`, records `notes_role`, `detailed_explanation_allowed`, and `triage_reason`, preserves useful ILO/topic/summary structure, and prevents non-teaching slides from becoming detailed public Notes explanations.
 
 Notes and Reports are intentionally separate outputs. Notes teach the lecture in course order. MCQ, Short Answer, and other Specific Research Reports provide concise exam-priority reinforcement from Past Papers, question formats, or route-specific evidence. Reports can guide revision emphasis, but they must not narrow, replace, or duplicate the broad Notes coverage.
@@ -41,27 +43,32 @@ This root Skill is the compatibility entrypoint. For new work, load `exam-prep-i
 | Extra Reading, external academic evidence, essay enrichment | [`exam-prep-extra-reading`](skills/exam-prep-extra-reading/SKILL.md) |
 | solve this question, how do I answer this question, question walkthrough | [`exam-prep-question-solver`](skills/exam-prep-question-solver/SKILL.md) |
 | organize Past Paper questions, sort Practice Material by lecture order | [`exam-prep-question-organizer`](skills/exam-prep-question-organizer/SKILL.md) |
+| build an assessment blueprint, map assessment coverage | [`exam-prep-index`](skills/exam-prep-index/SKILL.md) |
+| evaluate or mark my supplied answer | [`exam-prep-question-solver`](skills/exam-prep-question-solver/SKILL.md) |
+| timed practice, timed mock, timed session | [`exam-prep-question-solver`](skills/exam-prep-question-solver/SKILL.md) |
 
 Use [`exam-prep-index`](skills/exam-prep-index/SKILL.md) when the user asks broadly and the route is not yet clear. If a focused Skill is installed as a sibling local Skill, prefer that installed focused Skill. If not, follow the linked source entrypoint and the shared references in this package.
 
-Notes are offered for every exam type and should be generated before the route-specific Specific Research Report unless the user declines Notes. For Online Essay Exam, Notes are optional support and should not be forced before drafting unless the user asks to review lecture content first. Extra Reading is available when the confirmed branch includes Essay Question or Online Essay Exam and the source-permission Ask Questions allow it.
+Notes are offered for each Notes or Specific Research Report route and should be generated before the route-specific report unless the user declines Notes. Assessment Blueprint, Answer Evaluation, Timed Practice, Question Solving, and Question Organization use their own route-specific output gates rather than forcing a Notes decision. For Online Essay Exam, Notes are optional support and should not be forced before drafting unless the user asks to review lecture content first. Extra Reading is available when the confirmed branch includes Essay Question or Online Essay Exam and the source-permission Ask Questions allow it.
 
 ## Simple workflow
 
 1. Read the supplied files.
 2. Build a simple fragment index from readable content.
-3. For slide decks or slide-like PDFs, apply slide triage so structure slides support ordering, substantive knowledge slides can be explained, merged slides support nearby units, and excluded non-teaching slides remain internal audit records.
-4. Calibrate coverage from knowledge signals and knowledge units.
-5. Identify Extra Reading and Online Materials sources for essay-style enrichment when the user supplies them or the confirmed output calls for them.
-6. Match confirmed Extra Reading to essay claims or course points that need external enrichment.
-7. Make a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and source material.
-8. Display an **Auto-diagnosis review plan**, then call `request_user_input` with concrete options for Exam type, Material type, and whether to generate Notes.
-9. Ask route-specific follow-up questions for Essay, Online Essay Exam, MCQ, Short Answer, Long Answer, Worked Solutions, or Mixed routes.
-10. Update the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
-11. For Online Essay Exam, confirm Online Materials and Lecture Materials permissions, allowed supporting sources, citation expectation, and output format before planning or drafting.
-12. Generate explanation-only teaching Notes from the confirmed lecture-unit complete coverage map when the user accepts Notes.
-13. Render visible formulas, tables, academic source visuals, worked examples, and explanations in the target output format style.
-14. Produce the confirmed MCQ, short-answer, long-answer, practical/data/problem, essay preparation, or Math/Physics/Practical Worked Solutions Specific Research Report as separate output. For Online Essay Exam, produce the locked-brief plan, evidence map, approved structure, draft, and QA instead of a Specific Research Report. For mixed exam formats, produce every confirmed report.
+3. Preserve page, slide, and time locators in each fragment's provenance record.
+4. For slide decks or slide-like PDFs, apply slide triage so structure slides support ordering, substantive knowledge slides can be explained, merged slides support nearby units, and excluded non-teaching slides remain internal audit records.
+5. Calibrate coverage from knowledge signals and knowledge units.
+6. Identify Extra Reading and Online Materials sources for essay-style enrichment when the user supplies them or the confirmed output calls for them.
+7. Match confirmed Extra Reading to essay claims or course points that need external enrichment.
+8. Make a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and source material.
+9. Display an **Auto-diagnosis review plan**, then call `request_user_input` with concrete options for Exam type, Material type, and whether to generate Notes when that route supports Notes.
+10. Ask route-specific follow-up questions for Essay, Online Essay Exam, MCQ, Short Answer, Long Answer, Worked Solutions, Mixed, Assessment Blueprint, Answer Evaluation, or Timed Practice routes.
+11. Update the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
+12. For Online Essay Exam, confirm Online Materials and Lecture Materials permissions, allowed supporting sources, citation expectation, and output format before planning or drafting.
+13. Generate explanation-only teaching Notes from the confirmed lecture-unit complete coverage map when the user accepts Notes.
+14. Render visible formulas, tables, academic source visuals, worked examples, and explanations in the target output format style.
+15. Produce the confirmed MCQ, short-answer, long-answer, practical/data/problem, essay preparation, or Math/Physics/Practical Worked Solutions Specific Research Report as separate output. For Online Essay Exam, produce the locked-brief plan, evidence map, approved structure, draft, and QA instead of a Specific Research Report. For mixed exam formats, produce every confirmed report.
+16. When explicitly routed, build a source-grounded assessment blueprint, evaluate a supplied answer against confirmed criteria, or create timed practice from an explicit duration. Load and update per-course mastery history only while that default-enabled capability remains enabled.
 
 ## Extra Reading workflow
 
@@ -96,6 +103,9 @@ Specific Research Report writing:
 - Online Essay Exam: locked brief, confirmed Online Materials and Lecture Materials permissions, allowed-source evidence map, paragraph-level plan, CriticalAnalysisPlan, Planning Approval, draft, and QA; this is a drafting branch rather than a Specific Research Report.
 - Question Solving: target question analysis, matching knowledge display and explanation, solution reasoning, strict same-knowledge-point Past Paper or Practice Material questions, and transfer-practice prompt.
 - Question Organization: `organized_questions_docx` with Past Paper and Practice Material questions sorted by Lecture Slides or lecture knowledge-unit order, with minimal provenance and without answer or explanation content.
+- Assessment Blueprint: a source-grounded coverage map based on supplied fragments and relevant Everything University memory references; do not invent mark weighting when assessment evidence does not provide it.
+- Answer Evaluation: criterion-level feedback from an explicitly supplied answer and confirmed rubric, mark scheme, or expected concepts; mark evidence-limited judgements for human review and update mastery history only when enabled.
+- Timed Practice: a practice session generated from an assessment blueprint and explicit duration, with source provenance and per-slot time provenance.
 
 For math, physics, calculation, derivation, estimate, proof, and data/problem walkthrough outputs, write complete worked-solution notes. They should teach the question interpretation, relevant givens, target, method choice, derivation or calculation path, answer explanation, assumptions, unit or dimension reasoning, result meaning, and evidence status in coherent prose rather than a fixed fill-in template.
 
@@ -120,3 +130,6 @@ Recommended section order:
 | Online Essay Exam | `online_essay_exam_drafting` | Confirm source permissions, lock brief, build evidence map and plan, then produce an Online Essay Exam draft and optional DOCX |
 | solve this question, how do I answer this question, question walkthrough | `question_solving` | Question Solution Report with matched knowledge and strict same-point transfer questions |
 | organize Past Paper questions, sort Practice Material by lecture order | `question_organizing` | Organized Questions DOCX in lecture knowledge-unit order |
+| build assessment blueprint, map assessment coverage | `assessment_blueprint` | Source-grounded assessment blueprint |
+| evaluate my answer, mark this response | `answer_evaluation` | Criterion-level Answer Evaluation Report |
+| timed practice, timed mock | `timed_practice` | Timed Practice Session from an explicit duration and blueprint |

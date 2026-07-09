@@ -17,6 +17,9 @@ ROUTE_LABELS = {
     "mixed_exam_preparation": "Mixed",
     "question_solving": "Question Solving",
     "question_organizing": "Question Organization",
+    "assessment_blueprint": "Assessment Blueprint",
+    "answer_evaluation": "Answer Evaluation",
+    "timed_practice": "Timed Practice",
 }
 
 ROUTE_SHORT_LABELS = {
@@ -30,6 +33,9 @@ ROUTE_SHORT_LABELS = {
     "mixed_exam_preparation": "Mixed",
     "question_solving": "Solver",
     "question_organizing": "Organizer",
+    "assessment_blueprint": "Blueprint",
+    "answer_evaluation": "Evaluation",
+    "timed_practice": "Timed Practice",
 }
 
 ROLE_LABELS = {
@@ -64,6 +70,9 @@ OUTPUT_LABELS = {
     "practical_worked_solutions_docx": "Worked Solutions Specific Research Report",
     "question_solution_report": "Question Solution Report",
     "organized_questions_docx": "Organized Questions DOCX",
+    "assessment_blueprint": "Assessment Blueprint",
+    "answer_evaluation_report": "Answer Evaluation Report",
+    "timed_practice_session": "Timed Practice Session",
 }
 
 FOLLOWUP_KEY_BY_ROUTE = {
@@ -73,6 +82,9 @@ FOLLOWUP_KEY_BY_ROUTE = {
     "short_answer_preparation": "short_answer",
     "long_answer_preparation": "long_answer",
     "worked_solution_preparation": "worked_solution",
+    "assessment_blueprint": "assessment_blueprint",
+    "answer_evaluation": "answer_evaluation",
+    "timed_practice": "timed_practice",
 }
 
 FOLLOWUP_ALIASES = {
@@ -96,6 +108,12 @@ FOLLOWUP_ALIASES = {
     "worked_solution": "worked_solution",
     "worked_solutions": "worked_solution",
     "worked_solution_preparation": "worked_solution",
+    "assessment_blueprint": "assessment_blueprint",
+    "exam_blueprint": "assessment_blueprint",
+    "answer_evaluation": "answer_evaluation",
+    "evaluate_answer": "answer_evaluation",
+    "timed_practice": "timed_practice",
+    "timed_session": "timed_practice",
 }
 
 MIXED_FOLLOWUP_SCAN_PATTERNS = [
@@ -105,7 +123,21 @@ MIXED_FOLLOWUP_SCAN_PATTERNS = [
     ("long_answer", ["long_answer", "long answer", "practical/data", "practical data", "scenario"]),
     ("worked_solution", ["worked_solution", "worked solution", "worked solutions", "calculation", "derivation", "estimate", "proof"]),
     ("essay", ["essay_preparation", "essay question", "essay", "example essay"]),
+    ("assessment_blueprint", ["assessment_blueprint", "assessment blueprint", "exam blueprint"]),
+    ("answer_evaluation", ["answer_evaluation", "answer evaluation", "evaluate answer", "mark answer"]),
+    ("timed_practice", ["timed_practice", "timed practice", "timed session", "timed mock"]),
 ]
+
+NOTES_CHOICE_ROUTES = {
+    "exam_prep_notes",
+    "mcq_preparation",
+    "short_answer_preparation",
+    "long_answer_preparation",
+    "worked_solution_preparation",
+    "essay_preparation",
+    "online_essay_exam_drafting",
+    "mixed_exam_preparation",
+}
 
 
 def load_json(path: str | None) -> dict[str, Any]:
@@ -199,6 +231,21 @@ def output_names(outputs: list[str]) -> str:
 def proposed_outputs(workflow_plan: dict[str, Any]) -> list[str]:
     outputs = workflow_plan.get("proposed_outputs") or workflow_plan.get("outputs") or []
     return [str(output) for output in outputs]
+
+
+def review_target_resolved(workflow_plan: dict[str, Any], target_id: str) -> bool:
+    for target in workflow_plan.get("review_targets", []) or []:
+        if target.get("id") == target_id:
+            return target.get("status") == "explicitly_confirmed"
+    return False
+
+
+def confirmed_permission_ids(workflow_plan: dict[str, Any]) -> set[str]:
+    return {
+        str(permission.get("permission_id"))
+        for permission in workflow_plan.get("permissions", []) or []
+        if permission.get("status") in {"explicitly_confirmed", "denied"}
+    }
 
 
 def option(label: str, description: str) -> dict[str, str]:
@@ -577,6 +624,45 @@ def worked_solution_followup_question() -> dict[str, Any]:
     }
 
 
+def assessment_blueprint_followup_question() -> dict[str, Any]:
+    return {
+        "header": "Blueprint",
+        "id": "assessment_blueprint_scope",
+        "question": "Which confirmed assessment scope should the source-grounded blueprint represent?",
+        "options": [
+            option("Full course (Recommended)", "Map all evidenced course knowledge units and preserve source provenance without predicting marks."),
+            option("Selected topics", "Use only the topics explicitly selected for this task."),
+            option("Assessment materials", "Use only the confirmed assessment and practice source roles."),
+        ],
+    }
+
+
+def answer_evaluation_followup_question() -> dict[str, Any]:
+    return {
+        "header": "Criteria",
+        "id": "answer_evaluation_criteria",
+        "question": "Which source-grounded criteria should be used to evaluate the supplied answer?",
+        "options": [
+            option("Marking material (Recommended)", "Use an explicitly supplied rubric, mark scheme, or expected-concept set and preserve its provenance."),
+            option("Course criteria", "Use confirmed course knowledge units while marking the result as requiring human review."),
+            option("Provide criteria", "Pause evaluation until the user supplies the exact criteria."),
+        ],
+    }
+
+
+def timed_practice_followup_question() -> dict[str, Any]:
+    return {
+        "header": "Duration",
+        "id": "timed_practice_duration",
+        "question": "What explicit duration should the timed practice session use?",
+        "options": [
+            option("Use stated duration (Recommended)", "Use the duration already supplied for this task and record per-slot time provenance."),
+            option("30 minutes", "Build a 30-minute practice session from the confirmed assessment blueprint."),
+            option("60 minutes", "Build a 60-minute practice session from the confirmed assessment blueprint."),
+        ],
+    }
+
+
 def mixed_component_routes_question(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) -> dict[str, Any]:
     flags = question_flags(source_scan, workflow_plan)
     return {
@@ -626,6 +712,12 @@ def route_specific_questions(workflow_plan: dict[str, Any], source_scan: dict[st
             questions.append(long_answer_followup_question())
         elif key == "worked_solution":
             questions.append(worked_solution_followup_question())
+        elif key == "assessment_blueprint":
+            questions.append(assessment_blueprint_followup_question())
+        elif key == "answer_evaluation":
+            questions.append(answer_evaluation_followup_question())
+        elif key == "timed_practice":
+            questions.append(timed_practice_followup_question())
     return questions
 
 
@@ -638,17 +730,33 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
     roles = count_source_roles(source_scan, workflow_plan)
     outputs = proposed_outputs(workflow_plan)
     followup_keys = route_followup_keys(workflow_plan, source_scan)
-    questions = [exam_type_question(workflow_plan, source_scan)]
+    questions: list[dict[str, Any]] = []
+    if not review_target_resolved(workflow_plan, "exam_type_route"):
+        questions.append(exam_type_question(workflow_plan, source_scan))
     if route == "mixed_exam_preparation" and not followup_keys:
         questions.append(mixed_component_routes_question(workflow_plan, source_scan))
-    questions.extend([
-        material_question(workflow_plan, source_scan),
-        output_question(workflow_plan, source_scan),
-    ])
+    if not review_target_resolved(workflow_plan, "material_type_source_roles"):
+        questions.append(material_question(workflow_plan, source_scan))
+    if route in NOTES_CHOICE_ROUTES and not review_target_resolved(workflow_plan, "notes_output_choice"):
+        questions.append(output_question(workflow_plan, source_scan))
     followups = route_specific_questions(workflow_plan, source_scan)
+    resolved_followup_targets = {
+        "assessment_blueprint": "assessment_blueprint_scope",
+        "answer_evaluation": "answer_evaluation_criteria",
+        "timed_practice": "timed_practice_duration",
+    }
+    resolved_id = resolved_followup_targets.get(route)
+    if resolved_id and review_target_resolved(workflow_plan, resolved_id):
+        followups = [question for question in followups if question.get("id") != resolved_id]
+    if route == "online_essay_exam_drafting":
+        permission_ids = confirmed_permission_ids(workflow_plan)
+        if permission_ids & {"online_materials_use", "online_essay_online_materials_permission"}:
+            followups = [question for question in followups if question.get("id") != "online_essay_online_materials_permission"]
+        if permission_ids & {"lecture_materials_use", "online_essay_lecture_materials_permission"}:
+            followups = [question for question in followups if question.get("id") != "online_essay_lecture_materials_permission"]
     review_sequence = [
         "Show this plan to the user before asking questions.",
-        "Ask the Exam type, Material type, and Notes questions.",
+        "Ask the Exam type and Material type questions, plus the Notes question when that route can generate Notes.",
     ]
     if route == "mixed_exam_preparation" and not followup_keys:
         review_sequence.append("For Mixed routes, ask the confirmed_mixed_routes component question before route-specific follow-up questions.")
@@ -772,6 +880,24 @@ def self_test() -> None:
     mixed_online_ids = [item["id"] for batch in mixed_online["follow_up_question_batches"] for item in batch]
     assert "online_essay_online_materials_permission" in mixed_online_ids
     assert "mcq_research_report_choice" in mixed_online_ids
+    blueprint = build_payload({"route": "assessment_blueprint", "proposed_outputs": ["assessment_blueprint"]}, lecture_scan)
+    assert [item["id"] for item in blueprint["questions"]] == ["exam_type_route", "material_type_source_roles"]
+    assert blueprint["follow_up_question_batches"][0][0]["id"] == "assessment_blueprint_scope"
+    evaluation = build_payload({"route": "answer_evaluation", "proposed_outputs": ["answer_evaluation_report"]}, lecture_scan)
+    assert evaluation["follow_up_question_batches"][0][0]["id"] == "answer_evaluation_criteria"
+    timed = build_payload({"route": "timed_practice", "proposed_outputs": ["timed_practice_session"]}, lecture_scan)
+    assert timed["follow_up_question_batches"][0][0]["id"] == "timed_practice_duration"
+    explicit = build_payload({
+        "route": "answer_evaluation",
+        "proposed_outputs": ["answer_evaluation_report"],
+        "review_targets": [
+            {"id": "exam_type_route", "status": "explicitly_confirmed"},
+            {"id": "material_type_source_roles", "status": "pending_user_confirmation"},
+            {"id": "answer_evaluation_criteria", "status": "explicitly_confirmed"},
+        ],
+    }, lecture_scan)
+    assert [question["id"] for question in explicit["questions"]] == ["material_type_source_roles"]
+    assert explicit["follow_up_question_batches"] == []
 
 
 def main() -> None:

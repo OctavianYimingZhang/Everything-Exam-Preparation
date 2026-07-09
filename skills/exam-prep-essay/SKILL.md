@@ -7,6 +7,8 @@ description: Produce essay exam preparation, example essay plans, model-answer s
 
 Create an essay-focused Specific Research Report after `exam-prep-index` has confirmed the essay route. Use this Skill for essay questions, in-campus essay preparation, example essays, essay plans, model-answer support, paragraph planning, and Extra Reading enriched evaluation.
 
+Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
+
 Do not use this Skill for Online Essay Exam drafting. Online Essay Exam is a parallel branch owned by `exam-prep-online-essay-exam`; it requires Online Materials and Lecture Materials source-permission Ask Questions, locked brief, evidence map, paragraph-level plan, Planning Approval, draft generation, and QA.
 
 ## Load First

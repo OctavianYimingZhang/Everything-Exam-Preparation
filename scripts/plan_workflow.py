@@ -40,6 +40,34 @@ ONLINE_ESSAY_EXAM_ACTIONS = [
     "online_essay_exam_qa",
 ]
 
+ASSESSMENT_BLUEPRINT_ACTIONS = [
+    "source_inventory",
+    "fragment_index",
+    "human_review_exam_material_output_confirmation",
+    "relevant_everything_university_memory_load",
+    "assessment_blueprint_generation",
+    "assessment_blueprint_qa",
+]
+
+ANSWER_EVALUATION_ACTIONS = [
+    "source_inventory",
+    "fragment_index",
+    "human_review_exam_material_output_confirmation",
+    "answer_and_evaluation_criteria_confirmation",
+    "source_grounded_answer_evaluation",
+    "mastery_history_update_if_enabled",
+]
+
+TIMED_PRACTICE_ACTIONS = [
+    "source_inventory",
+    "fragment_index",
+    "human_review_exam_material_output_confirmation",
+    "assessment_blueprint_load_or_generation",
+    "timed_practice_duration_confirmation",
+    "timed_practice_generation",
+    "mastery_history_context_load_if_enabled",
+]
+
 ROUTES: dict[str, list[str]] = {
     "exam_prep_notes": BASE_ACTIONS + [
         "exam_prep_notes",
@@ -79,6 +107,9 @@ ROUTES: dict[str, list[str]] = {
         "sort_questions_by_latest_matching_lecture",
         "organized_questions_docx",
     ],
+    "assessment_blueprint": ASSESSMENT_BLUEPRINT_ACTIONS,
+    "answer_evaluation": ANSWER_EVALUATION_ACTIONS,
+    "timed_practice": TIMED_PRACTICE_ACTIONS,
 }
 
 ROUTE_OUTPUTS = {
@@ -91,6 +122,9 @@ ROUTE_OUTPUTS = {
     "mixed_exam_preparation": ["docx_notes", "exam_type_related_addon_docx"],
     "question_solving": ["question_solution_report"],
     "question_organizing": ["organized_questions_docx"],
+    "assessment_blueprint": ["assessment_blueprint"],
+    "answer_evaluation": ["answer_evaluation_report"],
+    "timed_practice": ["timed_practice_session"],
 }
 
 ROUTE_LABELS = {
@@ -104,7 +138,24 @@ ROUTE_LABELS = {
     "mixed_exam_preparation": "Mixed",
     "question_solving": "Question Solving",
     "question_organizing": "Question Organization",
+    "assessment_blueprint": "Assessment Blueprint",
+    "answer_evaluation": "Answer Evaluation",
+    "timed_practice": "Timed Practice",
 }
+
+NOTES_CHOICE_ROUTES = {
+    "exam_prep_notes",
+    "mcq_preparation",
+    "short_answer_preparation",
+    "long_answer_preparation",
+    "worked_solution_preparation",
+    "essay_preparation",
+    "online_essay_exam_drafting",
+    "mixed_exam_preparation",
+}
+
+ONLINE_MATERIAL_PERMISSION_IDS = {"online_materials_use", "online_essay_online_materials_permission"}
+LECTURE_MATERIAL_PERMISSION_IDS = {"lecture_materials_use", "online_essay_lecture_materials_permission"}
 
 
 def prompt_has_any(prompt: str, signals: list[str]) -> bool:
@@ -113,6 +164,12 @@ def prompt_has_any(prompt: str, signals: list[str]) -> bool:
 
 def detect_route(prompt: str) -> str:
     p = (prompt or "").lower()
+    if prompt_has_any(p, ["assessment blueprint", "exam blueprint", "assessment coverage blueprint"]):
+        return "assessment_blueprint"
+    if prompt_has_any(p, ["evaluate my answer", "evaluate this answer", "mark my answer", "answer evaluation", "grade this answer"]):
+        return "answer_evaluation"
+    if prompt_has_any(p, ["timed practice", "timed mock", "practice timer", "timed session"]):
+        return "timed_practice"
     if prompt_has_any(p, [
         "organize past paper",
         "organise past paper",
@@ -240,7 +297,12 @@ def source_summary(source_scan: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def auto_diagnosis(route: str, outputs: list[str], summary: dict[str, Any]) -> dict[str, Any]:
+def auto_diagnosis(
+    route: str,
+    outputs: list[str],
+    summary: dict[str, Any],
+    route_selection_status: str = "suggested",
+) -> dict[str, Any]:
     source_hints = summary.get("source_hints", {})
     question_material = summary.get("question_material", {})
     coverage_profile = summary.get("coverage_profile", {})
@@ -254,10 +316,12 @@ def auto_diagnosis(route: str, outputs: list[str], summary: dict[str, Any]) -> d
         review_requirement = "Confirm or correct route, source roles, route-specific follow-up choices, Online Materials and Lecture Materials permissions, and whether Notes should be generated before generating any Online Essay Exam plan or draft."
     elif route == "mixed_exam_preparation":
         review_requirement = "Confirm or correct route, selected Mixed component routes, source roles, route-specific follow-up choices, and whether Notes should be generated before generating public Notes, Specific Research Reports, add-ons, or worked solutions."
+    elif route not in NOTES_CHOICE_ROUTES:
+        review_requirement = "Confirm or correct route, source roles, and route-specific required inputs before generating public output."
     else:
         review_requirement = "Confirm or correct route, source roles, route-specific follow-up choices, and whether Notes should be generated before generating public Notes, Specific Research Reports, add-ons, or worked solutions."
     return {
-        "status": "preliminary",
+        "status": "route_explicitly_confirmed" if route_selection_status == "explicitly_confirmed" else "preliminary",
         "route": route,
         "exam_type": ROUTE_LABELS.get(route, route),
         "material_roles": source_hints,
@@ -290,8 +354,123 @@ def extra_reading_requested(prompt: str) -> bool:
     return any(k in p for k in ["extra reading", "external evidence", "research article", "journal article", "doi", "pmid"])
 
 
-def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, Any]:
-    route = detect_route(prompt)
+def confirmed_decision(decisions: list[dict[str, Any]], decision_id: str) -> Any:
+    for decision in decisions:
+        if decision.get("decision_id") == decision_id and decision.get("status") == "explicitly_confirmed":
+            return decision.get("value")
+    return None
+
+
+def explicit_language_from_prompt(prompt: str) -> str | None:
+    text = (prompt or "").lower()
+    if any(term in text for term in ["bilingual output", "bilingual answer", "in both english and chinese"]):
+        return "bilingual"
+    if any(term in text for term in ["in chinese", "chinese output", "answer in chinese", "write in chinese"]):
+        return "zh"
+    if any(term in text for term in ["in english", "english output", "answer in english", "write in english"]):
+        return "en"
+    return None
+
+
+def task_output_language(
+    prompt: str,
+    decisions: list[dict[str, Any]],
+    requested_output_language: str | None = None,
+) -> str:
+    explicit = confirmed_decision(decisions, "output_language")
+    if explicit:
+        return str(explicit)
+    if requested_output_language:
+        return str(requested_output_language)
+    return explicit_language_from_prompt(prompt) or "en"
+
+
+def permission_ids(permissions: list[dict[str, Any]]) -> set[str]:
+    return {
+        str(permission.get("permission_id"))
+        for permission in permissions
+        if permission.get("status") in {"explicitly_confirmed", "denied"}
+    }
+
+
+def online_essay_permissions_confirmed(permissions: list[dict[str, Any]]) -> bool:
+    confirmed = permission_ids(permissions)
+    return bool(confirmed & ONLINE_MATERIAL_PERMISSION_IDS) and bool(confirmed & LECTURE_MATERIAL_PERMISSION_IDS)
+
+
+def target(id: str, purpose: str, resolved: bool = False) -> dict[str, Any]:
+    return {
+        "id": id,
+        "purpose": purpose,
+        "status": "explicitly_confirmed" if resolved else "pending_user_confirmation",
+    }
+
+
+def source_scan_with_fragments(
+    source_scan: dict[str, Any] | None,
+    source_fragments: list[dict[str, Any]] | None,
+) -> dict[str, Any] | None:
+    if not source_fragments:
+        return source_scan
+    merged = dict(source_scan or {})
+    merged.setdefault("documents", [])
+    merged["fragments"] = list(source_fragments)
+    return merged
+
+
+def unresolved_required_inputs(route: str, metadata: dict[str, Any], has_source_fragments: bool = False) -> list[str]:
+    unresolved: list[str] = []
+    if route == "assessment_blueprint" and not has_source_fragments:
+        unresolved.append("source_fragments")
+    if route == "answer_evaluation":
+        if not metadata.get("student_answer"):
+            unresolved.append("student_answer")
+        if not (metadata.get("evaluation_criteria") or metadata.get("marking_material")):
+            unresolved.append("evaluation_criteria_or_marking_material")
+    if route == "timed_practice":
+        if not metadata.get("assessment_blueprint"):
+            unresolved.append("assessment_blueprint")
+        if not metadata.get("duration_minutes"):
+            unresolved.append("duration_minutes")
+    return unresolved
+
+
+def plan(
+    prompt: str = "",
+    source_scan: dict[str, Any] | None = None,
+    *,
+    route_selection: dict[str, Any] | None = None,
+    source_fragments: list[dict[str, Any]] | None = None,
+    relevant_memory: list[dict[str, Any]] | None = None,
+    permissions: list[dict[str, Any]] | None = None,
+    decisions: list[dict[str, Any]] | None = None,
+    requested_output_language: str | None = None,
+    academic_task_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    context = academic_task_context or {}
+    if context:
+        prompt = str(context.get("original_prompt") or prompt or "")
+        route_selection = context.get("route_selection") if isinstance(context.get("route_selection"), dict) else route_selection
+        relevant_memory = list(context.get("relevant_memory") or relevant_memory or [])
+        permissions = list(context.get("permissions") or permissions or [])
+        decisions = list(context.get("decisions") or decisions or [])
+        requested_output_language = str(context.get("requested_output_language") or requested_output_language or "") or None
+    relevant_memory = relevant_memory or []
+    permissions = permissions or []
+    decisions = decisions or []
+    metadata = context.get("metadata") if isinstance(context.get("metadata"), dict) else {}
+    selected_route = str((route_selection or {}).get("route_id") or "")
+    if selected_route:
+        if selected_route not in ROUTES:
+            raise ValueError(f"unsupported route_id: {selected_route}")
+        route = selected_route
+        route_source = "academic_task_context.route_selection" if context else "explicit_route_selection"
+    else:
+        route = detect_route(prompt)
+        route_source = "original_prompt_detection"
+    route_selection_status = str((route_selection or {}).get("status") or "suggested")
+    route_confirmed = route_selection_status == "explicitly_confirmed"
+    source_scan = source_scan_with_fragments(source_scan, source_fragments)
     action_ids = list(ROUTES[route])
     if "human_review_exam_material_output_confirmation" not in action_ids:
         insert_at = action_ids.index("source_inventory") + 1 if "source_inventory" in action_ids else 0
@@ -327,6 +506,13 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
         "For question solving, explain the target question, show matching knowledge, and retrieve only strict same-knowledge-point questions from user-supplied material.",
         "For question organization, generate a DOCX question list ordered by lecture order and containing questions only.",
     ]
+    if route not in NOTES_CHOICE_ROUTES:
+        notes = [
+            "Use source hints as rough provenance labels.",
+            "Complete the Direct Invocation Gate for unresolved route, source-role, and route-specific inputs before public output.",
+            "Preserve the AcademicTaskContext original prompt, explicit route selection, relevant memory references, and page, slide, or time provenance.",
+            "Default public output to English unless the user explicitly overrides the language for this task.",
+        ]
     if route == "online_essay_exam_drafting":
         notes.extend([
             "Online Essay Exam is the only new Exam Type and is parallel to MCQ, Short Answer, Long Answer, Worked Solutions, and Essay Question.",
@@ -339,42 +525,104 @@ def plan(prompt: str, source_scan: dict[str, Any] | None = None) -> dict[str, An
         else:
             notes.append("Extra Reading was requested, but Extra Reading is available only when the confirmed Exam type includes essay.")
     review_targets = [
-        {
-            "id": "exam_type_route",
-            "purpose": "confirm or correct the preliminary Exam type and route before writing",
-        },
-        {
-            "id": "material_type_source_roles",
-            "purpose": "confirm or correct Material type and source roles before using sources",
-        },
-        {
-            "id": "notes_output_choice",
-            "purpose": "confirm whether Notes should be generated before the exam-specific report",
-        },
+        target("exam_type_route", "confirm or correct the preliminary Exam type and route before writing", route_confirmed),
+        target(
+            "material_type_source_roles",
+            "confirm or correct Material type and source roles before using sources",
+            bool(confirmed_decision(decisions, "material_type_source_roles")),
+        ),
     ]
+    if route in NOTES_CHOICE_ROUTES:
+        review_targets.append(target(
+            "notes_output_choice",
+            "confirm whether Notes should be generated before the exam-specific report",
+            confirmed_decision(decisions, "notes_output_choice") is not None,
+        ))
     if route == "online_essay_exam_drafting":
-        review_targets.append({
-            "id": "online_essay_exam_source_permissions",
-            "purpose": "for Online Essay Exam, confirm whether Online Materials and Lecture Materials may be used before planning or drafting",
-        })
+        review_targets.append(target(
+            "online_essay_exam_source_permissions",
+            "for Online Essay Exam, confirm whether Online Materials and Lecture Materials may be used before planning or drafting",
+            online_essay_permissions_confirmed(permissions),
+        ))
     if route == "mixed_exam_preparation":
-        review_targets.append({
-            "id": "confirmed_mixed_routes",
-            "purpose": "for Mixed routes, confirm the exact component routes before route-specific follow-up questions or output generation",
-        })
+        review_targets.append(target(
+            "confirmed_mixed_routes",
+            "for Mixed routes, confirm the exact component routes before route-specific follow-up questions or output generation",
+            bool(confirmed_decision(decisions, "confirmed_mixed_routes")),
+        ))
+    if route == "assessment_blueprint":
+        review_targets.append(target(
+            "assessment_blueprint_scope",
+            "confirm the assessment scope and course knowledge units represented by the blueprint",
+            bool(confirmed_decision(decisions, "assessment_blueprint_scope")),
+        ))
+    if route == "answer_evaluation":
+        review_targets.append(target(
+            "answer_evaluation_criteria",
+            "confirm the student answer and source-grounded evaluation criteria before evaluation",
+            not unresolved_required_inputs(route, metadata, bool(source_fragments)),
+        ))
+    if route == "timed_practice":
+        review_targets.append(target(
+            "timed_practice_duration",
+            "confirm the timed-practice duration before generating the session",
+            not unresolved_required_inputs(route, metadata, bool(source_fragments)),
+        ))
+    pending_targets = [item["id"] for item in review_targets if item["status"] != "explicitly_confirmed"]
+    course = context.get("course_or_case") if isinstance(context.get("course_or_case"), dict) else None
+    history_enabled_decision = confirmed_decision(decisions, "mastery_history_enabled")
+    history_enabled = True if history_enabled_decision is None else bool(history_enabled_decision)
+    history_course_available = bool(course and course.get("kind") == "course" and course.get("stable_id"))
+    diagnosis = auto_diagnosis(route, outputs, summary, route_selection_status)
+    if route == "online_essay_exam_drafting" and online_essay_permissions_confirmed(permissions):
+        diagnosis["review_requirement"] = "Preserve the resolved Online Materials and Lecture Materials permissions; confirm only remaining source-role, Notes, allowed-source, citation, output-format, and planning decisions before drafting."
     return {
-        "schema_version": 2,
+        "schema_version": 3,
+        "context_contract": "AcademicTaskContext",
+        "context_version": 1,
+        "context_id": context.get("context_id"),
+        "original_prompt": prompt,
         "route": route,
+        "route_source": route_source,
+        "route_selection": {
+            "route_id": route,
+            "status": route_selection_status,
+        },
+        "output_language": task_output_language(prompt, decisions, requested_output_language),
+        "default_output_language": "en",
         "human_review_required": True,
-        "review_status": "pending_user_confirmation",
+        "review_status": "confirmed" if not pending_targets else "pending_user_confirmation",
         "review_targets": review_targets,
-        "auto_diagnosis": auto_diagnosis(route, outputs, summary),
+        "pending_review_targets": pending_targets,
+        "auto_diagnosis": diagnosis,
         "proposed_outputs": outputs,
         "outputs": outputs,
         "output_status": "proposed_until_human_review",
-        "output_name_policy": "Use user-requested filenames when supplied; otherwise generate a clear DOCX filename from the source, course, prompt, or note title.",
+        "output_name_policy": "Use user-requested filenames when supplied; otherwise generate a clear filename in the route's declared output media type from the source, course, prompt, or title.",
         "actions": actions,
         "source_summary": summary,
+        "source_fragments": list(source_fragments or []),
+        "relevant_memory": relevant_memory,
+        "permissions": permissions,
+        "decisions": decisions,
+        "confirmed_mixed_routes": confirmed_decision(decisions, "confirmed_mixed_routes") or [],
+        "course_or_case": course,
+        "mastery_history": {
+            "default_enabled": True,
+            "enabled_for_task": history_enabled and history_course_available,
+            "scope": "per_course",
+            "course_stable_id": course.get("stable_id") if course else None,
+            "status": "enabled" if history_enabled and history_course_available else ("disabled_by_user" if not history_enabled else "course_id_required"),
+            "operations": ["enable", "disable", "export", "delete"],
+            "adapter": "scripts/mastery_history.py",
+        },
+        "required_input_status": {
+            "unresolved": unresolved_required_inputs(route, metadata, bool(source_fragments)),
+        },
+        "provenance_contract": {
+            "fields": ["source_name", "locator", "page_number", "slide_number", "time_offset_seconds", "time_range"],
+            "policy": "preserve page, slide, and time locators from source fragments through public or internal outputs",
+        },
         "notes": notes,
     }
 
@@ -386,6 +634,9 @@ def load_json(path: str | None) -> dict[str, Any] | None:
 
 
 def self_test() -> None:
+    assert detect_route("build an assessment blueprint") == "assessment_blueprint"
+    assert detect_route("evaluate this answer") == "answer_evaluation"
+    assert detect_route("make a 30 minute timed practice") == "timed_practice"
     assert detect_route("make MCQ notes") == "mcq_preparation"
     assert detect_route("short answer definitions") == "short_answer_preparation"
     assert detect_route("give essay plans") == "essay_preparation"
@@ -466,19 +717,72 @@ def self_test() -> None:
     assert any(action["id"] == "human_review_exam_material_output_confirmation" for action in plan("identify exam format")["actions"])
     assert "confirmed_mixed_routes" in [target["id"] for target in plan("identify exam format")["review_targets"]]
     assert out["source_summary"]["coverage_profile"]["knowledge_signal_counts"]["mechanism"] == 1
+    context = {
+        "contract": "AcademicTaskContext",
+        "version": 1,
+        "context_id": "ctx-exam-0001",
+        "created_at": "2026-07-09T12:00:00Z",
+        "original_prompt": "Use the route already selected by the user.",
+        "route_selection": {"route_id": "answer_evaluation", "status": "explicitly_confirmed"},
+        "course_or_case": {"kind": "course", "stable_id": "BIO101", "label": "Biology"},
+        "source_references": [{"source_id": "source-0001", "trust_status": "trusted"}],
+        "relevant_memory": [{"store": "everything-university/mastery", "record_ids": ["BIO101-K2"], "purpose": "reuse weakness history"}],
+        "permissions": [],
+        "decisions": [{"decision_id": "output_language", "value": "fr", "status": "explicitly_confirmed"}],
+        "requested_output_language": "fr",
+        "metadata": {"student_answer": "A receptor activates a kinase.", "evaluation_criteria": ["receptor activation"]},
+    }
+    fragments = [{"id": "F1", "source_id": "source-0001", "text": "Receptor activation.", "page_number": 3, "knowledge_roles": ["mechanism"]}]
+    adapted = plan(academic_task_context=context, source_fragments=fragments)
+    assert adapted["route"] == "answer_evaluation"
+    assert adapted["route_source"] == "academic_task_context.route_selection"
+    assert adapted["original_prompt"] == context["original_prompt"]
+    assert adapted["source_summary"]["fragment_count"] == 1
+    assert adapted["relevant_memory"] == context["relevant_memory"]
+    assert adapted["output_language"] == "fr"
+    assert adapted["default_output_language"] == "en"
+    assert adapted["review_targets"][0]["status"] == "explicitly_confirmed"
+    assert adapted["mastery_history"]["enabled_for_task"] is True
+    mixed_context = dict(context)
+    mixed_context["route_selection"] = {"route_id": "mixed_exam_preparation", "status": "explicitly_confirmed"}
+    mixed_context["decisions"] = []
+    mixed_adapted = plan(academic_task_context=mixed_context, source_fragments=fragments)
+    assert "confirmed_mixed_routes" in mixed_adapted["pending_review_targets"]
+    online_context = dict(context)
+    online_context["route_selection"] = {"route_id": "online_essay_exam_drafting", "status": "explicitly_confirmed"}
+    online_context["permissions"] = []
+    online_adapted = plan(academic_task_context=online_context, source_fragments=fragments)
+    assert "online_essay_exam_source_permissions" in online_adapted["pending_review_targets"]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--prompt", default="make notes")
     parser.add_argument("--source-scan")
+    parser.add_argument("--academic-task-context")
+    parser.add_argument("--source-fragments")
+    parser.add_argument("--route")
+    parser.add_argument("--route-status", choices=["suggested", "explicitly_confirmed"], default="suggested")
+    parser.add_argument("--relevant-memory")
+    parser.add_argument("--output-language")
     parser.add_argument("--out")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
         self_test()
         return
-    result = plan(args.prompt, load_json(args.source_scan))
+    context = load_json(args.academic_task_context)
+    fragments = load_json(args.source_fragments)
+    memory = load_json(args.relevant_memory)
+    result = plan(
+        args.prompt,
+        load_json(args.source_scan),
+        academic_task_context=context,
+        source_fragments=(fragments.get("source_fragments") or fragments.get("fragments") or []) if isinstance(fragments, dict) else fragments,
+        route_selection={"route_id": args.route, "status": args.route_status} if args.route else None,
+        relevant_memory=memory.get("relevant_memory", []) if isinstance(memory, dict) else memory,
+        requested_output_language=args.output_language,
+    )
     text = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")

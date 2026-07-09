@@ -1,0 +1,291 @@
+{
+  "contract": "PluginCapabilityManifest",
+  "version": 2,
+  "plugin_id": "everything-exam-preparation",
+  "plugin_version": "2.0.0",
+  "default_output_language": "en",
+  "supported_context_versions": [1],
+  "routes": [
+    {
+      "route_id": "exam_prep_notes",
+      "owning_skill": "exam-prep-notes",
+      "triggers": {
+        "semantic_intents": ["teach course material as exam preparation notes"],
+        "examples": ["Prepare notes for this course"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+      ],
+      "outputs": [{"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "mcq_preparation",
+      "owning_skill": "exam-prep-mcq",
+      "triggers": {
+        "semantic_intents": ["prepare for multiple choice or single best answer assessment"],
+        "examples": ["Build an MCQ preparation report"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+      ],
+      "outputs": [
+        {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+        {"output_id": "mcq_exam_type_related_addon", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+      ],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "short_answer_preparation",
+      "owning_skill": "exam-prep-short-answer",
+      "triggers": {
+        "semantic_intents": ["prepare for short answer assessment"],
+        "examples": ["Build a short answer preparation report"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+      ],
+      "outputs": [
+        {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+        {"output_id": "short_answer_exam_type_related_addon", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+      ],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "long_answer_preparation",
+      "owning_skill": "exam-prep-long-answer",
+      "triggers": {
+        "semantic_intents": ["prepare long answer practical data or problem responses"],
+        "examples": ["Prepare long answer questions"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+      ],
+      "outputs": [
+        {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+        {"output_id": "long_answer_practical_data_problem_exam_type_related_addon", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+      ],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "worked_solution_preparation",
+      "owning_skill": "exam-prep-worked-solutions",
+      "triggers": {
+        "semantic_intents": ["teach worked calculations derivations or practical problems"],
+        "examples": ["Show complete worked solutions"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+      ],
+      "outputs": [
+        {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+        {"output_id": "practical_worked_solutions_docx", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+      ],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "essay_preparation",
+      "owning_skill": "exam-prep-essay",
+      "triggers": {
+        "semantic_intents": ["prepare in-campus essay plans and examples"],
+        "examples": ["Prepare example essays"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+      ],
+      "outputs": [
+        {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+        {"output_id": "essay_exam_type_related_addon", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+      ],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "online_essay_exam_drafting",
+      "owning_skill": "exam-prep-online-essay-exam",
+      "triggers": {
+        "semantic_intents": ["draft an online take-home or open-book essay exam"],
+        "examples": ["Draft this online essay exam answer"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "online_essay_exam_source_permissions", "required": true, "satisfied_by": "explicit Online Materials and Lecture Materials permissions"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
+      ],
+      "outputs": [
+        {"output_id": "online_essay_exam_draft", "media_type": "text/markdown"},
+        {"output_id": "online_essay_exam_draft_docx_if_requested", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+      ],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "mixed_exam_preparation",
+      "owning_skill": "exam-prep-index",
+      "triggers": {
+        "semantic_intents": ["prepare for a confirmed mixed-format assessment"],
+        "examples": ["Prepare MCQ and short answer components"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"},
+        {"input_id": "confirmed_mixed_routes", "required": true}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "confirmed_mixed_routes", "required": true, "satisfied_by": "explicitly confirmed component-route decision"}
+      ],
+      "outputs": [
+        {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+        {"output_id": "exam_type_related_addon_docx", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+      ],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "question_solving",
+      "owning_skill": "exam-prep-question-solver",
+      "triggers": {
+        "semantic_intents": ["solve and teach a specific supplied question"],
+        "examples": ["How do I answer this question?"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "target_question", "required": true},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [{"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route target-question and source-role review state"}],
+      "outputs": [{"output_id": "question_solution_report", "media_type": "text/markdown"}],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "question_organizing",
+      "owning_skill": "exam-prep-question-organizer",
+      "triggers": {
+        "semantic_intents": ["organize supplied questions in lecture order"],
+        "examples": ["Sort these past-paper questions by lecture"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [{"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route source-role and lecture-order review state"}],
+      "outputs": [{"output_id": "organized_questions_docx", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "assessment_blueprint",
+      "owning_skill": "exam-prep-index",
+      "triggers": {
+        "semantic_intents": ["build a source-grounded assessment coverage blueprint"],
+        "examples": ["Build an assessment blueprint for this course"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "assessment_blueprint_scope", "required": true, "satisfied_by": "explicitly confirmed scope decision"}
+      ],
+      "outputs": [{"output_id": "assessment_blueprint", "media_type": "application/json"}],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "answer_evaluation",
+      "owning_skill": "exam-prep-question-solver",
+      "triggers": {
+        "semantic_intents": ["evaluate a supplied student answer against source-grounded criteria"],
+        "examples": ["Evaluate my answer against this mark scheme"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "student_answer", "required": true},
+        {"input_id": "evaluation_criteria_or_marking_material", "required": true},
+        {"input_id": "source_fragments", "required": false, "schema_ref": "schemas/source_fragment.schema.json"}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "answer_evaluation_criteria", "required": true, "satisfied_by": "explicit criteria or supplied marking material"}
+      ],
+      "outputs": [{"output_id": "answer_evaluation_report", "media_type": "application/json"}],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    },
+    {
+      "route_id": "timed_practice",
+      "owning_skill": "exam-prep-question-solver",
+      "triggers": {
+        "semantic_intents": ["build a timed practice session from an assessment blueprint"],
+        "examples": ["Create a 45-minute timed practice"],
+        "direct_invocation": true
+      },
+      "required_inputs": [
+        {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
+        {"input_id": "assessment_blueprint", "required": true},
+        {"input_id": "duration_minutes", "required": true}
+      ],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
+        {"gate_id": "timed_practice_duration", "required": true, "satisfied_by": "explicit duration decision"}
+      ],
+      "outputs": [{"output_id": "timed_practice_session", "media_type": "application/json"}],
+      "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
+      "supported_context_versions": [1]
+    }
+  ]
+}
