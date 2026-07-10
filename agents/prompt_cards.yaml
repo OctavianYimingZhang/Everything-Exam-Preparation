@@ -29,7 +29,7 @@ prompt_cards:
     route: essay_preparation
   - id: online_essay_exam_drafting
     title: Online Essay Exam Drafting
-    purpose: Confirm Online Essay Exam, Online Materials and Lecture Materials permissions, allowed sources, citation expectation, and output format before evidence mapping, planning, drafting, or optional Notes support.
+    purpose: Confirm Online Essay Exam, source rules, explicit assessment permission for a complete draft, allowed sources, citation expectation, and output format before evidence mapping, planning, drafting, or optional Notes support.
     route: online_essay_exam_drafting
   - id: mixed_exam_preparation
     title: Mixed Exam Preparation

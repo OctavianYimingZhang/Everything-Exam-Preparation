@@ -94,19 +94,8 @@ def confirmed_decision(context: dict[str, Any], decision_id: str) -> Any:
     return None
 
 
-def confirmed_permissions(context: dict[str, Any]) -> set[str]:
-    return {
-        str(permission.get("permission_id"))
-        for permission in context.get("permissions") or []
-        if permission.get("status") in {"explicitly_confirmed", "denied"}
-    }
-
-
 def online_essay_permissions_confirmed(context: dict[str, Any]) -> bool:
-    confirmed = confirmed_permissions(context)
-    online_ids = {"online_materials_use", "online_essay_online_materials_permission"}
-    lecture_ids = {"lecture_materials_use", "online_essay_lecture_materials_permission"}
-    return bool(confirmed & online_ids) and bool(confirmed & lecture_ids)
+    return plan_workflow.online_essay_permissions_confirmed(list(context.get("permissions") or []))
 
 
 def state_history_for(context: dict[str, Any], workflow_plan: dict[str, Any], at: str) -> list[dict[str, Any]]:
@@ -131,12 +120,14 @@ def state_history_for(context: dict[str, Any], workflow_plan: dict[str, Any], at
                 "state": "permissions_confirmed",
                 "at": at,
                 "actor": "user",
-                "reason": "Online Materials and Lecture Materials permissions are explicitly resolved as allowed or denied.",
+                "reason": "Source-use rules are resolved and complete-draft permission is explicitly allowed by the assessment rules.",
             })
+    permission_gate_allows_execution = route != "online_essay_exam_drafting" or online_essay_permissions_confirmed(context)
     if (
         confirmed_decision(context, "planning_approval") is True
         and route_selection.get("status") == "explicitly_confirmed"
         and not workflow_plan.get("pending_review_targets")
+        and permission_gate_allows_execution
     ):
         history.append({
             "state": "plan_approved",
@@ -245,10 +236,12 @@ def self_test() -> None:
     assert "online_essay_lecture_materials_permission" not in online_followups
     assert "online_essay_allowed_source_set" in online_followups
     denied_payload = load_json(str(root / "tests/fixtures/academic_task_context_online_permissions.json"))
-    denied_payload["academic_task_context"]["permissions"][0]["status"] = "denied"
-    denied_payload["academic_task_context"]["permissions"][0]["confirmed_at"] = None
+    denied_payload["academic_task_context"]["permissions"][2]["status"] = "denied"
+    denied_payload["academic_task_context"]["permissions"][2]["confirmed_at"] = "2026-07-09T12:00:00Z"
     denied = adapt(denied_payload, at="2026-07-09T12:00:00Z")
-    assert denied["state"] == "permissions_confirmed"
+    assert denied["state"] == "route_or_brief_locked"
+    assert denied["plan"]["permission_gate"]["status"] == "denied"
+    assert denied["plan"]["execution_blockers"][0]["id"] == "online_essay_complete_draft_permission_denied"
 
 
 def main() -> None:

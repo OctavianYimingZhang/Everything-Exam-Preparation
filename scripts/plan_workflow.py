@@ -156,6 +156,7 @@ NOTES_CHOICE_ROUTES = {
 
 ONLINE_MATERIAL_PERMISSION_IDS = {"online_materials_use", "online_essay_online_materials_permission"}
 LECTURE_MATERIAL_PERMISSION_IDS = {"lecture_materials_use", "online_essay_lecture_materials_permission"}
+COMPLETE_DRAFT_PERMISSION_IDS = {"online_essay_complete_draft_permission", "online_essay_assessment_draft_permission"}
 
 
 def prompt_has_any(prompt: str, signals: list[str]) -> bool:
@@ -313,7 +314,7 @@ def auto_diagnosis(
         or (question_material.get("has_past_paper_questions") and question_material.get("has_practical_questions"))
     )
     if route == "online_essay_exam_drafting":
-        review_requirement = "Confirm or correct route, source roles, route-specific follow-up choices, Online Materials and Lecture Materials permissions, and whether Notes should be generated before generating any Online Essay Exam plan or draft."
+        review_requirement = "Confirm or correct route, source roles, route-specific follow-up choices, Online Materials and Lecture Materials rules, explicit assessment permission for a complete draft, and whether Notes should be generated before generating any Online Essay Exam plan or draft."
     elif route == "mixed_exam_preparation":
         review_requirement = "Confirm or correct route, selected Mixed component routes, source roles, route-specific follow-up choices, and whether Notes should be generated before generating public Notes, Specific Research Reports, add-ons, or worked solutions."
     elif route not in NOTES_CHOICE_ROUTES:
@@ -385,17 +386,56 @@ def task_output_language(
     return explicit_language_from_prompt(prompt) or "en"
 
 
-def permission_ids(permissions: list[dict[str, Any]]) -> set[str]:
+def permission_ids(
+    permissions: list[dict[str, Any]],
+    statuses: set[str] | None = None,
+) -> set[str]:
+    accepted_statuses = statuses or {"explicitly_confirmed", "denied"}
     return {
         str(permission.get("permission_id"))
         for permission in permissions
-        if permission.get("status") in {"explicitly_confirmed", "denied"}
+        if permission.get("status") in accepted_statuses
     }
 
 
+def online_essay_source_permissions_resolved(permissions: list[dict[str, Any]]) -> bool:
+    resolved = permission_ids(permissions)
+    return bool(resolved & ONLINE_MATERIAL_PERMISSION_IDS) and bool(resolved & LECTURE_MATERIAL_PERMISSION_IDS)
+
+
+def online_essay_complete_draft_permission_resolved(permissions: list[dict[str, Any]]) -> bool:
+    return bool(permission_ids(permissions) & COMPLETE_DRAFT_PERMISSION_IDS)
+
+
+def online_essay_complete_draft_allowed(permissions: list[dict[str, Any]]) -> bool:
+    explicitly_allowed = permission_ids(permissions, {"explicitly_confirmed"})
+    return bool(explicitly_allowed & COMPLETE_DRAFT_PERMISSION_IDS)
+
+
 def online_essay_permissions_confirmed(permissions: list[dict[str, Any]]) -> bool:
-    confirmed = permission_ids(permissions)
-    return bool(confirmed & ONLINE_MATERIAL_PERMISSION_IDS) and bool(confirmed & LECTURE_MATERIAL_PERMISSION_IDS)
+    return online_essay_source_permissions_resolved(permissions) and online_essay_complete_draft_allowed(permissions)
+
+
+def online_essay_permission_gate(permissions: list[dict[str, Any]]) -> dict[str, Any]:
+    resolved = permission_ids(permissions)
+    denied = permission_ids(permissions, {"denied"})
+    source_rules_resolved = online_essay_source_permissions_resolved(permissions)
+    draft_rule_resolved = online_essay_complete_draft_permission_resolved(permissions)
+    draft_allowed = online_essay_complete_draft_allowed(permissions)
+    if source_rules_resolved and draft_allowed:
+        status = "approved"
+    elif draft_rule_resolved and not draft_allowed:
+        status = "denied"
+    else:
+        status = "pending"
+    return {
+        "status": status,
+        "source_rules_resolved": source_rules_resolved,
+        "complete_draft_permission_resolved": draft_rule_resolved,
+        "complete_draft_allowed": draft_allowed,
+        "resolved_permission_ids": sorted(resolved),
+        "denied_permission_ids": sorted(denied),
+    }
 
 
 def target(id: str, purpose: str, resolved: bool = False) -> dict[str, Any]:
@@ -542,7 +582,12 @@ def plan(
         review_targets.append(target(
             "online_essay_exam_source_permissions",
             "for Online Essay Exam, confirm whether Online Materials and Lecture Materials may be used before planning or drafting",
-            online_essay_permissions_confirmed(permissions),
+            online_essay_source_permissions_resolved(permissions),
+        ))
+        review_targets.append(target(
+            "online_essay_exam_complete_draft_permission",
+            "confirm that the assessment rules explicitly permit a complete draft before planning or drafting one",
+            online_essay_complete_draft_permission_resolved(permissions),
         ))
     if route == "mixed_exam_preparation":
         review_targets.append(target(
@@ -574,8 +619,21 @@ def plan(
     history_enabled = True if history_enabled_decision is None else bool(history_enabled_decision)
     history_course_available = bool(course and course.get("kind") == "course" and course.get("stable_id"))
     diagnosis = auto_diagnosis(route, outputs, summary, route_selection_status)
-    if route == "online_essay_exam_drafting" and online_essay_permissions_confirmed(permissions):
-        diagnosis["review_requirement"] = "Preserve the resolved Online Materials and Lecture Materials permissions; confirm only remaining source-role, Notes, allowed-source, citation, output-format, and planning decisions before drafting."
+    permission_gate = online_essay_permission_gate(permissions) if route == "online_essay_exam_drafting" else None
+    if permission_gate and permission_gate["status"] == "approved":
+        diagnosis["review_requirement"] = "Preserve the resolved source rules and explicit complete-draft permission; confirm only remaining source-role, Notes, allowed-source, citation, output-format, and planning decisions before drafting."
+    elif permission_gate and permission_gate["status"] == "denied":
+        diagnosis["review_requirement"] = "A complete draft is blocked by the user's explicit assessment-permission denial. Planning support may continue, but drafting requires the user to explicitly change that permission."
+    review_status = "confirmed" if not pending_targets else "pending_user_confirmation"
+    output_status = "proposed_until_human_review"
+    execution_blockers: list[dict[str, Any]] = []
+    if permission_gate and permission_gate["status"] == "denied":
+        review_status = "blocked_by_permission_denial"
+        output_status = "blocked_by_permission_denial"
+        execution_blockers.append({
+            "id": "online_essay_complete_draft_permission_denied",
+            "message": "The assessment permission for a complete Online Essay Exam draft was explicitly denied.",
+        })
     return {
         "schema_version": 3,
         "context_contract": "AcademicTaskContext",
@@ -591,13 +649,15 @@ def plan(
         "output_language": task_output_language(prompt, decisions, requested_output_language),
         "default_output_language": "en",
         "human_review_required": True,
-        "review_status": "confirmed" if not pending_targets else "pending_user_confirmation",
+        "review_status": review_status,
         "review_targets": review_targets,
         "pending_review_targets": pending_targets,
         "auto_diagnosis": diagnosis,
         "proposed_outputs": outputs,
         "outputs": outputs,
-        "output_status": "proposed_until_human_review",
+        "output_status": output_status,
+        "permission_gate": permission_gate,
+        "execution_blockers": execution_blockers,
         "output_name_policy": "Use user-requested filenames when supplied; otherwise generate a clear filename in the route's declared output media type from the source, course, prompt, or title.",
         "actions": actions,
         "source_summary": summary,
@@ -704,7 +764,7 @@ def self_test() -> None:
     assert online["route"] == "online_essay_exam_drafting"
     assert online["outputs"] == ["online_essay_exam_draft", "online_essay_exam_draft_docx_if_requested"]
     assert "online_essay_exam_source_permissions" in [target["id"] for target in online["review_targets"]]
-    assert "Online Materials and Lecture Materials permissions" in online["auto_diagnosis"]["review_requirement"]
+    assert "explicit assessment permission for a complete draft" in online["auto_diagnosis"]["review_requirement"]
     assert "notes_generation_if_user_accepts" not in [action["id"] for action in online["actions"]]
     assert any(action["id"] == "online_materials_permission_review" for action in online["actions"])
     assert any("Online Materials and Lecture Materials" in note for note in online["notes"])
@@ -753,6 +813,20 @@ def self_test() -> None:
     online_context["permissions"] = []
     online_adapted = plan(academic_task_context=online_context, source_fragments=fragments)
     assert "online_essay_exam_source_permissions" in online_adapted["pending_review_targets"]
+    assert "online_essay_exam_complete_draft_permission" in online_adapted["pending_review_targets"]
+    denied_context = dict(online_context)
+    denied_context["permissions"] = [
+        {"permission_id": "online_materials_use", "scope": "Online Materials", "status": "denied"},
+        {"permission_id": "lecture_materials_use", "scope": "Lecture Materials", "status": "explicitly_confirmed"},
+        {"permission_id": "online_essay_complete_draft_permission", "scope": "Complete draft", "status": "denied"},
+    ]
+    denied_plan = plan(academic_task_context=denied_context, source_fragments=fragments)
+    assert denied_plan["permission_gate"]["status"] == "denied"
+    assert denied_plan["review_status"] == "blocked_by_permission_denial"
+    assert denied_plan["output_status"] == "blocked_by_permission_denial"
+    assert "online_essay_exam_source_permissions" not in denied_plan["pending_review_targets"]
+    assert "online_essay_exam_complete_draft_permission" not in denied_plan["pending_review_targets"]
+    assert denied_plan["execution_blockers"][0]["id"] == "online_essay_complete_draft_permission_denied"
 
 
 def main() -> None:

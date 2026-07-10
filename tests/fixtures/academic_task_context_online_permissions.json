@@ -28,6 +28,12 @@
         "scope": "Lecture Materials may be used as primary evidence.",
         "status": "explicitly_confirmed",
         "confirmed_at": "2026-07-09T12:00:00Z"
+      },
+      {
+        "permission_id": "online_essay_complete_draft_permission",
+        "scope": "The assessment rules permit assistance with a complete draft.",
+        "status": "explicitly_confirmed",
+        "confirmed_at": "2026-07-09T12:00:00Z"
       }
     ],
     "decisions": [],

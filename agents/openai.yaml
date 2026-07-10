@@ -35,7 +35,7 @@ mastery_history:
     - delete
   entrypoint: scripts/mastery_history.py
 default_workflow: analyze_all_materials_then_ask_exam_type_and_notes_then_generate_notes_then_specific_research_report
-online_essay_exam_workflow: ask_exam_branch_then_online_and_lecture_materials_permissions_then_lock_brief_then_evidence_map_then_planning_approval_then_draft_and_qa
+online_essay_exam_workflow: ask_exam_branch_then_source_rules_and_complete_draft_permission_then_lock_brief_then_evidence_map_then_planning_approval_then_permitted_output_and_qa
 conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
 conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
 conditional_question_solution: question_solution_report_when_user_asks_how_to_solve_a_supplied_question
@@ -50,7 +50,7 @@ human_review:
     - Exam type or route
     - Material type or source roles
     - Notes generation choice
-    - Online Materials and Lecture Materials permissions for Online Essay Exam
+    - Online Materials and Lecture Materials rules plus explicit complete-draft permission for Online Essay Exam
 source_hints:
   use: open provenance labels
   coverage_driver: knowledge_signals
@@ -134,6 +134,6 @@ student_surface:
     - Timed Practice
 mcq_saq_recurrence_policy: MCQ and Short Answer reports are result-only Past Paper-driven recurrence reports. Use Past Papers, Mock Papers, and official exam papers for recurrence; ordinary Practice Material can provide context but does not count. Treat each SAQ subquestion as an independent question record. Public output shows only lecture-order exam-needed knowledge points in the reference-document style, not evidence, calculations, source locators, matching debug, template labels, answer walkthroughs, or Notes-style teaching.
 extra_reading_policy: Extra Reading is only used when the confirmed branch includes Essay or Online Essay Exam and source permissions allow it.
-online_essay_exam_policy: Online Essay Exam is a parallel branch, not ordinary Essay preparation. Confirm Online Materials and Lecture Materials permissions before any evidence map, plan, Notes, report, or draft; then use locked brief, allowed-source evidence map, paragraph-level plan, CriticalAnalysisPlan, Planning Approval, draft generation, and QA.
+online_essay_exam_policy: Online Essay Exam is a parallel branch, not ordinary Essay preparation. Confirm Online Materials and Lecture Materials rules and explicit assessment permission for a complete draft before any complete drafting. A denial blocks a complete draft while preserving allowed review, evidence mapping, feedback, and planning support.
 question_solver_policy: Use user-supplied material to explain the target question, show the matched knowledge unit, and retrieve strict same-knowledge-point questions.
 question_organizer_policy: Generate organized_questions_docx from supplied Past Paper and Practice Material questions sorted by lecture knowledge-unit order, assigning multi-unit questions to the latest matching lecture.

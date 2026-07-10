@@ -42,7 +42,7 @@ The Notes question should ask whether to generate Notes before the Specific Rese
 Then ask the route-specific questions:
 
 - Essay: ask whether to generate Example Essays. If yes, ask how many essays and whether to use the user's own prepared or predicted questions.
-- Online Essay Exam: ask Online Materials permission, Lecture Materials permission, allowed supporting source set, citation expectation, and final draft output format before any evidence map, plan, Notes, report, or draft.
+- Online Essay Exam: ask Online Materials permission, Lecture Materials permission, explicit assessment permission for a complete draft, allowed supporting source set, citation expectation, and final draft output format before any evidence map, plan, Notes, report, or draft.
 - MCQ or Short Answer: ask whether to generate the Exam Specific Research Report.
 - Long Answer: ask whether to generate detailed analysis.
 - Worked Solutions: ask whether the user wants question-by-question teaching.

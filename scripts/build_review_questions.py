@@ -540,6 +540,16 @@ def online_essay_exam_followup_questions() -> list[dict[str, Any]]:
             ],
         },
         {
+            "header": "Draft",
+            "id": "online_essay_complete_draft_permission",
+            "question": "Do the confirmed assessment rules permit assistance with a complete Online Essay Exam draft?",
+            "options": [
+                option("Complete draft permitted (Recommended)", "Allow a complete draft only after the source rules, brief, evidence map, and plan are explicitly approved."),
+                option("Planning support only", "Do not generate a complete draft; limit support to source review, evidence mapping, feedback, and planning."),
+                option("Rule unclear", "Block complete drafting until the assessment rule is explicitly confirmed."),
+            ],
+        },
+        {
             "header": "Sources",
             "id": "online_essay_allowed_source_set",
             "question": "Which other materials may support the Online Essay Exam answer?",
@@ -754,6 +764,8 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
             followups = [question for question in followups if question.get("id") != "online_essay_online_materials_permission"]
         if permission_ids & {"lecture_materials_use", "online_essay_lecture_materials_permission"}:
             followups = [question for question in followups if question.get("id") != "online_essay_lecture_materials_permission"]
+        if permission_ids & {"online_essay_complete_draft_permission", "online_essay_assessment_draft_permission"}:
+            followups = [question for question in followups if question.get("id") != "online_essay_complete_draft_permission"]
     review_sequence = [
         "Show this plan to the user before asking questions.",
         "Ask the Exam type and Material type questions, plus the Notes question when that route can generate Notes.",
@@ -761,7 +773,7 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
     if route == "mixed_exam_preparation" and not followup_keys:
         review_sequence.append("For Mixed routes, ask the confirmed_mixed_routes component question before route-specific follow-up questions.")
     if route == "online_essay_exam_drafting" or "online_essay_exam" in followup_keys:
-        review_sequence.append("For Online Essay Exam, ask Online Materials and Lecture Materials source-permission questions before Notes support, evidence mapping, planning, reports, or drafting.")
+        review_sequence.append("For Online Essay Exam, ask Online Materials and Lecture Materials source-rule questions plus explicit assessment permission for a complete draft before Notes support, evidence mapping, planning, reports, or drafting.")
     review_sequence.extend([
         "Ask route-specific follow-up questions in batches of at most three.",
         "Update the workflow plan from the user's answers before generating public output.",
@@ -823,6 +835,7 @@ def self_test() -> None:
     assert online_ids == [
         "online_essay_online_materials_permission",
         "online_essay_lecture_materials_permission",
+        "online_essay_complete_draft_permission",
         "online_essay_allowed_source_set",
         "online_essay_citation_expectation",
         "online_essay_output_format",

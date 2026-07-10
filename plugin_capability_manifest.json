@@ -156,6 +156,7 @@
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
         {"gate_id": "online_essay_exam_source_permissions", "required": true, "satisfied_by": "explicit Online Materials and Lecture Materials permissions"},
+        {"gate_id": "online_essay_exam_complete_draft_permission", "required": true, "satisfied_by": "explicitly confirmed assessment permission for a complete draft; denial blocks complete drafting"},
         {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [

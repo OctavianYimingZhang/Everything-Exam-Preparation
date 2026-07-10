@@ -24,14 +24,14 @@ When this Skill is read from the source checkout instead of an installed local s
 
 ## Direct Invocation Gate
 
-If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before any public Online Essay Exam output. Confirm the Online Essay Exam route, Material type/source roles, optional Notes choice, Online Materials permission, Lecture Materials permission, allowed supporting source set, citation expectation, and output format before Notes support, evidence mapping, planning, reports, or drafting.
+If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before any public Online Essay Exam output. Confirm the Online Essay Exam route, Material type/source roles, optional Notes choice, Online Materials permission, Lecture Materials permission, complete-draft permission under the assessment rules, allowed supporting source set, citation expectation, and output format before Notes support, evidence mapping, planning, reports, or drafting.
 
 ## Workflow
 
 1. Display the Auto-diagnosis review plan and confirm the exam branch as `Online Essay Exam`.
-2. Ask source-permission questions before planning: Online Materials status, Lecture Materials status, allowed supporting sources, citation expectation, and output format.
+2. Ask permission questions before planning: Online Materials status, Lecture Materials status, whether the assessment rules permit a complete draft, allowed supporting sources, citation expectation, and output format.
 3. Build a locked Online Essay Exam brief from the exact question, module context, allowed source set, word/time limits when supplied, citation expectations, output language, and unresolved plan-changing items.
-4. Do not plan or draft while Online Materials or Lecture Materials permissions remain unresolved unless the user explicitly records a user-confirmed default.
+4. Do not plan or draft while Online Materials or Lecture Materials permissions remain unresolved unless the user explicitly records a user-confirmed default. Never generate a complete draft when complete-draft permission is denied or unclear; preserve the denial and provide only allowed review, evidence mapping, feedback, or planning support.
 5. Build an evidence map only from allowed sources. Use Lecture Materials as primary evidence, background, or not at all according to the confirmed rule. Use Online Materials only when confirmed as allowed or required.
 6. Create thesis or central-answer options when the question direction is not already fixed.
 7. Produce a paragraph-level structure plan and CriticalAnalysisPlan. Keep claims, evidence, interpretation, limitation, and links back to the exact question close together.
@@ -54,6 +54,7 @@ Before final output, verify:
 - `online_essay_exam_drafting` is the confirmed route.
 - The exact question or title is known or explicitly unresolved.
 - Online Materials and Lecture Materials permissions are recorded.
+- Complete-draft permission is explicitly allowed by the confirmed assessment rules before a complete draft is generated.
 - Evidence claims match the allowed source types.
 - Citation style, citation quantity, or no-citation expectation is recorded when relevant.
 - The draft follows the approved paragraph-level plan and CriticalAnalysisPlan.

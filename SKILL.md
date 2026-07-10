@@ -127,7 +127,7 @@ Recommended section order:
 | short answer, SAQ, definitions, state/list questions | `short_answer_preparation` | Notes if accepted, then separate short-answer Specific Research Report |
 | long answer, problem, data, practical, past-paper walkthrough | `long_answer_preparation` | Notes if accepted, then separate long-answer/practical/data/problem Specific Research Report or worked-solution report when calculation/problem signals dominate |
 | essay, in-campus essay, example essay, model essay | `essay_preparation` | Notes if accepted, then separate essay Specific Research Report |
-| Online Essay Exam | `online_essay_exam_drafting` | Confirm source permissions, lock brief, build evidence map and plan, then produce an Online Essay Exam draft and optional DOCX |
+| Online Essay Exam | `online_essay_exam_drafting` | Confirm source rules and explicit assessment permission for a complete draft, lock the brief, build the evidence map and plan, then produce only the permitted Online Essay Exam output |
 | solve this question, how do I answer this question, question walkthrough | `question_solving` | Question Solution Report with matched knowledge and strict same-point transfer questions |
 | organize Past Paper questions, sort Practice Material by lecture order | `question_organizing` | Organized Questions DOCX in lecture knowledge-unit order |
 | build assessment blueprint, map assessment coverage | `assessment_blueprint` | Source-grounded assessment blueprint |

@@ -21,7 +21,7 @@ The default output type is DOCX notes. If the user requests filenames or a multi
 11. Updates the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
 12. Produces explanation-only teaching Notes first when the user accepts Notes.
 13. Produces the confirmed Specific Research Report for MCQ, short answer, long answer, practical/data/problem, worked-solution, essay, or mixed exams.
-14. For Online Essay Exam, asks Online Materials and Lecture Materials source-permission questions, locks the brief, builds an evidence map and approved paragraph-level plan, then produces a draft and QA instead of a Specific Research Report.
+14. For Online Essay Exam, asks Online Materials and Lecture Materials source-rule questions plus explicit assessment permission for a complete draft, locks the brief, builds an evidence map and approved paragraph-level plan, then produces only the permitted output and QA instead of a Specific Research Report.
 15. When Past Paper or question-containing Practical Materials are supplied and confirmed, produces a separate question-based Specific Research Report alongside Notes when Notes are accepted.
 16. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
 17. When the user asks how to solve a supplied question, produces a `question_solution_report` that explains the target question, shows the matching knowledge unit, and retrieves strict same-knowledge-point questions from the supplied Past Paper or Practice Material.
@@ -53,7 +53,7 @@ Focused Skills:
 
 `python3 scripts/publish_skill.py --sync-local-skill` installs both the legacy `everything-exam-preparation` local Skill and the focused sibling Skills under `~/.codex/skills/`.
 
-The routing workflow is: analyze all supplied material, ask the user to choose or correct the Exam type, ask whether to generate Notes, ask route-specific follow-up questions, generate Notes first if accepted, then run the confirmed exam-type Sub Skill or Sub Skills to produce the Specific Research Report. Online Essay Exam is a parallel branch: ask Online Materials and Lecture Materials permissions before planning, then produce a draft workflow instead of a Specific Research Report. Mixed exam format activates every selected exam-type Sub Skill. Exam-mode diagnosis now lives inside `exam-prep-index`, not in a separate Skill.
+The routing workflow is: analyze all supplied material, ask the user to choose or correct the Exam type, ask whether to generate Notes, ask route-specific follow-up questions, generate Notes first if accepted, then run the confirmed exam-type Sub Skill or Sub Skills to produce the Specific Research Report. Online Essay Exam is a parallel branch: resolve Online Materials and Lecture Materials rules and explicitly confirm that the assessment permits a complete draft before drafting; a denial limits support to allowed review, evidence mapping, feedback, and planning. Mixed exam format activates every selected exam-type Sub Skill. Exam-mode diagnosis now lives inside `exam-prep-index`, not in a separate Skill.
 
 ## Soleil v2 adapter and state
 
@@ -178,7 +178,7 @@ Slide triage adds page-level material analysis for slide decks and slide-like PD
 
 Slide triage is not used to narrow Specific Research Reports. MCQ, SAQ, Long Answer, Worked Solutions, Essay, Question Solving, and Question Organization keep their route-specific evidence logic.
 
-Online Essay Exam keeps a separate drafting logic. It requires source-permission Ask Questions for Online Materials and Lecture Materials, a locked brief, allowed-source evidence map, paragraph-level plan, CriticalAnalysisPlan, Planning Approval, draft generation, and QA. It is not ordinary Essay Specific Research Report behavior.
+Online Essay Exam keeps a separate drafting logic. It requires source-rule Ask Questions for Online Materials and Lecture Materials, explicit assessment permission for a complete draft, a locked brief, allowed-source evidence map, paragraph-level plan, CriticalAnalysisPlan, Planning Approval, permitted output generation, and QA. It is not ordinary Essay Specific Research Report behavior.
 
 Complete worked-solution notes are generated as a separate DOCX when Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions. Available solutions or mark schemes are used as evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
 

@@ -17,11 +17,12 @@ Before any plan, evidence map, Notes, report, or draft, display the Auto-diagnos
 - Whether Notes are needed as optional support after source permissions are confirmed.
 - Whether Online Materials are required, optional, forbidden, or unclear.
 - Whether Lecture Materials may be used as primary evidence, background only, forbidden, or unclear.
+- Whether the confirmed assessment rules explicitly permit assistance with a complete draft.
 - Whether Past Papers, rubrics, module handbooks, uploaded readings, and external academic sources may be used.
 - Whether citations or references are required, optional, forbidden, or not specified.
 - Whether the final output should be a chat draft, DOCX draft, or both.
 
-Missing source-permission answers remain plan-changing unresolved items. Generate optional Notes, the essay plan, evidence map, report, or draft only after the relevant source-use rule is resolved or explicitly recorded as a user-confirmed default.
+Missing permission answers remain plan-changing unresolved items. Generate optional Notes, the essay plan, evidence map, report, or draft only after the relevant source-use rule is resolved or explicitly recorded as a user-confirmed default. A complete draft additionally requires an explicitly allowed assessment-draft permission. If that permission is denied, preserve the denial, do not re-ask it automatically, and limit support to allowed review, evidence mapping, feedback, and planning until the user explicitly changes the permission.
 
 ## Locked Brief
 
@@ -31,6 +32,7 @@ The internal Online Essay Exam locked brief should record:
 - module or course context;
 - assessment setting and timing when supplied;
 - allowed source set, including Online Materials and Lecture Materials status;
+- complete-draft permission from the confirmed assessment rules;
 - word limit or expected scope when supplied;
 - citation style, citation quantity, or no-citation expectation when supplied;
 - output language;
@@ -74,6 +76,7 @@ Before final output, check:
 - route is `online_essay_exam_drafting`;
 - exact question or title is known or explicitly unresolved;
 - Online Materials and Lecture Materials permissions are recorded;
+- complete-draft permission is explicitly allowed before a complete draft is generated;
 - claims use only allowed source types;
 - citation expectations are followed without inventing metadata;
 - draft follows the approved plan;

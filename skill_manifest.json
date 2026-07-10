@@ -45,7 +45,7 @@
     ],
   "notes_coverage_policy": "lecture_unit_complete",
   "slide_triage_policy": "notes_material_analysis_use_merge_or_exclude_not_detail_level_grading",
-  "online_essay_exam_policy": "parallel_drafting_branch_with_online_and_lecture_materials_permission_gate",
+  "online_essay_exam_policy": "parallel_drafting_branch_with_source_rules_and_explicit_complete_draft_permission_gate",
   "output_name_policy": "user_requested_or_generated_from_context",
   "human_review_required": true,
   "human_review_targets": [
@@ -55,6 +55,7 @@
         "confirmed_mixed_routes",
         "route_specific_follow_up_choices",
         "online_essay_exam_source_permissions",
+        "online_essay_exam_complete_draft_permission",
         "assessment_blueprint_scope",
         "answer_evaluation_criteria",
         "timed_practice_duration"
