@@ -1,218 +1,261 @@
 # Everything Exam Preparation
 
-Signal-driven exam preparation and Online Essay Exam drafting Skill for uploaded course content, practice material, Online Materials, and Extra Reading.
+[Everything Exam Preparation](https://github.com/OctavianYimingZhang/Everything-Exam-Preparation) is a multiple-Skill Plugin that converts trusted course sources into teachable exam preparation, assessment practice, and permission-controlled Online Essay Exam support.
 
-## Output naming
+Its purpose is not to summarize files indiscriminately. It reconstructs the knowledge a student must understand, separates broad teaching from route-specific practice, preserves source locators, and refuses execution until the route, inputs, permissions, and plan are explicit.
 
-The default output type is DOCX notes. If the user requests filenames or a multi-file output set, follow that request. Otherwise generate clear, distinct DOCX filenames for each output from the source, course, prompt, or note title.
+## First-principles workflow
 
-## What it does
+Reliable exam preparation requires a traceable chain from source to learning outcome:
 
-1. Reads supplied course files, practice material, mark schemes, examples, Extra Reading, and other useful files.
-2. Uses rough source hints as provenance labels.
-3. Builds a fragment index from readable content.
-4. Applies slide triage before Notes generation for slide decks and slide-like PDFs so useless slides are excluded from detailed public explanation while ILO, topic, visual, example, and summary slides can still support lecture order.
-5. Extracts open knowledge signals and groups connected signals into knowledge units.
-6. Calibrates Notes coverage from the knowledge units and required explanation.
-7. Identifies Extra Reading and Online Materials only when the confirmed branch and source permissions allow essay-style enrichment.
-8. Matches confirmed Extra Reading to essay claims or course points that need external enrichment.
-9. Makes a preliminary diagnosis of Exam type/route, Material type/source roles, and proposed output set from the prompt and practice material.
-10. Displays an **Auto-diagnosis review plan** and uses `request_user_input` for human review of Exam type, Material type, and whether Notes should be generated.
-11. Updates the route, source-role handling, and final output plan from the user's confirmed or corrected answers.
-12. Produces explanation-only teaching Notes first when the user accepts Notes.
-13. Produces the confirmed Specific Research Report for MCQ, short answer, long answer, practical/data/problem, worked-solution, essay, or mixed exams.
-14. For Online Essay Exam, asks Online Materials and Lecture Materials source-rule questions plus explicit assessment permission for a complete draft, locks the brief, builds an evidence map and approved paragraph-level plan, then produces only the permitted output and QA instead of a Specific Research Report.
-15. When Past Paper or question-containing Practical Materials are supplied and confirmed, produces a separate question-based Specific Research Report alongside Notes when Notes are accepted.
-16. When Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions and are confirmed, produces a separate detailed worked-solutions DOCX.
-17. When the user asks how to solve a supplied question, produces a `question_solution_report` that explains the target question, shows the matching knowledge unit, and retrieves strict same-knowledge-point questions from the supplied Past Paper or Practice Material.
-18. When the user asks to organize Past Paper or Practice Material, produces `organized_questions_docx` sorted by Lecture Slides or lecture knowledge-unit order and containing questions plus minimal provenance.
-19. Preserves page, slide, timestamp, and time-range provenance from source fragments.
-20. Builds a source-grounded `assessment_blueprint`, evaluates supplied answers against confirmed criteria, and creates timed practice from an explicit duration when those routes are selected.
-21. Uses default-enabled per-course mastery and weakness history with explicit enable, disable, export, and delete controls.
+```text
+trusted source fragments -> knowledge units -> human review
+                         -> route and required inputs locked
+                         -> permissions confirmed -> plan approved
+                         -> local execution -> QA -> mastery update
+```
 
-Student-facing Notes explain the lecture and exam-relevant knowledge the student needs to master. They are broad lecture reconstruction documents for students who may not have learned the material yet. MCQ, SAQ, and other Specific Research Reports remain separate concise exam-priority reinforcement outputs. Source intake, extraction notes, coverage calibration, QA state, route planning, subagent narration, and similar workflow records remain internal.
+The Plugin therefore:
+
+1. Reads supplied lecture material, practice material, mark schemes, worked examples, allowed Online Materials, and confirmed Extra Reading.
+2. Preserves page, slide, timestamp, and time-range provenance on every fragment.
+3. Classifies Material type and source role before using a fragment as evidence.
+4. Builds knowledge units rather than treating every page as equally important.
+5. Presents an auto-diagnosis for human review of Exam type, Material type, and whether Notes should be generated.
+6. Keeps every recommendation `suggested` until the user selects or corrects it.
+7. Executes only after the route, route-specific questions, permissions, and plan are explicitly confirmed.
+8. Returns artifacts, QA results or failure reasons, and an optional per-course mastery update.
 
 ## Multiple Skill system
 
-This repository now exposes Everything Exam Prep as a multiple Skill system. The root `SKILL.md` remains as a compatibility entrypoint, while focused entrypoints live under `skills/`.
+The root [`SKILL.md`](SKILL.md) is the compatibility entrypoint. `exam-prep-index` is the router, and the focused sibling Skills own specialised preparation workflows.
 
-Focused Skills:
+| Skill | Responsibility |
+| --- | --- |
+| `exam-prep-index` | Route broad, mixed, blueprint, evaluation, and timed-practice requests. |
+| `exam-prep-notes` | Produce explanation-first DOCX Notes from trusted knowledge units. |
+| `exam-prep-slide-triage` | Analyse slide-like sources and retain a `slide_triage_audit` without turning administrative or decorative slides into teaching sections. |
+| `exam-prep-mcq` | Prepare MCQ/SBA recurrence and exam-priority reinforcement. |
+| `exam-prep-short-answer` | Prepare short-answer and SAQ knowledge reinforcement. |
+| `exam-prep-long-answer` | Prepare long-answer, practical, data, scenario, and problem responses. |
+| `exam-prep-worked-solutions` | Teach calculation, derivation, proof, estimate, data, and problem-solving paths. |
+| `exam-prep-essay` | Prepare essay structures and permitted Extra Reading enrichment. |
+| `exam-prep-online-essay-exam` | Lock the assessment brief, allowed source set, evidence map, paragraph plan, permissions, drafting boundary, and QA. |
+| `exam-prep-extra-reading` | Discover, classify, and map academically useful enrichment to essay claims. |
+| `exam-prep-question-solver` | Explain a target question, its knowledge unit, its solution path, and strict same-knowledge-point transfer questions. |
+| `exam-prep-question-organizer` | Order supplied questions by lecture or knowledge-unit sequence with minimal provenance. |
 
-- `exam-prep-index`: routes broad requests to the right focused Skill.
-- `exam-prep-notes`: generates explanation-only DOCX Notes.
-- `exam-prep-slide-triage`: internal Notes material analysis for excluding non-teaching slides and preserving useful slide structure without detailed explanation.
-- `exam-prep-mcq`: produces MCQ/SBA Specific Research Reports.
-- `exam-prep-short-answer`: produces SAQ and short-answer Specific Research Reports.
-- `exam-prep-long-answer`: produces long-answer, practical, data, scenario, and problem Specific Research Reports.
-- `exam-prep-worked-solutions`: produces calculation, derivation, estimate, proof, data, and problem worked-solution teaching notes.
-- `exam-prep-essay`: produces essay preparation and Extra Reading enriched essay outputs.
-- `exam-prep-online-essay-exam`: produces Online Essay Exam locked briefs, allowed-source evidence maps, approved plans, drafts, and QA.
-- `exam-prep-extra-reading`: finds, classifies, and matches Extra Reading for essay enrichment.
-- `exam-prep-question-solver`: explains a target question, displays the matched course knowledge, and returns strict same-knowledge-point transfer questions.
-- `exam-prep-question-organizer`: compiles Past Paper and Practice Material questions into a DOCX ordered by lecture knowledge-unit sequence.
+Direct invocation is supported, but it does not bypass route review, required inputs, permissions, or Planning Approval.
 
-`python3 scripts/publish_skill.py --sync-local-skill` installs both the legacy `everything-exam-preparation` local Skill and the focused sibling Skills under `~/.codex/skills/`.
+## Versioned capability and contracts
 
-The routing workflow is: analyze all supplied material, ask the user to choose or correct the Exam type, ask whether to generate Notes, ask route-specific follow-up questions, generate Notes first if accepted, then run the confirmed exam-type Sub Skill or Sub Skills to produce the Specific Research Report. Online Essay Exam is a parallel branch: resolve Online Materials and Lecture Materials rules and explicitly confirm that the assessment permits a complete draft before drafting; a denial limits support to allowed review, evidence mapping, feedback, and planning. Mixed exam format activates every selected exam-type Sub Skill. Exam-mode diagnosis now lives inside `exam-prep-index`, not in a separate Skill.
+[`plugin_capability_manifest.json`](plugin_capability_manifest.json) is a `PluginCapabilityManifest v2`. It declares 13 route IDs, owning Skills, triggers, required inputs, gates, outputs, the adapter entrypoint, and supported context versions.
 
-## Soleil v2 adapter and state
+The schemas under [`contracts/`](contracts/) are the shared boundary with the other independently installable Soleil Plugins and the private ChatGPT Sites:
 
-`plugin_capability_manifest.json` declares each route's owning Skill, required inputs, gates, outputs, adapter entrypoint, and supported context version. `scripts/soleil_adapter.py` accepts `AcademicTaskContext` v1 under `academic_task_context` and returns `TaskRunState` v1. It preserves `original_prompt`, an explicit `route_selection`, supplied `source_fragments`, `relevant_memory` references, and a caller-supplied top-level `run_id` instead of re-detecting or replacing confirmed state.
+| Contract | Purpose |
+| --- | --- |
+| `PluginCapabilityManifest v2` | Typed route ownership and execution requirements. |
+| `AcademicTaskContext v1` | Original prompt, course, explicit route, source fragments, relevant memory, permissions, and decisions. |
+| `TaskRunState v1` | One caller-supplied `run_id` from source readiness to QA or failure. |
+| `SourceRecord v1` | Stable source identity, checksum, provenance, parser version, local reference, and page/time locators. |
+| `LocalBridgeProtocol v1` | Version handshake, random session token, loopback/origin restrictions, rate limiting, and explicit transfer consent. |
 
-Planning-only calls stop at the latest satisfied gate. A completed executor call supplies a top-level `execution_result` with an explicit `qa_passed` or `failed` outcome, artifacts, QA, and any structured failure. The adapter accepts that result only after the route is locked, `local_execution` and any route-specific permissions are confirmed, all review targets and required inputs are resolved, and `planning_approval` is explicitly confirmed. It then enforces this ordered lifecycle without skipped states:
+[`scripts/soleil_adapter.py`](scripts/soleil_adapter.py) consumes `AcademicTaskContext v1` and preserves explicit route selection, source fragments, relevant-memory references, permissions, decisions, and the caller's `run_id`. It enforces the ordered lifecycle:
 
-`source_ready → route_or_brief_locked → permissions_confirmed → plan_approved → running → qa_passed | failed`
-
-Online Essay Exam complete-draft denial remains an execution blocker and cannot reach `running`. Every route in `plugin_capability_manifest.json` declares the shared local-execution and planning-approval gates.
-
-All focused routes default to English (`en`) unless the user explicitly overrides output language for the current task. The adapter does not infer a language change from examples written in another language.
-
-Assessment utilities:
-
-```bash
-python3 scripts/soleil_adapter.py --input tests/fixtures/academic_task_context_answer_evaluation.json
-python3 scripts/assessment_tools.py blueprint --fragments source_fragments.json --memory relevant_memory.json
-python3 scripts/assessment_tools.py evaluate --input answer_evaluation_input.json
-python3 scripts/assessment_tools.py timed --blueprint assessment_blueprint.json --duration-minutes 45
+```text
+source_ready -> route_or_brief_locked -> permissions_confirmed
+             -> plan_approved -> running -> qa_passed | failed
 ```
 
-Per-course mastery and weakness history is enabled by default. Disabling stops new history records without deleting existing data; export and delete are separate explicit operations:
+The adapter never manufactures a completed execution. A terminal result must be supplied as an explicit `execution_result`, and the adapter accepts it only after every manifest-derived gate has passed.
+
+## Routes
+
+| Route ID | Owning Skill | Primary result |
+| --- | --- | --- |
+| `exam_prep_notes` | `exam-prep-notes` | `docx_notes` |
+| `mcq_preparation` | `exam-prep-mcq` | Notes plus MCQ exam-priority output |
+| `short_answer_preparation` | `exam-prep-short-answer` | Notes plus short-answer output |
+| `long_answer_preparation` | `exam-prep-long-answer` | Notes plus long-answer/practical/data/problem output |
+| `worked_solution_preparation` | `exam-prep-worked-solutions` | Notes plus worked-solutions DOCX |
+| `essay_preparation` | `exam-prep-essay` | Notes plus essay-preparation output |
+| `online_essay_exam_drafting` | `exam-prep-online-essay-exam` | Permitted draft and optional DOCX |
+| `mixed_exam_preparation` | `exam-prep-index` | Confirmed combination of selected component routes |
+| `question_solving` | `exam-prep-question-solver` | `question_solution_report` |
+| `question_organizing` | `exam-prep-question-organizer` | `organized_questions_docx` |
+| `assessment_blueprint` | `exam-prep-index` | Source-grounded assessment blueprint |
+| `answer_evaluation` | `exam-prep-question-solver` | Answer-evaluation report against confirmed criteria |
+| `timed_practice` | `exam-prep-question-solver` | Duration-bound timed practice session |
+
+## Ask User, permission, and plan gates
+
+[`scripts/build_review_questions.py`](scripts/build_review_questions.py) generates the route-specific Ask User payload. The user reviews concrete alternatives rather than a vague approval prompt.
+
+Common controls include:
+
+- direct-invocation review;
+- Exam type and route selection;
+- Material type and source-role confirmation;
+- whether Notes should be generated;
+- explicit component selection for mixed exams;
+- required-input readiness from the capability manifest;
+- local-execution permission;
+- visible plan and Planning Approval.
+
+Online Essay Exam adds stricter gates:
+
+- Online Materials permission;
+- Lecture Materials permission;
+- exact allowed source set;
+- explicit confirmation that the assessment permits a complete draft;
+- citation and output-format expectations;
+- locked brief, evidence map, paragraph plan, and CriticalAnalysisPlan.
+
+If complete-draft permission is denied, missing, conflicting, or later revoked, the route cannot enter `running`. The Plugin can still provide permitted source organisation, evidence mapping, planning, review, and feedback.
+
+## Notes, reports, and practice
+
+Notes use `coverage_policy: lecture_unit_complete`. They are a broad lecture reconstruction for a student who may not yet understand the material. They preserve source order where useful, cover most substantive units, and teach the exam-relevant knowledge behind concepts, mechanisms, methods, calculations, assumptions, interpretation, and applications.
+
+`core_lecture_content` is explained. Supporting examples are retained when useful and compressed when repetitive. Administrative, duplicate, decorative, transition, empty, and reading-list slides remain traceable in slide triage but do not become long public sections.
+
+A route-specific Specific Research Report is separate concise exam-priority reinforcement. It does not replace the broader Notes. MCQ and SAQ recurrence use supplied past or official exam papers; long-answer, worked-solution, essay, question-solving, and question-organisation routes keep their own evidence logic.
+
+`question_solution_report` presents the target question, matched course knowledge, solution reasoning, and strict same-knowledge-point transfer material. `organized_questions_docx` follows lecture or knowledge-unit order and keeps each question tied to minimal provenance.
+
+Assessment tools support:
+
+```bash
+python3 scripts/assessment_tools.py blueprint \
+  --fragments source_fragments.json \
+  --memory relevant_memory.json
+
+python3 scripts/assessment_tools.py evaluate \
+  --input answer_evaluation_input.json
+
+python3 scripts/assessment_tools.py timed \
+  --blueprint assessment_blueprint.json \
+  --duration-minutes 45
+```
+
+## Mastery and weakness history
+
+Per-course mastery history is enabled by default and stored locally at:
+
+```text
+~/.codex/state/everything-exam-preparation/mastery_history.json
+```
+
+Disabling history stops new records without deleting existing ones. Export and deletion are separate explicit controls:
 
 ```bash
 python3 scripts/mastery_history.py status --course-id BIO101
 python3 scripts/mastery_history.py disable --course-id BIO101
+python3 scripts/mastery_history.py enable --course-id BIO101
 python3 scripts/mastery_history.py export --course-id BIO101 --out BIO101-history.json
 python3 scripts/mastery_history.py delete --course-id BIO101
 ```
 
-## Extra Reading
+Relevant memory is passed by record ID and purpose. The Plugin does not need a monolithic memory dump to prepare a task.
 
-Extra Reading is only for Essay Question, Example Essay, and Online Essay Exam enrichment when source permissions allow it. It can include academically useful sources such as textbook-like background, chapters, journal articles, primary research, DOI/PMID sources, lecture-mentioned references, mechanism evidence, counterargument material, and evaluation sources that help earn Extra Reading credit in essay-style outputs.
+## Private Everything University Site
 
-Workflow utility:
+The owner-only [Everything University Site](https://soleil-university.ready-loach-3659.chatgpt.site) is the source, memory, task, run-control, and artifact workspace. It discovers available Exam routes from this Plugin's manifest and sends an already reviewed `AcademicTaskContext`; it does not duplicate Exam generation logic.
 
-```bash
-python3 scripts/extra_reading_tools.py all --source-scan source_scan.json --out extra_reading.json
-python3 scripts/extra_reading_tools.py queries --source-scan source_scan.json --out extra_reading_queries.json
-python3 scripts/essay_exam_tools.py generate-plan --source-scan source_scan.json --extra-reading extra_reading.json --out essay_plan.json
+The intended flow is:
+
+```text
+Today -> Courses -> Sources -> Memory/Mastery -> Tasks -> Runs -> Artifacts
 ```
 
-Expected Extra Reading output shape:
+File bytes go only to the authenticated local bridge. Local processing performs parsing, OCR or transcription, checksum deduplication, fragmentation, and locator attachment before the user reviews material for trusted memory. D1 stores confirmed structured state and opaque local references, not raw documents, audio, or full extracted text. R2 is not required.
 
-```json
-{
-  "schema_version": 2,
-  "extra_reading_sources": [],
-  "lecture_topics": [],
-  "search_queries": [],
-  "topic_enrichment": [],
-  "essay_enrichment": {
-    "extra_reading_blend": "15-30%",
-    "paragraph_slots": []
-  }
-}
-```
+The Plugin remains independently installable and can also consume a valid `AcademicTaskContext v1` and source fragments without the Site.
 
-## Current output focus
+## Output language and private-data boundary
 
-This version focuses on signal-driven coverage, teaching depth, domain-neutral formula visibility, academic source visuals, calculation worked examples, output language style, output format style, and student-facing coverage of exam-relevant knowledge.
+All shipped documentation, prompts, questions, plans, metadata, errors, tests, and generated output default to English. A request written in another language does not silently change the output language; only an explicit task-level override does.
 
-Before public output is generated, automatic routing remains a preliminary diagnosis unless `AcademicTaskContext.route_selection` is explicitly confirmed. `scripts/plan_workflow.py` marks `human_review_required: true`, stores automatic files under `proposed_outputs`, and inserts `human_review_exam_material_output_confirmation` before writing. `scripts/build_review_questions.py` asks only for unresolved Exam type/route, Material type/source roles, Notes choices where the route supports Notes, and route-specific gates.
+Keep raw lecture files, past papers, permitted Online Materials, audio, extracted full text, generated DOCX files, and mastery history local. A task context may carry bounded source fragments for local execution; persistent shared state should contain checksums, provenance, permissions, decisions, QA, and opaque source or artifact identifiers, not raw or full extracted content. Never place credentials, access tokens, assessment answers, or private course archives in the repository.
 
-### 1. Coverage calibration
-
-`references/input_and_evidence_protocol.md` defines open knowledge signals. `references/exam_prep_notes_protocol.md` defines how those signals become a coverage map before Notes are written. Coverage planning is internal; the final document is a knowledge-explanation document. Formulas, visuals, and worked examples function as parts of knowledge explanation; exam advice, workflow display, Skill explanation, and high-frequency-analysis process stay in the internal workflow record.
-
-Exam Prep Notes use `coverage_policy: lecture_unit_complete`. They should preserve lecture/source order and reconstruct most substantive lecture content through coherent knowledge units. This is near slide-by-slide coverage at the level of lecture units, not a literal explanation of every slide or image. The aim is that a weakly prepared student can read the Notes once and understand most of the lecture before using the separate report to reinforce exam priorities.
-
-Coverage is driven by:
-
-- knowledge units;
-- concepts and definitions;
-- mechanisms and causal chains;
-- methods, assays, controls, and readouts;
-- comparisons;
-- calculations and data interpretation;
-- evidence and confirmed essay-style Extra Reading;
-- conceptual applications and interpretation use.
-- source visuals when they clarify a concept, mechanism, method, formula, graph, table, pathway, scheme, or data interpretation.
-- worked-example signals when a calculation, derivation, estimate, proof, data, or problem example teaches reusable reasoning.
-
-Examples are used when they clarify knowledge, mechanism, method, calculation, interpretation, or conceptual application.
-
-Content triage keeps Notes broad without becoming a dump of every slide artifact:
-
-- `core_lecture_content` is covered.
-- `supporting_example` is included when useful and compressed when repetitive.
-- `reading_reference`, `admin_or_boilerplate`, and `low_exam_relevance_context` are excluded unless directly needed for examinable course knowledge.
-
-Slide triage adds page-level material analysis for slide decks and slide-like PDFs. It is not a detail-level grading system. Each slide-like fragment can be marked with `slide_decision: use`, `merge_with_previous`, or `exclude`; `notes_role`; `detailed_explanation_allowed`; and `triage_reason`. ILOs, agendas, topic boundaries, section dividers, summaries, non-core visuals, non-essential data, and examples may guide topic order or merge with nearby units without becoming long explanations. Administrative, copyright/license, reading-list-only, decorative, empty, pure transition, duplicate, and generic awareness slides remain in `slide_triage_audit` and do not become public Notes sections.
-
-### 2. Teaching depth and formula visibility
-
-`references/exam_prep_notes_protocol.md` defines how the notes should teach:
-
-- strong tutor voice;
-- direct course explanation;
-- concept identity, mechanism, method, calculation, assumptions, interpretation, and conceptual application;
-- visible formulas using Word equation/OMML where possible;
-- readable Unicode mathematical fallback when equation conversion is unavailable;
-- domain-neutral formula normalization for mathematics, physics, chemistry, biological science, and coding-adjacent technical material;
-- academically useful cropped PDF visual-region assets and embedded DOCX/PPTX media when they strengthen a knowledge unit;
-- `worked_example` blocks for physics/math calculation-heavy knowledge units;
-- essay-style external enrichment when the confirmed output calls for it;
-- separate Specific Research Reports for MCQ, short answer, long answer, practical/data/problem, worked solutions, essay preparation, and mixed exams.
-
-### 3. Output format style
-
-`references/exam_prep_notes_protocol.md` defines how the notes should be structured:
-
-- DOCX notes with filenames requested by the user or generated from context;
-- Arial;
-- 2.5 cm margins;
-- 1.5 line spacing;
-- centered main title;
-- left-aligned headings;
-- justified body text;
-- compact tables;
-- compact academic captions and source visuals;
-- clear knowledge sections that teach the material and keep workflow or process records internal.
-
-### 4. Separate question-based Specific Research Report
-
-`references/exam_mode_and_addons_protocol.md` defines Past Paper and Practical question outputs. MCQ and Short Answer reports are result-only Past Paper-driven recurrence reports: they use Past Papers, Mock Papers, and official exam papers to find recurring exam-needed knowledge points, then present those points in Lecture Slides order. Ordinary Practice Material can provide context but does not count toward high-frequency recurrence. SAQ subquestions are treated as independent question records. Public MCQ and Short Answer reports do not show evidence tables, recurrence calculations, source locators, matching debug, or workflow steps. These reports must not narrow or replace broad lecture reconstruction in Notes.
-
-Slide triage is not used to narrow Specific Research Reports. MCQ, SAQ, Long Answer, Worked Solutions, Essay, Question Solving, and Question Organization keep their route-specific evidence logic.
-
-Online Essay Exam keeps a separate drafting logic. It requires source-rule Ask Questions for Online Materials and Lecture Materials, explicit assessment permission for a complete draft, a locked brief, allowed-source evidence map, paragraph-level plan, CriticalAnalysisPlan, Planning Approval, permitted output generation, and QA. It is not ordinary Essay Specific Research Report behavior.
-
-Complete worked-solution notes are generated as a separate DOCX when Past Paper or Practical Materials contain calculation, derivation, estimate, proof, data, or problem questions. Available solutions or mark schemes are used as evidence for formula choice, algebra path, units, assumptions, final result, and interpretation.
-
-Question solving uses `exam-prep-question-solver` and `scripts/exam_mode_tools.py solve-question`. The fixed student-facing order is question analysis, matching knowledge display and explanation, solution reasoning, strict same-knowledge-point Past Paper or Practice Material questions, and transfer-practice prompt. Strict same-point retrieval depends on user-supplied material, matched lecture knowledge unit, shared knowledge terms, question demand, and source locators.
-
-Question organization uses `exam-prep-question-organizer` and `scripts/exam_mode_tools.py organize-questions`. The default output is `organized_questions_docx`; it shows questions plus minimal provenance and sorts by Lecture Slides or lecture knowledge-unit order. Questions that match more than one lecture unit are assigned to the latest matching lecture unit.
-
-## Routes
-
-- `exam_prep_notes`
-- `mcq_preparation`
-- `short_answer_preparation`
-- `long_answer_preparation`
-- `worked_solution_preparation`
-- `essay_preparation`
-- `online_essay_exam_drafting`
-- `mixed_exam_preparation`
-- `question_solving`
-- `question_organizing`
-
-## Step 8: publish and update
+## Installation
 
 ```bash
-python3 scripts/validate_skill_contracts.py
-python3 scripts/github_ready_check.py
-python3 scripts/publish_skill.py --push
+git clone https://github.com/OctavianYimingZhang/Everything-Exam-Preparation.git
+cd Everything-Exam-Preparation
+python3 -m pip install -r requirements.txt
 python3 scripts/publish_skill.py --sync-local-skill
-python3 scripts/publish_skill.py --push --sync-local-skill
 ```
 
-`--push` runs `git push` from the repository root. `--sync-local-skill` copies the repository into `~/.codex/skills/everything-exam-preparation` and installs each focused Skill as a sibling local Skill so the local Skill installation updates from the current repository files.
+The synchroniser installs the compatibility entrypoint and every focused sibling Skill under `~/.codex/skills` while excluding generated outputs and private artifacts.
+
+After an update:
+
+```bash
+git pull --ff-only
+python3 scripts/publish_skill.py --sync-local-skill
+```
+
+## Example invocations
+
+```text
+$everything-exam-preparation
+Use these lecture slides and past papers to propose the Exam type, Material type, Notes choice, and output plan for my review.
+```
+
+```text
+$exam-prep-question-solver
+Explain this question from the supplied course sources and retrieve strict same-knowledge-point practice.
+```
+
+```text
+$exam-prep-online-essay-exam
+Review the assessment and source permissions before deciding whether a complete draft is allowed.
+```
+
+## Validation
+
+Run from the repository root:
+
+```bash
+python3 -m compileall -q scripts
+python3 scripts/validate_skill_contracts.py
+python3 scripts/github_ready_check.py --ci
+python3 scripts/plan_workflow.py --self-test
+python3 scripts/build_review_questions.py --self-test
+python3 scripts/soleil_adapter.py --self-test
+python3 scripts/assessment_tools.py --self-test
+python3 scripts/mastery_history.py --self-test
+python3 scripts/publish_skill.py --self-test
+python3 scripts/publish_skill.py --dry-run --sync-local-skill
+python3 "$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py" .
+```
+
+## Repository map
+
+| Path | Responsibility |
+| --- | --- |
+| [`SKILL.md`](SKILL.md) | Compatibility entrypoint and shared workflow. |
+| [`skills/`](skills/) | Router and focused Skills. |
+| [`plugin_capability_manifest.json`](plugin_capability_manifest.json) | `PluginCapabilityManifest v2` route registry. |
+| [`contracts/`](contracts/) | Shared Soleil schemas. |
+| [`references/`](references/) | Source, Notes, route, essay, Online Essay Exam, Extra Reading, and language protocols. |
+| [`scripts/`](scripts/) | Routing, Ask User payloads, adapters, assessment tools, mastery state, rendering helpers, validation, and local installation. |
+| [`schemas/`](schemas/) | Route-specific structured-output schemas. |
+| [`agents/`](agents/) | Presets, prompt cards, and setup metadata. |
+| [`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) | Plugin metadata and Codex interface declaration. |
+
+## Security and provenance
+
+- Use the exact source permissions confirmed for the task.
+- Preserve page, slide, timestamp, and time-range locators in source fragments and derived claims.
+- Reject missing, stale, conflicting, or merely suggested permission and planning decisions.
+- Do not let direct invocation, mixed routing, or Online Essay Exam selection skip lifecycle gates.
+- Treat external enrichment as optional evidence, not a substitute for supplied course material.
+- Keep the local bridge on strict loopback with a random session token, origin allowlist, rate limiting, protocol-version checks, and explicit transfer consent.
+- Return explicit failure reasons; do not project a persistence error into a fabricated academic result.
+
+## Licence
+
+MIT. See [`LICENSE`](LICENSE).
