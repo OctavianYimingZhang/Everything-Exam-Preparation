@@ -14,6 +14,8 @@ import plan_workflow  # noqa: E402
 import soleil_adapter  # noqa: E402
 
 NOW = "2026-07-10T12:00:00Z"
+LATER = "2026-07-10T12:01:00Z"
+LATEST = "2026-07-10T12:02:00Z"
 EXPECTED_SUCCESS_LIFECYCLE = [
     "source_ready",
     "route_or_brief_locked",
@@ -53,6 +55,30 @@ def executable_payload(route_id: str, *, outcome: str = "qa_passed") -> dict[str
         decisions.append(confirmed_decision("confirmed_mixed_routes", ["mcq_preparation", "short_answer_preparation"]))
     if route_id == "assessment_blueprint":
         decisions.append(confirmed_decision("assessment_blueprint_scope", ["unit-fixture"]))
+    route_review_decisions: dict[str, list[tuple[str, Any]]] = {
+        "mcq_preparation": [("mcq_research_report_choice", "generate_report")],
+        "short_answer_preparation": [("short_answer_research_report_choice", "generate_report")],
+        "long_answer_preparation": [("long_answer_detailed_analysis_choice", "detailed_analysis")],
+        "worked_solution_preparation": [("worked_solution_teaching_choice", "teach_each_question")],
+        "essay_preparation": [
+            ("essay_example_essay_choice", "generate_examples"),
+            ("essay_example_essay_count", 2),
+            ("essay_question_source", "generate_from_material"),
+        ],
+        "online_essay_exam_drafting": [
+            ("online_essay_allowed_source_set", "all_confirmed_sources"),
+            ("online_essay_citation_expectation", "citations_required"),
+            ("online_essay_output_format", "docx_draft"),
+        ],
+        "mixed_exam_preparation": [
+            ("mcq_research_report_choice", "generate_report"),
+            ("short_answer_research_report_choice", "generate_report"),
+        ],
+    }
+    decisions.extend(
+        confirmed_decision(decision_id, value)
+        for decision_id, value in route_review_decisions.get(route_id, [])
+    )
 
     permissions = [
         confirmed_permission("local_execution", "Allow this approved task to run through the authenticated local executor."),
@@ -187,6 +213,49 @@ class SoleilAdapterLifecycleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "execution_result requires"):
             soleil_adapter.adapt(undated_approval, at=NOW)
 
+    def test_manifest_required_inputs_block_execution_for_every_declared_input(self) -> None:
+        missing_inputs = executable_payload("question_solving")
+        missing_inputs.pop("source_fragments")
+        missing_inputs["academic_task_context"]["metadata"].pop("target_question")
+        with self.assertRaisesRegex(ValueError, "execution_result requires"):
+            soleil_adapter.adapt(missing_inputs, at=NOW)
+
+        planning_only = copy.deepcopy(missing_inputs)
+        planning_only.pop("execution_result")
+        state = soleil_adapter.adapt(planning_only, at=NOW)
+        self.assertEqual(state["state"], "permissions_confirmed")
+        self.assertEqual(
+            state["plan"]["required_input_status"]["unresolved"],
+            ["target_question", "source_fragments"],
+        )
+
+    def test_generated_route_reviews_block_execution_until_explicitly_confirmed(self) -> None:
+        unresolved = executable_payload("online_essay_exam_drafting")
+        required_reviews = {
+            "online_essay_allowed_source_set",
+            "online_essay_citation_expectation",
+            "online_essay_output_format",
+        }
+        unresolved["academic_task_context"]["decisions"] = [
+            decision
+            for decision in unresolved["academic_task_context"]["decisions"]
+            if decision["decision_id"] not in required_reviews
+        ]
+        unresolved["academic_task_context"]["decisions"].append(
+            confirmed_decision("online_essay_output_format", None)
+        )
+        with self.assertRaisesRegex(ValueError, "execution_result requires"):
+            soleil_adapter.adapt(unresolved, at=NOW)
+
+        planning_only = copy.deepcopy(unresolved)
+        planning_only.pop("execution_result")
+        state = soleil_adapter.adapt(planning_only, at=NOW)
+        self.assertEqual(state["state"], "permissions_confirmed")
+        self.assertEqual(
+            set(state["plan"]["required_review_status"]["unresolved"]),
+            required_reviews,
+        )
+
     def test_online_essay_denial_blocks_running_and_approved_permission_executes(self) -> None:
         denied = executable_payload("online_essay_exam_drafting")
         complete_draft_permission = next(
@@ -224,6 +293,75 @@ class SoleilAdapterLifecycleTests(unittest.TestCase):
             "online_materials_use",
             source_use_denied_state["plan"]["permission_gate"]["denied_permission_ids"],
         )
+
+    def test_later_or_conflicting_complete_draft_denial_blocks_execution(self) -> None:
+        later_denial = executable_payload("online_essay_exam_drafting")
+        later_denial["academic_task_context"]["permissions"].append({
+            "permission_id": "online_essay_complete_draft_permission",
+            "scope": "The assessment rules do not permit a complete draft.",
+            "status": "denied",
+            "confirmed_at": LATER,
+        })
+        with self.assertRaisesRegex(ValueError, "execution_result requires"):
+            soleil_adapter.adapt(later_denial, at=LATEST)
+
+        planning_only = copy.deepcopy(later_denial)
+        planning_only.pop("execution_result")
+        denied_state = soleil_adapter.adapt(planning_only, at=LATEST)
+        self.assertEqual(denied_state["plan"]["permission_gate"]["status"], "denied")
+        self.assertEqual(denied_state["state"], "route_or_brief_locked")
+
+        conflict = executable_payload("online_essay_exam_drafting")
+        conflict["academic_task_context"]["permissions"].append({
+            "permission_id": "online_essay_complete_draft_permission",
+            "scope": "The assessment rules do not permit a complete draft.",
+            "status": "denied",
+            "confirmed_at": NOW,
+        })
+        with self.assertRaisesRegex(ValueError, "execution_result requires"):
+            soleil_adapter.adapt(conflict, at=LATER)
+
+        reapproved = copy.deepcopy(later_denial)
+        reapproved["academic_task_context"]["permissions"].append(
+            confirmed_permission(
+                "online_essay_complete_draft_permission",
+                "The assessment rules now explicitly permit a complete draft.",
+            ) | {"confirmed_at": LATEST}
+        )
+        reapproved_state = soleil_adapter.adapt(reapproved, at=LATEST)
+        self.assertEqual(reapproved_state["state"], "qa_passed")
+
+    def test_later_permission_or_planning_revocation_blocks_execution(self) -> None:
+        local_revoked = executable_payload("mcq_preparation")
+        local_revoked["academic_task_context"]["permissions"].append({
+            "permission_id": "local_execution",
+            "scope": "Do not execute this task locally.",
+            "status": "denied",
+            "confirmed_at": LATER,
+        })
+        with self.assertRaisesRegex(ValueError, "execution_result requires"):
+            soleil_adapter.adapt(local_revoked, at=LATEST)
+
+        approval_revoked = executable_payload("mcq_preparation")
+        approval_revoked["academic_task_context"]["decisions"].append(
+            confirmed_decision("planning_approval", False) | {"confirmed_at": LATER}
+        )
+        with self.assertRaisesRegex(ValueError, "execution_result requires"):
+            soleil_adapter.adapt(approval_revoked, at=LATEST)
+
+        approval_conflict = executable_payload("mcq_preparation")
+        approval_conflict["academic_task_context"]["decisions"].append(
+            confirmed_decision("planning_approval", False)
+        )
+        with self.assertRaisesRegex(ValueError, "execution_result requires"):
+            soleil_adapter.adapt(approval_conflict, at=LATER)
+
+        reapproved = copy.deepcopy(approval_revoked)
+        reapproved["academic_task_context"]["decisions"].append(
+            confirmed_decision("planning_approval", True) | {"confirmed_at": LATEST}
+        )
+        reapproved_state = soleil_adapter.adapt(reapproved, at=LATEST)
+        self.assertEqual(reapproved_state["state"], "qa_passed")
 
     def test_invalid_terminal_payload_cannot_claim_qa_success(self) -> None:
         payload = executable_payload("question_solving")

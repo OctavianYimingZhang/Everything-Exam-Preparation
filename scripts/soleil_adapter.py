@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import build_review_questions
 import plan_workflow
 
 PLUGIN_ID = "everything-exam-preparation"
@@ -15,6 +16,8 @@ CONTEXT_CONTRACT = "AcademicTaskContext"
 TASK_STATE_CONTRACT = "TaskRunState"
 SUPPORTED_CONTEXT_VERSION = 1
 LOCAL_EXECUTION_PERMISSION_ID = "local_execution"
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+CAPABILITY_MANIFEST_PATH = PLUGIN_ROOT / "plugin_capability_manifest.json"
 LIFECYCLE_ORDER = [
     "source_ready",
     "route_or_brief_locked",
@@ -97,46 +100,130 @@ def source_scan_from_payload(context: dict[str, Any], source_fragments: list[dic
 
 
 def local_execution_permission_confirmed(context: dict[str, Any]) -> bool:
-    return any(
-        permission.get("permission_id") == LOCAL_EXECUTION_PERMISSION_ID
-        and permission.get("status") == "explicitly_confirmed"
-        and bool(permission.get("confirmed_at"))
-        for permission in context.get("permissions") or []
-        if isinstance(permission, dict)
-    )
-
-
-def planning_approval_confirmed(context: dict[str, Any]) -> bool:
-    return any(
-        decision.get("decision_id") == "planning_approval"
-        and decision.get("value") is True
-        and decision.get("status") == "explicitly_confirmed"
-        and bool(decision.get("confirmed_at"))
-        for decision in context.get("decisions") or []
-        if isinstance(decision, dict)
-    )
-
-
-def online_essay_permissions_confirmed(context: dict[str, Any]) -> bool:
-    resolved_permissions = [
+    permissions = [
         permission
         for permission in context.get("permissions") or []
         if isinstance(permission, dict)
-        and (
-            permission.get("status") == "denied"
-            or (
-                permission.get("status") == "explicitly_confirmed"
-                and bool(permission.get("confirmed_at"))
-            )
-        )
     ]
-    return plan_workflow.online_essay_permissions_confirmed(resolved_permissions)
+    return plan_workflow.permission_resolution(
+        permissions,
+        {LOCAL_EXECUTION_PERMISSION_ID},
+    ) == "allowed"
+
+
+def planning_approval_confirmed(context: dict[str, Any]) -> bool:
+    decisions = [
+        decision
+        for decision in context.get("decisions") or []
+        if isinstance(decision, dict)
+    ]
+    resolution = plan_workflow.explicit_decision_resolution(decisions, "planning_approval")
+    return resolution.get("status") == "resolved" and resolution.get("value") is True
+
+
+def online_essay_permissions_confirmed(context: dict[str, Any]) -> bool:
+    permissions = [
+        permission
+        for permission in context.get("permissions") or []
+        if isinstance(permission, dict)
+    ]
+    return plan_workflow.online_essay_permissions_confirmed(permissions)
 
 
 def route_permissions_confirmed(context: dict[str, Any], route: str) -> bool:
     if not local_execution_permission_confirmed(context):
         return False
     return route != "online_essay_exam_drafting" or online_essay_permissions_confirmed(context)
+
+
+def manifest_required_input_ids(route: str) -> list[str]:
+    manifest = load_json(str(CAPABILITY_MANIFEST_PATH))
+    if manifest.get("contract") != "PluginCapabilityManifest" or manifest.get("version") != 2:
+        raise ValueError("plugin capability manifest must use PluginCapabilityManifest v2")
+    route_contract = next(
+        (
+            item
+            for item in manifest.get("routes") or []
+            if isinstance(item, dict) and item.get("route_id") == route
+        ),
+        None,
+    )
+    if route_contract is None:
+        raise ValueError(f"plugin capability manifest has no route contract for {route}")
+    return [
+        str(item.get("input_id"))
+        for item in route_contract.get("required_inputs") or []
+        if isinstance(item, dict) and item.get("required") is True and item.get("input_id")
+    ]
+
+
+def input_value_present(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set, dict)):
+        return bool(value)
+    return True
+
+
+def manifest_input_resolved(
+    input_id: str,
+    context: dict[str, Any],
+    source_fragments: list[dict[str, Any]],
+) -> bool:
+    if input_id == "academic_task_context":
+        return True
+    if input_id == "source_fragments":
+        return bool(source_fragments)
+    metadata = context.get("metadata") if isinstance(context.get("metadata"), dict) else {}
+    if input_id == "evaluation_criteria_or_marking_material":
+        return input_value_present(metadata.get("evaluation_criteria")) or input_value_present(metadata.get("marking_material"))
+    decisions = [
+        decision
+        for decision in context.get("decisions") or []
+        if isinstance(decision, dict)
+    ]
+    decision = plan_workflow.explicit_decision_resolution(decisions, input_id)
+    if decision.get("status") == "resolved" and input_value_present(decision.get("value")):
+        return True
+    return input_value_present(metadata.get(input_id))
+
+
+def apply_manifest_input_readiness(
+    workflow_plan: dict[str, Any],
+    context: dict[str, Any],
+    source_fragments: list[dict[str, Any]],
+) -> None:
+    required_input_ids = manifest_required_input_ids(str(workflow_plan.get("route") or ""))
+    unresolved = [
+        input_id
+        for input_id in required_input_ids
+        if not manifest_input_resolved(input_id, context, source_fragments)
+    ]
+    for input_id in (workflow_plan.get("required_input_status") or {}).get("unresolved") or []:
+        if input_id not in unresolved:
+            unresolved.append(str(input_id))
+    workflow_plan["required_input_status"] = {
+        "required": required_input_ids,
+        "unresolved": unresolved,
+    }
+
+
+def apply_generated_review_readiness(
+    workflow_plan: dict[str, Any],
+    source_scan: dict[str, Any],
+) -> None:
+    review_payload = build_review_questions.build_payload(workflow_plan, source_scan)
+    unresolved: list[str] = []
+    review_questions = list(review_payload.get("questions") or [])
+    for batch in review_payload.get("follow_up_question_batches") or []:
+        review_questions.extend(batch if isinstance(batch, list) else [])
+    for question in review_questions:
+        question_id = str(question.get("id") or "") if isinstance(question, dict) else ""
+        if question_id and question_id not in unresolved:
+            unresolved.append(question_id)
+    workflow_plan["required_review_status"] = {"unresolved": unresolved}
 
 
 def state_history_for(context: dict[str, Any], workflow_plan: dict[str, Any], at: str) -> list[dict[str, Any]]:
@@ -176,6 +263,7 @@ def state_history_for(context: dict[str, Any], workflow_plan: dict[str, Any], at
         and not workflow_plan.get("pending_review_targets")
         and not workflow_plan.get("execution_blockers")
         and not (workflow_plan.get("required_input_status") or {}).get("unresolved")
+        and not (workflow_plan.get("required_review_status") or {}).get("unresolved")
     ):
         history.append({
             "state": "plan_approved",
@@ -308,6 +396,8 @@ def task_run_state(
         source_scan=source_scan,
         source_fragments=fragments,
     )
+    apply_manifest_input_readiness(workflow_plan, academic_task_context, fragments)
+    apply_generated_review_readiness(workflow_plan, source_scan)
     timestamp = at or now_iso()
     history = state_history_for(academic_task_context, workflow_plan, timestamp)
     route_id = str(workflow_plan["route"])

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -356,10 +357,111 @@ def extra_reading_requested(prompt: str) -> bool:
 
 
 def confirmed_decision(decisions: list[dict[str, Any]], decision_id: str) -> Any:
-    for decision in decisions:
-        if decision.get("decision_id") == decision_id and decision.get("status") == "explicitly_confirmed":
-            return decision.get("value")
+    candidates = [
+        decision
+        for decision in decisions
+        if isinstance(decision, dict)
+        and decision.get("decision_id") == decision_id
+        and decision.get("status") == "explicitly_confirmed"
+    ]
+    resolution = explicit_decision_resolution(decisions, decision_id)
+    if resolution.get("status") == "resolved":
+        return resolution.get("value")
+    if len(candidates) == 1 and confirmation_time(candidates[0].get("confirmed_at")) is None:
+        return candidates[0].get("value")
     return None
+
+
+def confirmation_time(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc)
+
+
+def canonical_decision_value(value: Any) -> str:
+    try:
+        return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    except (TypeError, ValueError):
+        return repr(value)
+
+
+def explicit_decision_resolution(decisions: list[dict[str, Any]], decision_id: str) -> dict[str, Any]:
+    candidates = [
+        decision
+        for decision in decisions
+        if isinstance(decision, dict)
+        and decision.get("decision_id") == decision_id
+        and decision.get("status") == "explicitly_confirmed"
+    ]
+    if not candidates:
+        return {"status": "unresolved", "value": None}
+    dated = [(confirmation_time(decision.get("confirmed_at")), decision) for decision in candidates]
+    if any(confirmed_at is None for confirmed_at, _ in dated):
+        return {
+            "status": "conflict" if len(candidates) > 1 else "unresolved",
+            "value": None,
+        }
+    latest_at = max(confirmed_at for confirmed_at, _ in dated if confirmed_at is not None)
+    latest = [
+        decision
+        for confirmed_at, decision in dated
+        if confirmed_at == latest_at
+    ]
+    values = {canonical_decision_value(decision.get("value")) for decision in latest}
+    if len(values) != 1:
+        return {"status": "conflict", "value": None}
+    return {"status": "resolved", "value": latest[0].get("value")}
+
+
+def explicit_decision_answered(decisions: list[dict[str, Any]], decision_id: str) -> bool:
+    resolution = explicit_decision_resolution(decisions, decision_id)
+    if resolution.get("status") != "resolved":
+        return False
+    value = resolution.get("value")
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set, dict)):
+        return bool(value)
+    return True
+
+
+def permission_resolution(permissions: list[dict[str, Any]], permission_ids_to_match: set[str]) -> str:
+    candidates = [
+        permission
+        for permission in permissions
+        if isinstance(permission, dict)
+        and permission.get("permission_id") in permission_ids_to_match
+        and permission.get("status") in {"explicitly_confirmed", "denied"}
+    ]
+    if not candidates:
+        return "unresolved"
+    states = [
+        "denied" if permission.get("status") == "denied" else "allowed"
+        for permission in candidates
+    ]
+    dated = [(confirmation_time(permission.get("confirmed_at")), state) for permission, state in zip(candidates, states)]
+    if any(confirmed_at is None for confirmed_at, _ in dated):
+        distinct_states = set(states)
+        if distinct_states == {"denied"}:
+            return "denied"
+        return "conflict" if len(candidates) > 1 else "unresolved"
+    latest_at = max(confirmed_at for confirmed_at, _ in dated if confirmed_at is not None)
+    latest_states = {
+        state
+        for confirmed_at, state in dated
+        if confirmed_at == latest_at
+    }
+    if len(latest_states) != 1:
+        return "conflict"
+    return next(iter(latest_states))
 
 
 def explicit_language_from_prompt(prompt: str) -> str | None:
@@ -399,17 +501,17 @@ def permission_ids(
 
 
 def online_essay_source_permissions_resolved(permissions: list[dict[str, Any]]) -> bool:
-    resolved = permission_ids(permissions)
-    return bool(resolved & ONLINE_MATERIAL_PERMISSION_IDS) and bool(resolved & LECTURE_MATERIAL_PERMISSION_IDS)
+    online_state = permission_resolution(permissions, ONLINE_MATERIAL_PERMISSION_IDS)
+    lecture_state = permission_resolution(permissions, LECTURE_MATERIAL_PERMISSION_IDS)
+    return online_state in {"allowed", "denied"} and lecture_state in {"allowed", "denied"}
 
 
 def online_essay_complete_draft_permission_resolved(permissions: list[dict[str, Any]]) -> bool:
-    return bool(permission_ids(permissions) & COMPLETE_DRAFT_PERMISSION_IDS)
+    return permission_resolution(permissions, COMPLETE_DRAFT_PERMISSION_IDS) in {"allowed", "denied"}
 
 
 def online_essay_complete_draft_allowed(permissions: list[dict[str, Any]]) -> bool:
-    explicitly_allowed = permission_ids(permissions, {"explicitly_confirmed"})
-    return bool(explicitly_allowed & COMPLETE_DRAFT_PERMISSION_IDS)
+    return permission_resolution(permissions, COMPLETE_DRAFT_PERMISSION_IDS) == "allowed"
 
 
 def online_essay_permissions_confirmed(permissions: list[dict[str, Any]]) -> bool:
@@ -419,12 +521,17 @@ def online_essay_permissions_confirmed(permissions: list[dict[str, Any]]) -> boo
 def online_essay_permission_gate(permissions: list[dict[str, Any]]) -> dict[str, Any]:
     resolved = permission_ids(permissions)
     denied = permission_ids(permissions, {"denied"})
-    source_rules_resolved = online_essay_source_permissions_resolved(permissions)
-    draft_rule_resolved = online_essay_complete_draft_permission_resolved(permissions)
-    draft_allowed = online_essay_complete_draft_allowed(permissions)
+    online_state = permission_resolution(permissions, ONLINE_MATERIAL_PERMISSION_IDS)
+    lecture_state = permission_resolution(permissions, LECTURE_MATERIAL_PERMISSION_IDS)
+    draft_state = permission_resolution(permissions, COMPLETE_DRAFT_PERMISSION_IDS)
+    source_rules_resolved = online_state in {"allowed", "denied"} and lecture_state in {"allowed", "denied"}
+    draft_rule_resolved = draft_state in {"allowed", "denied"}
+    draft_allowed = draft_state == "allowed"
     if source_rules_resolved and draft_allowed:
         status = "approved"
-    elif draft_rule_resolved and not draft_allowed:
+    elif "conflict" in {online_state, lecture_state, draft_state}:
+        status = "conflict"
+    elif draft_state == "denied":
         status = "denied"
     else:
         status = "pending"
@@ -433,6 +540,11 @@ def online_essay_permission_gate(permissions: list[dict[str, Any]]) -> dict[str,
         "source_rules_resolved": source_rules_resolved,
         "complete_draft_permission_resolved": draft_rule_resolved,
         "complete_draft_allowed": draft_allowed,
+        "effective_permission_states": {
+            "online_materials_use": online_state,
+            "lecture_materials_use": lecture_state,
+            "online_essay_complete_draft_permission": draft_state,
+        },
         "resolved_permission_ids": sorted(resolved),
         "denied_permission_ids": sorted(denied),
     }
@@ -622,17 +734,25 @@ def plan(
     permission_gate = online_essay_permission_gate(permissions) if route == "online_essay_exam_drafting" else None
     if permission_gate and permission_gate["status"] == "approved":
         diagnosis["review_requirement"] = "Preserve the resolved source rules and explicit complete-draft permission; confirm only remaining source-role, Notes, allowed-source, citation, output-format, and planning decisions before drafting."
-    elif permission_gate and permission_gate["status"] == "denied":
+    elif permission_gate and permission_gate["status"] in {"denied", "conflict"}:
         diagnosis["review_requirement"] = "A complete draft is blocked by the user's explicit assessment-permission denial. Planning support may continue, but drafting requires the user to explicitly change that permission."
     review_status = "confirmed" if not pending_targets else "pending_user_confirmation"
     output_status = "proposed_until_human_review"
     execution_blockers: list[dict[str, Any]] = []
-    if permission_gate and permission_gate["status"] == "denied":
+    if permission_gate and permission_gate["status"] in {"denied", "conflict"}:
         review_status = "blocked_by_permission_denial"
         output_status = "blocked_by_permission_denial"
         execution_blockers.append({
-            "id": "online_essay_complete_draft_permission_denied",
-            "message": "The assessment permission for a complete Online Essay Exam draft was explicitly denied.",
+            "id": (
+                "online_essay_permission_conflict"
+                if permission_gate["status"] == "conflict"
+                else "online_essay_complete_draft_permission_denied"
+            ),
+            "message": (
+                "Conflicting Online Essay Exam permission records must be resolved before execution."
+                if permission_gate["status"] == "conflict"
+                else "The assessment permission for a complete Online Essay Exam draft was explicitly denied."
+            ),
         })
     return {
         "schema_version": 3,
@@ -816,9 +936,9 @@ def self_test() -> None:
     assert "online_essay_exam_complete_draft_permission" in online_adapted["pending_review_targets"]
     denied_context = dict(online_context)
     denied_context["permissions"] = [
-        {"permission_id": "online_materials_use", "scope": "Online Materials", "status": "denied"},
-        {"permission_id": "lecture_materials_use", "scope": "Lecture Materials", "status": "explicitly_confirmed"},
-        {"permission_id": "online_essay_complete_draft_permission", "scope": "Complete draft", "status": "denied"},
+        {"permission_id": "online_materials_use", "scope": "Online Materials", "status": "denied", "confirmed_at": "2026-07-09T12:00:00Z"},
+        {"permission_id": "lecture_materials_use", "scope": "Lecture Materials", "status": "explicitly_confirmed", "confirmed_at": "2026-07-09T12:00:00Z"},
+        {"permission_id": "online_essay_complete_draft_permission", "scope": "Complete draft", "status": "denied", "confirmed_at": "2026-07-09T12:00:00Z"},
     ]
     denied_plan = plan(academic_task_context=denied_context, source_fragments=fragments)
     assert denied_plan["permission_gate"]["status"] == "denied"

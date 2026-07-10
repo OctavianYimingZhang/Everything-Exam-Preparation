@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import plan_workflow
+
 ROUTE_LABELS = {
     "exam_prep_notes": "Notes",
     "mcq_preparation": "MCQ",
@@ -750,6 +752,19 @@ def build_payload(workflow_plan: dict[str, Any], source_scan: dict[str, Any]) ->
     if route in NOTES_CHOICE_ROUTES and not review_target_resolved(workflow_plan, "notes_output_choice"):
         questions.append(output_question(workflow_plan, source_scan))
     followups = route_specific_questions(workflow_plan, source_scan)
+    decisions = [
+        decision
+        for decision in workflow_plan.get("decisions", []) or []
+        if isinstance(decision, dict)
+    ]
+    followups = [
+        question
+        for question in followups
+        if not plan_workflow.explicit_decision_answered(
+            decisions,
+            str(question.get("id") or ""),
+        )
+    ]
     resolved_followup_targets = {
         "assessment_blueprint": "assessment_blueprint_scope",
         "answer_evaluation": "answer_evaluation_criteria",
