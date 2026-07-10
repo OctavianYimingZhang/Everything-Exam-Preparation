@@ -142,11 +142,15 @@
   ],
   "publish": {
     "github_push": "python3 scripts/publish_skill.py --push",
+    "dependency_update": "python3 -m pip install --upgrade -r requirements.txt",
     "local_skill_update": "python3 scripts/publish_skill.py --sync-local-skill",
     "local_multi_skill_update": "python3 scripts/publish_skill.py --sync-local-skill",
+    "installed_drift_check": "python3 scripts/publish_skill.py --check-installed",
     "push_and_update": "python3 scripts/publish_skill.py --push --sync-local-skill"
   },
   "post_update_commands": [
-    "python3 scripts/publish_skill.py --sync-local-skill"
+    "python3 -m pip install --upgrade -r requirements.txt",
+    "python3 scripts/publish_skill.py --sync-local-skill",
+    "python3 scripts/publish_skill.py --check-installed"
   ]
 }

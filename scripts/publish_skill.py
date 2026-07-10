@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -151,6 +152,67 @@ def sync_focused_skill(skill: dict[str, Any], local_skill_root: Path, dry_run: b
     return {"name": skill["name"], "destination": str(destination), "status": "ok"}
 
 
+def tree_manifest(root: Path) -> dict[str, str]:
+    manifest: dict[str, str] = {}
+    if not root.exists():
+        return manifest
+    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+        relative = path.relative_to(root)
+        if (
+            any(part in SKIP_DIRS or part == ".DS_Store" for part in relative.parts)
+            or path.suffix in SKIP_SUFFIXES
+        ):
+            continue
+        manifest[relative.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return manifest
+
+
+def compare_managed_tree(expected: Path, actual: Path, name: str) -> dict[str, Any]:
+    expected_files = tree_manifest(expected)
+    actual_files = tree_manifest(actual)
+    missing = sorted(expected_files.keys() - actual_files.keys())
+    unexpected = sorted(actual_files.keys() - expected_files.keys())
+    changed = sorted(
+        path
+        for path in expected_files.keys() & actual_files.keys()
+        if expected_files[path] != actual_files[path]
+    )
+    return {
+        "name": name,
+        "destination": str(actual),
+        "status": "ok" if not missing and not unexpected and not changed else "error",
+        "missing": missing,
+        "unexpected": unexpected,
+        "changed": changed,
+    }
+
+
+def check_installed_skills(destination: Path) -> dict[str, Any]:
+    if not is_package_root():
+        return {
+            "status": "error",
+            "error": "check_installed_skills must be run from the Everything Exam Preparation package root.",
+        }
+    with tempfile.TemporaryDirectory() as tmp:
+        expected_root = Path(tmp) / "expected"
+        expected_router = expected_root / LEGACY_SKILL_ID
+        shutil.copytree(ROOT, expected_router, ignore=ignore)
+        checks = [compare_managed_tree(expected_router, destination, LEGACY_SKILL_ID)]
+        for skill in discover_focused_skills():
+            sync_focused_skill(skill, expected_root, dry_run=False)
+            checks.append(
+                compare_managed_tree(
+                    expected_root / skill["name"],
+                    destination.parent / skill["name"],
+                    skill["name"],
+                )
+            )
+    return {
+        "status": "ok" if all(check["status"] == "ok" for check in checks) else "error",
+        "checks": checks,
+    }
+
+
 def copy_child_local_resources(source_dir: Path, destination: Path) -> None:
     for item in source_dir.iterdir():
         if item.name == "SKILL.md" or item.name in SKIP_DIRS or item.suffix in SKIP_SUFFIXES or item.name == ".DS_Store":
@@ -175,14 +237,24 @@ def basic_status() -> dict[str, Any]:
     }
 
 
-def publish(push: bool, sync_local: bool, destination: Path, dry_run: bool) -> dict[str, Any]:
+def publish(
+    push: bool,
+    sync_local: bool,
+    check_installed: bool,
+    destination: Path,
+    dry_run: bool,
+) -> dict[str, Any]:
     result: dict[str, Any] = {"status": basic_status(), "steps": []}
     if push:
-        result["steps"].append(run(["git", "push"], dry_run))
+        result["steps"].append(run(["git", "push", "origin", "HEAD:main"], dry_run))
     if sync_local:
         result["steps"].append(sync_local_skill(destination, dry_run))
-    if not push and not sync_local:
-        result["steps"].append({"status": "nothing_requested", "hint": "Use --push and/or --sync-local-skill."})
+    if check_installed:
+        result["steps"].append(check_installed_skills(destination))
+    if not push and not sync_local and not check_installed:
+        result["steps"].append(
+            {"status": "nothing_requested", "hint": "Use --push, --sync-local-skill, and/or --check-installed."}
+        )
     return result
 
 
@@ -209,12 +281,20 @@ def self_test() -> None:
         assert (root / "exam-prep-index" / "contracts" / "academic-task-context-v1.schema.json").exists()
         assert (root / "exam-prep-index" / "plugin_capability_manifest.json").exists()
         assert (root / "exam-prep-index" / "scripts" / "soleil_adapter.py").exists()
+        assert check_installed_skills(legacy)["status"] == "ok"
+        (root / "exam-prep-index" / "requirements.txt").write_text("drift\n", encoding="utf-8")
+        assert check_installed_skills(legacy)["status"] == "error"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Minimal publish/update helper for Everything Exam Preparation.")
     parser.add_argument("--push", action="store_true", help="Run git push from the repository root.")
     parser.add_argument("--sync-local-skill", action="store_true", help="Copy this repository into the local Codex skill directory.")
+    parser.add_argument(
+        "--check-installed",
+        action="store_true",
+        help="Fail when the installed router or any focused Skill differs from the packaged source.",
+    )
     parser.add_argument("--local-skill-dir", default=str(DEFAULT_LOCAL_SKILL_DIR))
     parser.add_argument("--dry-run", action="store_true", help="Print planned actions without changing anything.")
     parser.add_argument("--self-test", action="store_true")
@@ -222,7 +302,13 @@ def main() -> None:
     if args.self_test:
         self_test()
         return
-    result = publish(args.push, args.sync_local_skill, Path(args.local_skill_dir), args.dry_run)
+    result = publish(
+        args.push,
+        args.sync_local_skill,
+        args.check_installed,
+        Path(args.local_skill_dir),
+        args.dry_run,
+    )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     if has_error(result):
         sys.exit(1)
