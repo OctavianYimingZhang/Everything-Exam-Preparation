@@ -14,6 +14,15 @@ PLUGIN_ID = "everything-exam-preparation"
 CONTEXT_CONTRACT = "AcademicTaskContext"
 TASK_STATE_CONTRACT = "TaskRunState"
 SUPPORTED_CONTEXT_VERSION = 1
+LOCAL_EXECUTION_PERMISSION_ID = "local_execution"
+LIFECYCLE_ORDER = [
+    "source_ready",
+    "route_or_brief_locked",
+    "permissions_confirmed",
+    "plan_approved",
+    "running",
+]
+TERMINAL_STATES = {"qa_passed", "failed"}
 
 
 def load_json(path: str | None) -> dict[str, Any]:
@@ -87,15 +96,47 @@ def source_scan_from_payload(context: dict[str, Any], source_fragments: list[dic
     return {"schema_version": 2, "documents": documents, "fragments": source_fragments}
 
 
-def confirmed_decision(context: dict[str, Any], decision_id: str) -> Any:
-    for decision in context.get("decisions") or []:
-        if decision.get("decision_id") == decision_id and decision.get("status") == "explicitly_confirmed":
-            return decision.get("value")
-    return None
+def local_execution_permission_confirmed(context: dict[str, Any]) -> bool:
+    return any(
+        permission.get("permission_id") == LOCAL_EXECUTION_PERMISSION_ID
+        and permission.get("status") == "explicitly_confirmed"
+        and bool(permission.get("confirmed_at"))
+        for permission in context.get("permissions") or []
+        if isinstance(permission, dict)
+    )
+
+
+def planning_approval_confirmed(context: dict[str, Any]) -> bool:
+    return any(
+        decision.get("decision_id") == "planning_approval"
+        and decision.get("value") is True
+        and decision.get("status") == "explicitly_confirmed"
+        and bool(decision.get("confirmed_at"))
+        for decision in context.get("decisions") or []
+        if isinstance(decision, dict)
+    )
 
 
 def online_essay_permissions_confirmed(context: dict[str, Any]) -> bool:
-    return plan_workflow.online_essay_permissions_confirmed(list(context.get("permissions") or []))
+    resolved_permissions = [
+        permission
+        for permission in context.get("permissions") or []
+        if isinstance(permission, dict)
+        and (
+            permission.get("status") == "denied"
+            or (
+                permission.get("status") == "explicitly_confirmed"
+                and bool(permission.get("confirmed_at"))
+            )
+        )
+    ]
+    return plan_workflow.online_essay_permissions_confirmed(resolved_permissions)
+
+
+def route_permissions_confirmed(context: dict[str, Any], route: str) -> bool:
+    if not local_execution_permission_confirmed(context):
+        return False
+    return route != "online_essay_exam_drafting" or online_essay_permissions_confirmed(context)
 
 
 def state_history_for(context: dict[str, Any], workflow_plan: dict[str, Any], at: str) -> list[dict[str, Any]]:
@@ -113,21 +154,28 @@ def state_history_for(context: dict[str, Any], workflow_plan: dict[str, Any], at
             "actor": "user",
             "reason": "The adapter preserved the explicitly confirmed route instead of re-detecting it.",
         })
+    else:
+        return history
     route = str(workflow_plan.get("route") or "")
-    if route == "online_essay_exam_drafting" and route_selection.get("status") == "explicitly_confirmed":
-        if online_essay_permissions_confirmed(context):
-            history.append({
-                "state": "permissions_confirmed",
-                "at": at,
-                "actor": "user",
-                "reason": "Source-use rules are resolved and complete-draft permission is explicitly allowed by the assessment rules.",
-            })
-    permission_gate_allows_execution = route != "online_essay_exam_drafting" or online_essay_permissions_confirmed(context)
+    if route_permissions_confirmed(context, route):
+        permission_reason = (
+            "Local execution permission, source-use rules, and complete-draft permission are explicitly confirmed."
+            if route == "online_essay_exam_drafting"
+            else "Local execution permission is explicitly confirmed and this route has no additional source-use permission gate."
+        )
+        history.append({
+            "state": "permissions_confirmed",
+            "at": at,
+            "actor": "user",
+            "reason": permission_reason,
+        })
+    else:
+        return history
     if (
-        confirmed_decision(context, "planning_approval") is True
-        and route_selection.get("status") == "explicitly_confirmed"
+        planning_approval_confirmed(context)
         and not workflow_plan.get("pending_review_targets")
-        and permission_gate_allows_execution
+        and not workflow_plan.get("execution_blockers")
+        and not (workflow_plan.get("required_input_status") or {}).get("unresolved")
     ):
         history.append({
             "state": "plan_approved",
@@ -138,9 +186,118 @@ def state_history_for(context: dict[str, Any], workflow_plan: dict[str, Any], at
     return history
 
 
+def validated_run_id(run_id: Any, context_id: str, route_id: str) -> str:
+    if run_id is None:
+        digest = hashlib.sha256(f"{context_id}:{route_id}".encode("utf-8")).hexdigest()[:20]
+        return f"exam-{digest}"
+    if not isinstance(run_id, str) or len(run_id) < 8 or not run_id.strip():
+        raise ValueError("run_id must be a non-empty string containing at least 8 characters")
+    return run_id
+
+
+def validate_artifacts(artifacts: Any) -> list[dict[str, Any]]:
+    if not isinstance(artifacts, list):
+        raise ValueError("execution_result.artifacts must be an array")
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            raise ValueError("execution_result.artifacts entries must be objects")
+        unexpected = set(artifact) - {"artifact_id", "artifact_type", "opaque_local_ref", "status"}
+        if unexpected:
+            raise ValueError(f"execution_result artifact contains unsupported fields: {', '.join(sorted(unexpected))}")
+        if not str(artifact.get("artifact_id") or ""):
+            raise ValueError("execution_result artifact_id is required")
+        if not str(artifact.get("artifact_type") or ""):
+            raise ValueError("execution_result artifact_type is required")
+        if "opaque_local_ref" in artifact and not str(artifact.get("opaque_local_ref") or ""):
+            raise ValueError("execution_result artifact opaque_local_ref must be non-empty when supplied")
+        if artifact.get("status") not in {"created", "qa_passed", "failed"}:
+            raise ValueError("execution_result artifact status must be created, qa_passed, or failed")
+    return artifacts
+
+
+def validate_qa(qa: Any, *, required_passed: bool | None) -> dict[str, Any] | None:
+    if qa is None and required_passed is None:
+        return None
+    if not isinstance(qa, dict) or not isinstance(qa.get("passed"), bool) or not isinstance(qa.get("checks"), list):
+        raise ValueError("execution_result.qa must contain boolean passed and array checks")
+    if set(qa) - {"passed", "checks"}:
+        raise ValueError("execution_result.qa contains unsupported fields")
+    if required_passed is not None and qa["passed"] is not required_passed:
+        expected = "true" if required_passed else "false"
+        raise ValueError(f"execution_result.qa.passed must be {expected} for this outcome")
+    return qa
+
+
+def validate_failure(failure: Any, *, required: bool) -> dict[str, Any] | None:
+    if not required:
+        if failure is not None:
+            raise ValueError("execution_result.failure must be null for qa_passed")
+        return None
+    if not isinstance(failure, dict):
+        raise ValueError("execution_result.failure is required for failed outcomes")
+    if set(failure) - {"code", "message", "retryable"}:
+        raise ValueError("execution_result.failure contains unsupported fields")
+    if not str(failure.get("code") or "") or not str(failure.get("message") or ""):
+        raise ValueError("execution_result.failure must contain code and message")
+    if not isinstance(failure.get("retryable"), bool):
+        raise ValueError("execution_result.failure.retryable must be boolean")
+    return failure
+
+
+def apply_execution_result(
+    run_state: dict[str, Any],
+    execution_result: dict[str, Any],
+    at: str,
+) -> dict[str, Any]:
+    if run_state["state"] != "plan_approved":
+        raise ValueError(
+            "execution_result requires route lock, local and route-specific permissions, resolved review targets, required inputs, and explicit planning approval"
+        )
+    prior_states = [entry.get("state") for entry in run_state["state_history"]]
+    if prior_states != LIFECYCLE_ORDER[:4]:
+        raise ValueError("TaskRunState lifecycle must reach plan_approved without skipped or reordered states")
+    outcome = execution_result.get("outcome")
+    if outcome not in TERMINAL_STATES:
+        raise ValueError("execution_result.outcome must be qa_passed or failed")
+    artifacts = validate_artifacts(execution_result.get("artifacts", []))
+    qa = validate_qa(execution_result.get("qa"), required_passed=(outcome == "qa_passed"))
+    failure = validate_failure(execution_result.get("failure"), required=(outcome == "failed"))
+    assert qa is not None
+    if outcome == "qa_passed" and not artifacts:
+        raise ValueError("execution_result.artifacts must contain at least one QA-passed artifact")
+    if outcome == "qa_passed" and any(artifact.get("status") != "qa_passed" for artifact in artifacts):
+        raise ValueError("every artifact must have qa_passed status for a qa_passed outcome")
+    if outcome == "qa_passed" and not qa["checks"]:
+        raise ValueError("execution_result.qa.checks must not be empty for a qa_passed outcome")
+    run_state["state_history"].append({
+        "state": "running",
+        "at": at,
+        "actor": "plugin",
+        "reason": "Execution started after route, permission, and planning gates passed with the same run_id.",
+    })
+    run_state["state_history"].append({
+        "state": outcome,
+        "at": at,
+        "actor": "plugin",
+        "reason": (
+            "The executor returned an artifact set that passed its declared QA checks."
+            if outcome == "qa_passed"
+            else "The executor returned a structured failure after execution started."
+        ),
+    })
+    run_state["state"] = outcome
+    run_state["updated_at"] = at
+    run_state["artifacts"] = artifacts
+    run_state["qa"] = qa
+    run_state["failure"] = failure
+    return run_state
+
+
 def task_run_state(
     academic_task_context: dict[str, Any],
     source_fragments: list[dict[str, Any]] | None = None,
+    run_id: str | None = None,
+    execution_result: dict[str, Any] | None = None,
     at: str | None = None,
 ) -> dict[str, Any]:
     validate_academic_task_context(academic_task_context)
@@ -154,11 +311,10 @@ def task_run_state(
     timestamp = at or now_iso()
     history = state_history_for(academic_task_context, workflow_plan, timestamp)
     route_id = str(workflow_plan["route"])
-    digest = hashlib.sha256(f"{academic_task_context['context_id']}:{route_id}".encode("utf-8")).hexdigest()[:20]
-    return {
+    state = {
         "contract": TASK_STATE_CONTRACT,
         "version": 1,
-        "run_id": f"exam-{digest}",
+        "run_id": validated_run_id(run_id, str(academic_task_context["context_id"]), route_id),
         "context_id": academic_task_context["context_id"],
         "plugin_id": PLUGIN_ID,
         "route_id": route_id,
@@ -171,12 +327,23 @@ def task_run_state(
         "qa": None,
         "failure": None,
     }
+    if execution_result is not None:
+        if not isinstance(execution_result, dict):
+            raise ValueError("execution_result must be an object")
+        return apply_execution_result(state, execution_result, timestamp)
+    return state
 
 
 def adapt(payload: dict[str, Any], at: str | None = None) -> dict[str, Any]:
     context = payload.get("academic_task_context") if isinstance(payload.get("academic_task_context"), dict) else payload
     fragments = payload.get("source_fragments") if isinstance(payload.get("source_fragments"), list) else []
-    return task_run_state(context, fragments, at=at)
+    return task_run_state(
+        context,
+        fragments,
+        run_id=payload.get("run_id"),
+        execution_result=payload.get("execution_result"),
+        at=at,
+    )
 
 
 def self_test() -> None:
@@ -225,10 +392,16 @@ def self_test() -> None:
     assert [question["id"] for question in fixture_review["questions"]] == ["material_type_source_roles"]
     mixed = adapt(load_json(str(root / "tests/fixtures/academic_task_context_mixed_gate.json")), at="2026-07-09T12:00:00Z")
     assert "confirmed_mixed_routes" in mixed["plan"]["pending_review_targets"]
-    online = adapt(load_json(str(root / "tests/fixtures/academic_task_context_online_permissions.json")), at="2026-07-09T12:00:00Z")
+    online_payload = load_json(str(root / "tests/fixtures/academic_task_context_online_permissions.json"))
+    online_payload["academic_task_context"]["permissions"].append({
+        "permission_id": "local_execution",
+        "scope": "Allow this approved task to run through the authenticated local executor.",
+        "status": "explicitly_confirmed",
+        "confirmed_at": "2026-07-09T12:00:00Z",
+    })
+    online = adapt(online_payload, at="2026-07-09T12:00:00Z")
     assert online["state"] == "permissions_confirmed"
     assert "online_essay_exam_source_permissions" not in online["plan"]["pending_review_targets"]
-    online_payload = load_json(str(root / "tests/fixtures/academic_task_context_online_permissions.json"))
     online_scan = source_scan_from_payload(online_payload["academic_task_context"], online_payload["source_fragments"])
     online_review = build_review_questions.build_payload(online["plan"], online_scan)
     online_followups = [question["id"] for batch in online_review["follow_up_question_batches"] for question in batch]

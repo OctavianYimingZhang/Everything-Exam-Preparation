@@ -4,7 +4,7 @@ These JSON Schemas are the versioned boundary between the four independently ins
 
 - `PluginCapabilityManifest v2` declares route ownership, inputs, gates, outputs, adapters, and supported context versions.
 - `AcademicTaskContext v1` carries the original request, course or case, source references, relevant memory, permissions, and user decisions.
-- `TaskRunState v1` preserves one `run_id` from source readiness through QA or failure.
+- `TaskRunState v1` preserves one caller-supplied `run_id` from source readiness through QA or failure.
 - `SourceRecord v1` describes a locally held source without embedding its raw bytes or full extracted text.
 - `LocalBridgeProtocol v1` defines the loopback handshake and authenticated request envelopes.
 

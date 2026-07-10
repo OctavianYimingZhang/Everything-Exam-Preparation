@@ -227,6 +227,16 @@ def manifest_sync_failures() -> list[str]:
                 failures.append(f"route {route_id} has no required_inputs declaration")
             if not item.get("gates"):
                 failures.append(f"route {route_id} has no gates declaration")
+            required_gate_ids = {
+                str(gate.get("gate_id") or "")
+                for gate in item.get("gates") or []
+                if isinstance(gate, dict) and gate.get("required") is True
+            }
+            missing_lifecycle_gates = {"local_execution_permission", "planning_approval"} - required_gate_ids
+            if missing_lifecycle_gates:
+                failures.append(
+                    f"route {route_id} is missing execution lifecycle gates: {', '.join(sorted(missing_lifecycle_gates))}"
+                )
             if not item.get("outputs"):
                 failures.append(f"route {route_id} has no outputs declaration")
             adapter = item.get("adapter_entrypoint") or {}
@@ -346,6 +356,13 @@ def script_self_test(script: str) -> str | None:
     return f"{script}: {proc.stderr.strip() or proc.stdout.strip() or proc.returncode}"
 
 
+def python_test(script: str) -> str | None:
+    proc = subprocess.run([sys.executable, str(ROOT / script)], cwd=ROOT, text=True, capture_output=True)
+    if proc.returncode == 0:
+        return None
+    return f"{script}: {proc.stderr.strip() or proc.stdout.strip() or proc.returncode}"
+
+
 def check_all() -> dict[str, Any]:
     files = [
         "SKILL.md",
@@ -357,6 +374,7 @@ def check_all() -> dict[str, Any]:
         "scripts/assessment_tools.py",
         "scripts/mastery_history.py",
         "scripts/soleil_adapter.py",
+        "tests/test_soleil_adapter.py",
         "plugin_capability_manifest.json",
         *CANONICAL_CONTRACT_FILES,
         *CONTEXT_FIXTURES,
@@ -770,6 +788,8 @@ def check_all() -> dict[str, Any]:
                 "assessment_blueprint",
                 "answer_evaluation",
                 "timed_practice",
+                "local_execution_permission",
+                "planning_approval",
             ],
         ),
         "scripts/assessment_tools.py": require_terms(
@@ -782,7 +802,30 @@ def check_all() -> dict[str, Any]:
         ),
         "scripts/soleil_adapter.py": require_terms(
             "scripts/soleil_adapter.py",
-            ["AcademicTaskContext", "TaskRunState", "original_prompt", "route_selection", "source_fragments", "relevant_memory"],
+            [
+                "AcademicTaskContext",
+                "TaskRunState",
+                "original_prompt",
+                "route_selection",
+                "source_fragments",
+                "relevant_memory",
+                "run_id",
+                "execution_result",
+                "local_execution",
+                "permissions_confirmed",
+                "plan_approved",
+                "running",
+                "qa_passed",
+                "failed",
+            ],
+        ),
+        "tests/test_soleil_adapter.py": require_terms(
+            "tests/test_soleil_adapter.py",
+            [
+                "test_every_declared_route_preserves_run_id_and_full_success_lifecycle",
+                "test_failed_execution_preserves_full_ordered_lifecycle",
+                "test_online_essay_denial_blocks_running_and_approved_permission_executes",
+            ],
         ),
     }
     for focused_path in FOCUSED_SKILL_FILES:
@@ -818,6 +861,7 @@ def check_all() -> dict[str, Any]:
         ]
         if failure
     ]
+    focused_tests = [failure for failure in [python_test("tests/test_soleil_adapter.py")] if failure]
     failures = {
         "missing_files": missing_files,
         "invalid_schemas": invalid_schemas,
@@ -826,6 +870,7 @@ def check_all() -> dict[str, Any]:
         "agent_registry_failures": agent_registry_failures(),
         "context_fixture_failures": context_fixture_failures(),
         "script_self_tests": script_self_tests,
+        "focused_tests": focused_tests,
         "non_english_cjk_locations": cjk,
         "fixed_filename_locations": prohibited_names,
         "prohibited_wording_locations": prohibited_wording,

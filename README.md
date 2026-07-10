@@ -57,7 +57,13 @@ The routing workflow is: analyze all supplied material, ask the user to choose o
 
 ## Soleil v2 adapter and state
 
-`plugin_capability_manifest.json` declares each route's owning Skill, required inputs, gates, outputs, adapter entrypoint, and supported context version. `scripts/soleil_adapter.py` accepts `AcademicTaskContext` v1 under `academic_task_context` and returns `TaskRunState` v1. It preserves `original_prompt`, an explicit `route_selection`, supplied `source_fragments`, and `relevant_memory` references instead of re-detecting the route from empty input.
+`plugin_capability_manifest.json` declares each route's owning Skill, required inputs, gates, outputs, adapter entrypoint, and supported context version. `scripts/soleil_adapter.py` accepts `AcademicTaskContext` v1 under `academic_task_context` and returns `TaskRunState` v1. It preserves `original_prompt`, an explicit `route_selection`, supplied `source_fragments`, `relevant_memory` references, and a caller-supplied top-level `run_id` instead of re-detecting or replacing confirmed state.
+
+Planning-only calls stop at the latest satisfied gate. A completed executor call supplies a top-level `execution_result` with an explicit `qa_passed` or `failed` outcome, artifacts, QA, and any structured failure. The adapter accepts that result only after the route is locked, `local_execution` and any route-specific permissions are confirmed, all review targets and required inputs are resolved, and `planning_approval` is explicitly confirmed. It then enforces this ordered lifecycle without skipped states:
+
+`source_ready → route_or_brief_locked → permissions_confirmed → plan_approved → running → qa_passed | failed`
+
+Online Essay Exam complete-draft denial remains an execution blocker and cannot reach `running`. Every route in `plugin_capability_manifest.json` declares the shared local-execution and planning-approval gates.
 
 All focused routes default to English (`en`) unless the user explicitly overrides output language for the current task. The adapter does not infer a language change from examples written in another language.
 

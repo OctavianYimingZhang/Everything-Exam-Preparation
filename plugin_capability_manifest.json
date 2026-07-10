@@ -20,7 +20,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [{"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}],
       "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
@@ -40,7 +42,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [
         {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
@@ -63,7 +67,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [
         {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
@@ -86,7 +92,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [
         {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
@@ -109,7 +117,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [
         {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
@@ -132,7 +142,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"}
+        {"gate_id": "notes_output_choice", "required": true, "satisfied_by": "explicitly confirmed decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [
         {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
@@ -157,6 +169,7 @@
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
         {"gate_id": "online_essay_exam_source_permissions", "required": true, "satisfied_by": "explicit Online Materials and Lecture Materials permissions"},
         {"gate_id": "online_essay_exam_complete_draft_permission", "required": true, "satisfied_by": "explicitly confirmed assessment permission for a complete draft; denial blocks complete drafting"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
         {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [
@@ -181,7 +194,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "confirmed_mixed_routes", "required": true, "satisfied_by": "explicitly confirmed component-route decision"}
+        {"gate_id": "confirmed_mixed_routes", "required": true, "satisfied_by": "explicitly confirmed component-route decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [
         {"output_id": "docx_notes", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
@@ -203,7 +218,11 @@
         {"input_id": "target_question", "required": true},
         {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
       ],
-      "gates": [{"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route target-question and source-role review state"}],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route target-question and source-role review state"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
+      ],
       "outputs": [{"output_id": "question_solution_report", "media_type": "text/markdown"}],
       "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
       "supported_context_versions": [1]
@@ -220,7 +239,11 @@
         {"input_id": "academic_task_context", "required": true, "schema_ref": "contracts/academic-task-context-v1.schema.json"},
         {"input_id": "source_fragments", "required": true, "schema_ref": "schemas/source_fragment.schema.json"}
       ],
-      "gates": [{"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route source-role and lecture-order review state"}],
+      "gates": [
+        {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route source-role and lecture-order review state"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
+      ],
       "outputs": [{"output_id": "organized_questions_docx", "media_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}],
       "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
       "supported_context_versions": [1]
@@ -239,7 +262,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "assessment_blueprint_scope", "required": true, "satisfied_by": "explicitly confirmed scope decision"}
+        {"gate_id": "assessment_blueprint_scope", "required": true, "satisfied_by": "explicitly confirmed scope decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [{"output_id": "assessment_blueprint", "media_type": "application/json"}],
       "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
@@ -261,7 +286,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "answer_evaluation_criteria", "required": true, "satisfied_by": "explicit criteria or supplied marking material"}
+        {"gate_id": "answer_evaluation_criteria", "required": true, "satisfied_by": "explicit criteria or supplied marking material"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [{"output_id": "answer_evaluation_report", "media_type": "application/json"}],
       "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
@@ -282,7 +309,9 @@
       ],
       "gates": [
         {"gate_id": "direct_invocation_review", "required": true, "satisfied_by": "explicit route and source-role review state"},
-        {"gate_id": "timed_practice_duration", "required": true, "satisfied_by": "explicit duration decision"}
+        {"gate_id": "timed_practice_duration", "required": true, "satisfied_by": "explicit duration decision"},
+        {"gate_id": "local_execution_permission", "required": true, "satisfied_by": "explicitly confirmed local_execution permission"},
+        {"gate_id": "planning_approval", "required": true, "satisfied_by": "explicitly confirmed planning_approval decision"}
       ],
       "outputs": [{"output_id": "timed_practice_session", "media_type": "application/json"}],
       "adapter_entrypoint": {"type": "python", "value": "scripts/soleil_adapter.py"},
