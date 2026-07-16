@@ -1,44 +1,28 @@
 ---
 name: exam-prep-essay
-description: Produce essay exam preparation, example essay plans, model-answer support, claim-evidence-analysis structures, and Extra Reading enriched essay outputs from course material, essay questions, examples, and external academic sources.
+description: Prepare essay plans, model answers, permitted Online Essay work, critical analysis, and Extra Reading enrichment from course material, essay prompts, assessment instructions, and reliable academic sources.
 ---
 
-# Essay Preparation
+# Exam Prep Essay
 
-Create an essay-focused Specific Research Report after `exam-prep-index` has confirmed the essay route. Use this Skill for essay questions, in-campus essay preparation, example essays, essay plans, model-answer support, paragraph planning, and Extra Reading enriched evaluation.
+Create the requested essay-preparation output with a clear claim-evidence-analysis structure.
 
-Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
-
-Do not use this Skill for Online Essay Exam drafting. Online Essay Exam is a parallel branch owned by `exam-prep-online-essay-exam`; it requires Online Materials and Lecture Materials source-permission Ask Questions, locked brief, evidence map, paragraph-level plan, Planning Approval, draft generation, and QA.
-
-## Load First
-
-Read:
+## Read First
 
 - `references/input_and_evidence_protocol.md`
-- `references/exam_mode_and_addons_protocol.md`
 - `references/essay_exam_prep_protocol.md`
-- `references/extra_reading_workflow.md`
-- `references/language_quality_contract.md`
 
-Use `scripts/essay_exam_tools.py`, `scripts/extra_reading_tools.py`, `scripts/plan_workflow.py`, and `scripts/build_review_questions.py` when structured planning or review payloads are useful.
-
-When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
-
-## Direct Invocation Gate
-
-If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Essay output. Confirm the ordinary Essay route, Material type/source roles, Notes generation choice, Example Essay choices, and Extra Reading source role before writing.
+Shared resources are two directories above this file in the source checkout.
 
 ## Workflow
 
-1. Identify essay question demand, course knowledge, conceptual scope, and assessment expectations.
-2. Determine whether Extra Reading is supplied, requested, or required by the confirmed output.
-3. Match Extra Reading to claims or course points that need mechanism depth, molecular evidence, experimental evidence, counterargument, or evaluation.
-4. Use the confirmed review state before public generation if this Skill was invoked directly without `exam-prep-index`.
-5. Produce the requested essay-preparation output.
+1. Identify the essay question, command word, scope, assessment setting, and requested artifact.
+2. Map course knowledge to the claims needed to answer the question.
+3. Use `scripts/essay_exam_tools.py` for topic analysis, essay structure, language checks, Extra Reading discovery, and evidence placement.
+4. For an active Online Essay assessment, establish the permitted use of lecture material, online material, uploaded readings, external sources, citations, and complete drafting. Ask only when the permission is genuinely unclear.
+5. Match reliable Extra Reading to specific claims needing mechanism depth, experimental evidence, counterargument, or evaluation.
+6. Produce the requested plan, evidence map, paragraph support, feedback, or permitted draft and verify its source use.
 
-## Output Contract
+## Output
 
-For essay Specific Research Reports, use claim, explanation, course detail, Extra Reading evidence, analysis, and link back to the question. Example Essays use an Extra Reading blend of 15%-30% through paragraph slots that add mechanism depth, molecular evidence, experimental evidence, counterargument, or evaluation.
-
-Keep unsupported claims out. If evidence is insufficient, state the gap or omit the claim.
+Use a question-led thesis, coherent paragraph sequence, accurate course detail, explicit analysis, and a conclusion that resolves the question. Cite external evidence in the style requested by the user or assessment.

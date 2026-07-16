@@ -1,57 +1,12 @@
 setup_wizard:
-  prompts:
+  required:
+    - requested_artifact
     - source_files
-    - requested_output
-    - exam_mode
-    - auto_diagnosis_review
-    - material_type_source_roles
-    - output_set_confirmation
-    - output_depth
-    - output_format
-    - topic_focus
-    - extra_reading_focus
-  source_hints:
-    purpose: source hints act as open provenance labels
-    policy: infer useful source hints from file content when they help routing; confirm Material type and source roles through human review; calibrate notes depth and coverage from confirmed roles, knowledge signals, knowledge density, and knowledge units
-  human_review:
-    required_before_public_output: true
-    plan_title: Auto-diagnosis review plan
-    targets:
-      - exam_type_route
-      - material_type_source_roles
-      - notes_output_choice
-      - confirmed_mixed_routes
-      - route_specific_follow_up_choices
-      - online_essay_exam_source_permissions
-      - online_essay_exam_complete_draft_permission
-      - assessment_blueprint_scope
-      - answer_evaluation_criteria
-      - timed_practice_duration
-  output:
-    type: docx_notes
-    conditional_addon: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
-    conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
-    conditional_question_solution: question_solution_report_when_user_asks_how_to_solve_a_supplied_question
-    conditional_question_organization: organized_questions_docx_when_user_asks_to_sort_past_paper_or_practice_questions_by_lecture_order
-    online_essay_exam: online_essay_exam_draft_after_source_rules_complete_draft_permission_brief_lock_evidence_map_planning_approval_and_qa
-    assessment_blueprint: assessment_blueprint_with_page_slide_time_provenance
-    answer_evaluation: answer_evaluation_report_with_optional_mastery_history_update
-    timed_practice: timed_practice_session_from_confirmed_duration_and_blueprint
-    naming: user_requested_or_generated_from_context
-    student_surface: explanation_only_notes
-    formula_policy: domain_neutral_visible_formula_blocks
-    visual_policy: academic_cropped_pdf_visual_region_assets
-  coverage_calibration:
-    basis: open knowledge signals
-    signals:
-      - topic_boundary
-      - learning_objective
-      - definition
-      - mechanism
-      - method
-      - comparison
-      - calculation
-      - data_interpretation
-      - evidence
-      - application
-      - explanatory_example
+  ask_when_required:
+    - target_question_or_answer
+    - evaluation_criteria
+    - timed_duration
+    - online_essay_permissions
+  defaults:
+    output_language: English
+    document_style: A4 Arial academic

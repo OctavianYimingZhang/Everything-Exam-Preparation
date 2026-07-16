@@ -3,19 +3,20 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
-  simple-health:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install runtime dependencies
+      - name: Install dependencies
         run: python3 -m pip install --upgrade -r requirements.txt
-      - name: Basic repository check
+      - name: Validate Plugin
         run: |
           python3 -m compileall -q scripts
           python3 scripts/validate_skill_contracts.py
-          python3 scripts/github_ready_check.py --ci
+          python3 scripts/publish_skill.py --self-test

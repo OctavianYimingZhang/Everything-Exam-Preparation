@@ -1,7 +1,7 @@
 {
   "name": "everything-exam-preparation",
-  "version": "2.0.0",
-  "description": "Context-aware exam preparation with assessment blueprints, answer evaluation, timed practice, mastery history, reports, and Online Essay Exam drafting.",
+  "version": "3.0.0",
+  "description": "Exam preparation through a router and three focused Skills for Notes, Practice, and Essay work.",
   "author": {
     "name": "Octavian Yiming Zhang"
   },
@@ -12,20 +12,14 @@
     "exam-preparation",
     "lecture-notes",
     "past-papers",
-    "online-essay-exam",
-    "mcq",
-    "short-answer",
-    "worked-solutions",
-    "extra-reading",
-    "assessment-blueprint",
-    "answer-evaluation",
-    "timed-practice"
+    "practice",
+    "essay"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Everything Exam Preparation",
-    "shortDescription": "Prepare exams with blueprints, evaluation, timed practice, notes, reports, and drafting.",
-    "longDescription": "Everything Exam Preparation consumes AcademicTaskContext v1 and routes course material, source fragments, relevant course memory, practice papers, Online Materials, and Extra Reading into focused workflows. It supports assessment blueprints, answer evaluation, timed practice, default-enabled per-course mastery history controls, explanation notes, reports, worked solutions, essay enrichment, Online Essay Exam drafting, question solving, and question organization while preserving Mixed, direct-invocation, and Online Essay permission gates.",
+    "shortDescription": "Create course Notes, exam Practice, and Essay support.",
+    "longDescription": "Routes explicit student requests to explanation-first Notes, question-based Practice, or Essay support using trusted course and assessment material.",
     "developerName": "Octavian Yiming Zhang",
     "category": "Education",
     "capabilities": [
@@ -37,10 +31,9 @@
     "privacyPolicyURL": "https://openai.com/policies/privacy-policy/",
     "termsOfServiceURL": "https://openai.com/policies/terms-of-use/",
     "defaultPrompt": [
-      "Prepare exam notes and reports from these lecture and past-paper files.",
-      "Draft an Online Essay Exam answer using the allowed source materials.",
-      "Organize these past-paper questions by lecture knowledge unit.",
-      "Build an assessment blueprint, evaluate my answer, or create a timed practice session."
+      "Create course Notes from these lectures and use the past papers to calibrate emphasis.",
+      "Prepare worked solutions and organise these exam questions.",
+      "Build an essay plan and match reliable Extra Reading to its claims."
     ],
     "brandColor": "#2563EB",
     "screenshots": []

@@ -1,6 +1,0 @@
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Workflow plan shape",
-  "type": "object",
-  "additionalProperties": true
-}

@@ -493,18 +493,14 @@ def image_emu_size(path: Path) -> tuple[int, int]:
 
 def paragraph_xml(text: str, style: str = "Normal", align: str = "both") -> str:
     style_xml = "" if style == "Normal" else f'<w:pStyle w:val="{xml_escape(style)}"/>'
+    keep_next = "<w:keepNext/>" if style in {"Title", "Heading1", "Heading2"} else ""
     bold = "<w:b/>" if style in {"Title", "Heading1", "Heading2"} else ""
     italic = "<w:i/>" if style == "Caption" else ""
     size = {"Title": "32", "Heading1": "26", "Heading2": "23", "Caption": "18", "Formula": "24"}.get(style, "21")
-    color = {
-        "Title": "1F2933",
-        "Heading1": "1F4E79",
-        "Heading2": "2F3A45",
-        "Caption": "5B6670",
-    }.get(style, "1F2933")
+    color = "000000"
     return (
         "<w:p><w:pPr>"
-        f"{style_xml}<w:jc w:val=\"{xml_escape(align)}\"/><w:spacing w:line=\"{LINE_SPACING}\" w:lineRule=\"auto\"/>"
+        f"{style_xml}{keep_next}<w:jc w:val=\"{xml_escape(align)}\"/><w:spacing w:line=\"{LINE_SPACING}\" w:lineRule=\"auto\"/>"
         "</w:pPr><w:r><w:rPr>"
         f"<w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/>{bold}{italic}<w:color w:val=\"{color}\"/><w:sz w:val=\"{size}\"/>"
         "</w:rPr>"
@@ -531,7 +527,7 @@ def table_cell_xml(text: Any, header: bool = False) -> str:
         "<w:tc>"
         f'<w:tcPr>{shading}</w:tcPr>'
         '<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:line="360" w:lineRule="auto"/></w:pPr>'
-        f'<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>{bold}<w:color w:val="1F2933"/><w:sz w:val="20"/></w:rPr>'
+        f'<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>{bold}<w:color w:val="000000"/><w:sz w:val="20"/></w:rPr>'
         f"<w:t>{xml_escape(value)}</w:t></w:r></w:p>"
         "</w:tc>"
     )
@@ -541,7 +537,13 @@ def table_xml(rows: list[list[Any]]) -> str:
     rendered_rows = []
     for idx, row in enumerate(rows):
         cells = row if isinstance(row, list) else [row]
-        rendered_rows.append("<w:tr>" + "".join(table_cell_xml(cell, header=(idx == 0)) for cell in cells) + "</w:tr>")
+        row_properties = "<w:trPr><w:cantSplit/>" + ("<w:tblHeader/>" if idx == 0 else "") + "</w:trPr>"
+        rendered_rows.append(
+            "<w:tr>"
+            + row_properties
+            + "".join(table_cell_xml(cell, header=(idx == 0)) for cell in cells)
+            + "</w:tr>"
+        )
     return (
         "<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/>"
         "<w:tblBorders>"
@@ -588,11 +590,13 @@ def document_xml(blocks: list[Any]) -> str:
             body.append(formula_xml(str(block.get("formula") or "")))
         elif isinstance(block, dict) and block.get("kind") == "image":
             body.append(image_xml(block))
+        elif isinstance(block, dict) and block.get("kind") == "page_break":
+            body.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
         else:
             text, style, align = block
             body.append(paragraph_xml(text, style, align))
     sect = (
-        f'<w:sectPr><w:pgMar w:top="{MARGIN_TWIPS}" w:right="{MARGIN_TWIPS}" '
+        f'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="{MARGIN_TWIPS}" w:right="{MARGIN_TWIPS}" '
         f'w:bottom="{MARGIN_TWIPS}" w:left="{MARGIN_TWIPS}" w:header="720" '
         'w:footer="720" w:gutter="0"/></w:sectPr>'
     )
@@ -620,19 +624,19 @@ def styles_xml() -> str:
         f'<w:spacing w:line="{LINE_SPACING}" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
         '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/>'
         '<w:pPr><w:jc w:val="both"/></w:pPr><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="1F2933"/><w:sz w:val="21"/></w:rPr></w:style>'
+        '<w:color w:val="000000"/><w:sz w:val="21"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/>'
         '<w:pPr><w:jc w:val="center"/></w:pPr><w:rPr><w:b/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="1F2933"/><w:sz w:val="32"/></w:rPr></w:style>'
+        '<w:color w:val="000000"/><w:sz w:val="32"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/>'
         '<w:pPr><w:jc w:val="left"/></w:pPr><w:rPr><w:b/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="1F4E79"/><w:sz w:val="26"/></w:rPr></w:style>'
+        '<w:color w:val="000000"/><w:sz w:val="26"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/>'
         '<w:pPr><w:jc w:val="left"/></w:pPr><w:rPr><w:b/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="2F3A45"/><w:sz w:val="23"/></w:rPr></w:style>'
+        '<w:color w:val="000000"/><w:sz w:val="23"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Caption"><w:name w:val="Caption"/>'
         '<w:pPr><w:jc w:val="center"/></w:pPr><w:rPr><w:i/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="5B6670"/><w:sz w:val="18"/></w:rPr></w:style>'
+        '<w:color w:val="000000"/><w:sz w:val="18"/></w:rPr></w:style>'
         "</w:styles>"
     )
 
@@ -669,6 +673,11 @@ def document_rels_xml(media: list[dict[str, Any]]) -> str:
         f'<Relationship Id="{xml_escape(item["rid"])}" Type="{IMAGE_REL_TYPE}" Target="media/{xml_escape(item["media_name"])}"/>'
         for item in media
     ]
+    relationships.append(
+        '<Relationship Id="rIdStyles" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" '
+        'Target="styles.xml"/>'
+    )
     return (
         '<?xml version="1.0" encoding="UTF-8"?><Relationships '
         'xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
@@ -971,6 +980,8 @@ def blocks_from_plan(plan: dict[str, Any]) -> list[Any]:
     result_only = is_result_only_exam_report(plan)
     blocks: list[Any] = [(plan.get("title") or "Exam Preparation Notes", "Title", "center")]
     for section in plan.get("sections", []) or []:
+        if section.get("page_break_before"):
+            blocks.append({"kind": "page_break"})
         heading = section.get("heading") or section.get("title")
         if heading:
             blocks.append((str(heading), "Heading1", "left"))

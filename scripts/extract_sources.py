@@ -175,9 +175,14 @@ def has_marking_signal(name: str, haystack: str) -> bool:
 
 def question_signals(path: Path, text: str, source_hint: str) -> dict[str, Any]:
     name = path.name.lower().replace("_", " ").replace("-", " ")
+    parent = str(path.parent).lower().replace("_", " ").replace("-", " ")
     lower = (text or "").lower().replace("_", " ").replace("-", " ")
     haystack = name + "\n" + lower
-    is_past_paper = has_any(haystack, ["past paper", "question paper", "exam paper", "answer all questions"]) or ("time allowed" in haystack and "examination" in haystack)
+    is_past_paper = (
+        "past papers" in parent
+        or has_any(haystack, ["past paper", "question paper", "exam paper", "answer all questions"])
+        or ("time allowed" in haystack and "examination" in haystack)
+    )
     is_practical = has_any(name, ["practical", "lab", "experiment", "worksheet"]) or has_any(haystack, ["practical task", "practical question", "lab practical", "experiment worksheet"])
     has_questions = has_question_signal(text) or (source_hint == "practice_material" and has_question_signal(haystack))
     has_practical_questions = is_practical and has_questions and has_any(haystack, PRACTICAL_QUESTION_KEYWORDS)
@@ -432,14 +437,16 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
 
 
 def classify_source(path: str | Path, text: str = "") -> str:
-    name = Path(path).name.lower().replace("_", " ").replace("-", " ")
+    source_path = Path(path)
+    name = source_path.name.lower().replace("_", " ").replace("-", " ")
+    parent = str(source_path.parent).lower().replace("_", " ").replace("-", " ")
     sample = (text or "")[:6000].lower().replace("_", " ").replace("-", " ")
     haystack = name + "\n" + sample
     lecture_named = any(word in name for word in ["lecture", "slides", "notes", "module"]) or is_lecture_source(path, text)
     exam_like = has_any(haystack, ["past paper", "question paper", "exam paper", "answer all questions"]) or ("time allowed" in haystack and "examination" in haystack)
     course_like = lecture_named or has_any(sample[:1200], ["notes for", "contents", "chapter", "module"])
 
-    if exam_like or has_any(name, ["problem sheet"]):
+    if "past papers" in parent or exam_like or has_any(name, ["problem sheet"]):
         return "practice_material"
     if has_marking_signal(name, haystack) and not exam_like:
         return "marking_material"
@@ -934,7 +941,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
             notes_role = str(frag["notes_role"])
             notes_roles[notes_role] = notes_roles.get(notes_role, 0) + 1
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "documents": documents,
         "fragments": fragments,
         "visuals": visuals,
@@ -961,7 +968,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
     }
 
 
-def self_test() -> None:
+def _scan_self_test() -> None:
     with tempfile.TemporaryDirectory() as td:
         p1 = Path(td) / "source_a.md"
         p2 = Path(td) / "source_b.txt"
@@ -1060,9 +1067,161 @@ def self_test() -> None:
                     assert (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) < 500000
 
 
+def _count_values(items: list[dict[str, Any]], key: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in items:
+        value = str(item.get(key) or "")
+        if value:
+            counts[value] = counts.get(value, 0) + 1
+    return counts
+
+
+def build_fragment_index(scan: dict[str, Any] | None, purpose: str = "notes") -> dict[str, Any]:
+    scan = scan or {"documents": [], "fragments": []}
+    documents = {str(item.get("id")): item for item in scan.get("documents", [])}
+    fragments: list[dict[str, Any]] = []
+    for source_fragment in scan.get("fragments", []):
+        source = documents.get(str(source_fragment.get("source_id")), {})
+        text = str(source_fragment.get("text") or "")
+        signals = list(source_fragment.get("knowledge_signals") or [])
+        score = sum(
+            2 if signal in {"definition", "mechanism", "method", "comparison", "calculation", "data_interpretation", "evidence"} else 1
+            for signal in signals
+        )
+        fragments.append({
+            **source_fragment,
+            "source_name": source_fragment.get("source_name") or source.get("name"),
+            "source_order": source_fragment.get("source_order") or source.get("source_order") or 0,
+            "lecture_order": source_fragment.get("lecture_order") or source.get("lecture_order"),
+            "lecture_source": bool(source_fragment.get("lecture_source") or source.get("lecture_source")),
+            "content_triage": source_fragment.get("content_triage") or source.get("content_triage") or "core_lecture_content",
+            "notes_obligation": source_fragment.get("notes_obligation") or source.get("notes_obligation") or "must_cover",
+            "knowledge_score": score,
+            "preview": re.sub(r"\s+", " ", text).strip()[:220],
+        })
+    if purpose == "notes":
+        fragments.sort(key=lambda item: (
+            int(item.get("lecture_order") or 10_000),
+            int(item.get("source_order") or 10_000),
+            int(item.get("slide_number") or item.get("page_number") or item.get("fragment_order") or 10_000),
+        ))
+    else:
+        fragments.sort(key=lambda item: (-int(item.get("knowledge_score") or 0), int(item.get("source_order") or 10_000)))
+    usable = [item for item in fragments if item.get("slide_decision") != "exclude"]
+    detailed = [
+        item for item in usable
+        if item.get("slide_decision") is None or item.get("detailed_explanation_allowed") is True
+    ]
+    source_audit: list[dict[str, Any]] = []
+    for document in scan.get("documents", []):
+        source_items = [item for item in fragments if item.get("source_id") == document.get("id")]
+        source_visuals = [item for item in scan.get("visuals", []) if item.get("source_id") == document.get("id")]
+        source_audit.append({
+            "source_id": document.get("id"),
+            "source_name": document.get("name"),
+            "source_hint": document.get("source_hint"),
+            "lecture_order": document.get("lecture_order"),
+            "fragment_count": len(source_items),
+            "use_count": sum(item.get("slide_decision") == "use" for item in source_items),
+            "merge_count": sum(item.get("slide_decision") == "merge_with_previous" for item in source_items),
+            "exclude_count": sum(item.get("slide_decision") == "exclude" for item in source_items),
+            "visual_count": len(source_visuals),
+            "extraction_notes": document.get("extraction_notes") or [],
+        })
+    return {
+        "schema_version": 3,
+        "purpose": purpose,
+        "fragment_count": len(fragments),
+        "coverage_profile": {
+            "source_count": len(documents),
+            "content_triage_counts": _count_values(fragments, "content_triage"),
+            "notes_obligation_counts": _count_values(fragments, "notes_obligation"),
+            "slide_decision_counts": _count_values(fragments, "slide_decision"),
+            "notes_role_counts": _count_values(fragments, "notes_role"),
+            "source_audit": source_audit,
+        },
+        "notes_generation_fragments": usable if purpose == "notes" else fragments,
+        "detailed_knowledge_fragments": detailed if purpose == "notes" else fragments,
+        "fragments": fragments,
+    }
+
+
+def readiness_report(scan: dict[str, Any] | None, purpose: str = "notes") -> dict[str, Any]:
+    scan = scan or {"documents": [], "fragments": []}
+    signals: dict[str, int] = {}
+    for fragment in scan.get("fragments", []):
+        for signal in fragment.get("knowledge_signals", []) or []:
+            signals[signal] = signals.get(signal, 0) + 1
+    core = {"definition", "mechanism", "method", "comparison", "calculation", "data_interpretation", "evidence"}
+    return {
+        "schema_version": 3,
+        "purpose": purpose,
+        "status": "ready" if scan.get("documents") and scan.get("fragments") else "missing_sources",
+        "document_count": len(scan.get("documents", [])),
+        "fragment_count": len(scan.get("fragments", [])),
+        "source_hint_counts": _count_values(scan.get("documents", []), "source_hint"),
+        "knowledge_signal_counts": signals,
+        "has_core_knowledge": any(signal in signals for signal in core),
+        "observations": (scan.get("summary") or {}).get("extraction_notes", []),
+    }
+
+
+def process_sources(
+    paths: list[str],
+    asset_dir: str = ".skill_assets",
+    visual_mode: str = "embedded_media",
+    purpose: str = "notes",
+) -> dict[str, Any]:
+    scan = build_scan(paths, asset_dir, visual_mode)
+    index = build_fragment_index(scan, purpose)
+    readiness = readiness_report(scan, purpose)
+    return {
+        "schema_version": 3,
+        "purpose": purpose,
+        "scan": scan,
+        "index": index,
+        "readiness": readiness,
+        "coverage_audit": index["coverage_profile"]["source_audit"],
+    }
+
+
+def _load_scan(path: str | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def self_test() -> None:
+    _scan_self_test()
+    scan = {
+        "documents": [{"id": "S1", "name": "Lecture 1.pptx", "source_hint": "knowledge_material", "source_order": 1}],
+        "fragments": [{
+            "id": "S1_F1",
+            "source_id": "S1",
+            "fragment_order": 1,
+            "slide_number": 1,
+            "slide_decision": "use",
+            "detailed_explanation_allowed": True,
+            "knowledge_signals": ["definition", "mechanism"],
+            "text": "A receptor is defined as a protein that initiates a signalling mechanism.",
+        }],
+        "visuals": [],
+        "summary": {"extraction_notes": []},
+    }
+    index = build_fragment_index(scan)
+    assert index["fragment_count"] == 1
+    assert index["coverage_profile"]["source_audit"][0]["use_count"] == 1
+    readiness = readiness_report(scan)
+    assert readiness["status"] == "ready"
+    assert readiness["has_core_knowledge"]
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Extract sources, index fragments, report readiness, and audit coverage.")
     parser.add_argument("sources", nargs="*")
+    parser.add_argument("--mode", choices=("process", "scan", "index", "readiness"), default="process")
+    parser.add_argument("--source-scan")
+    parser.add_argument("--purpose", choices=("notes", "practice", "essay"), default="notes")
     parser.add_argument("--out")
     parser.add_argument("--asset-dir", default=".skill_assets")
     parser.add_argument("--visual-mode", default="embedded_media")
@@ -1071,12 +1230,20 @@ def main() -> None:
     if args.self_test:
         self_test()
         return
-    result = build_scan(args.sources, args.asset_dir, args.visual_mode)
-    text = json.dumps(result, indent=2, ensure_ascii=False)
-    if args.out:
-        Path(args.out).write_text(text + "\n", encoding="utf-8")
+    existing_scan = _load_scan(args.source_scan)
+    if args.mode == "scan":
+        result = build_scan(args.sources, args.asset_dir, args.visual_mode)
+    elif args.mode == "index":
+        result = build_fragment_index(existing_scan, args.purpose)
+    elif args.mode == "readiness":
+        result = readiness_report(existing_scan, args.purpose)
     else:
-        print(text)
+        result = process_sources(args.sources, args.asset_dir, args.visual_mode, args.purpose)
+    rendered = json.dumps(result, indent=2, ensure_ascii=False)
+    if args.out:
+        Path(args.out).write_text(rendered + "\n", encoding="utf-8")
+    else:
+        print(rendered)
 
 
 if __name__ == "__main__":

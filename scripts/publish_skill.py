@@ -17,8 +17,8 @@ LEGACY_SKILL_ID = "everything-exam-preparation"
 DEFAULT_LOCAL_SKILL_ROOT = Path.home() / ".codex" / "skills"
 DEFAULT_LOCAL_SKILL_DIR = DEFAULT_LOCAL_SKILL_ROOT / LEGACY_SKILL_ID
 MULTI_SKILL_SOURCE_DIR = ROOT / "skills"
-SHARED_RESOURCE_DIRS = ("references", "scripts", "schemas", "contracts")
-SHARED_RESOURCE_FILES = ("requirements.txt", "LICENSE", "skill_manifest.json", "plugin_capability_manifest.json")
+SHARED_RESOURCE_DIRS = ("references", "scripts")
+SHARED_RESOURCE_FILES = ("requirements.txt", "LICENSE", "skill_manifest.json")
 SKIP_DIRS = {
     ".git",
     "__pycache__",
@@ -60,7 +60,9 @@ def ignore(_: str, names: list[str]) -> set[str]:
 def is_package_root() -> bool:
     return (
         (ROOT / "SKILL.md").exists()
-        and (ROOT / "skills" / "exam-prep-index" / "SKILL.md").exists()
+        and (ROOT / "skills" / "exam-prep-notes" / "SKILL.md").exists()
+        and (ROOT / "skills" / "exam-prep-practice" / "SKILL.md").exists()
+        and (ROOT / "skills" / "exam-prep-essay" / "SKILL.md").exists()
         and (ROOT / "skill_manifest.json").exists()
     )
 
@@ -277,12 +279,16 @@ def self_test() -> None:
         assert result["status"] == "ok", result
         assert not (legacy / "outputs").exists()
         assert not any(legacy.rglob("*.docx"))
-        assert (root / "exam-prep-slide-triage" / "agents" / "openai.yaml").exists()
-        assert (root / "exam-prep-index" / "contracts" / "academic-task-context-v1.schema.json").exists()
-        assert (root / "exam-prep-index" / "plugin_capability_manifest.json").exists()
-        assert (root / "exam-prep-index" / "scripts" / "soleil_adapter.py").exists()
+        assert sorted(item.name for item in root.iterdir() if item.is_dir()) == [
+            "everything-exam-preparation",
+            "exam-prep-essay",
+            "exam-prep-notes",
+            "exam-prep-practice",
+        ]
+        assert (root / "exam-prep-practice" / "scripts" / "exam_mode_tools.py").exists()
+        assert (root / "exam-prep-essay" / "scripts" / "essay_exam_tools.py").exists()
         assert check_installed_skills(legacy)["status"] == "ok"
-        (root / "exam-prep-index" / "requirements.txt").write_text("drift\n", encoding="utf-8")
+        (root / "exam-prep-practice" / "requirements.txt").write_text("drift\n", encoding="utf-8")
         assert check_installed_skills(legacy)["status"] == "error"
 
 

@@ -914,6 +914,146 @@ def load_json(path: str | None) -> dict[str, Any] | None:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def normalized_provenance(item: dict[str, Any]) -> dict[str, Any]:
+    nested = item.get("provenance") if isinstance(item.get("provenance"), dict) else {}
+    return {
+        "source_id": nested.get("source_id") or item.get("source_id"),
+        "source_name": nested.get("source_name") or item.get("source_name"),
+        "locator": nested.get("locator") or item.get("locator"),
+        "page_number": nested.get("page_number") or item.get("page_number"),
+        "slide_number": nested.get("slide_number") or item.get("slide_number"),
+        "time_offset_seconds": nested.get("time_offset_seconds") or item.get("time_offset_seconds"),
+        "time_range": nested.get("time_range") or item.get("time_range"),
+    }
+
+
+def unit_labels(fragment: dict[str, Any]) -> list[str]:
+    labels: list[str] = []
+    for candidate in fragment.get("knowledge_unit_candidates", []) or []:
+        if isinstance(candidate, dict) and candidate.get("label"):
+            labels.append(str(candidate["label"]).strip())
+    for role in fragment.get("knowledge_roles", []) or []:
+        label = str(role).strip().replace("_", " ")
+        if label:
+            labels.append(label)
+    if not labels:
+        preview = re.sub(r"\s+", " ", str(fragment.get("text") or "")).strip()
+        if preview:
+            labels.append(preview[:120])
+    unique_labels: list[str] = []
+    seen: set[str] = set()
+    for label in labels:
+        key = label.casefold()
+        if key not in seen:
+            seen.add(key)
+            unique_labels.append(label)
+    return unique_labels
+
+
+def build_assessment_blueprint(
+    source_fragments: list[dict[str, Any]],
+    relevant_memory: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    units: dict[str, dict[str, Any]] = {}
+    for fragment in source_fragments:
+        provenance = normalized_provenance(fragment)
+        for label in unit_labels(fragment):
+            record = units.setdefault(label.casefold(), {
+                "knowledge_unit": label,
+                "source_occurrences": 0,
+                "provenance": [],
+            })
+            record["source_occurrences"] += 1
+            if provenance not in record["provenance"]:
+                record["provenance"].append(provenance)
+    ordered = sorted(units.values(), key=lambda item: (-int(item["source_occurrences"]), str(item["knowledge_unit"])))
+    memory_units: list[str] = []
+    for memory in relevant_memory or []:
+        for key in ("weaknesses", "weakness_history", "knowledge_units"):
+            value = memory.get(key)
+            if isinstance(value, list):
+                for unit in value:
+                    label = str(unit.get("knowledge_unit") if isinstance(unit, dict) else unit).strip()
+                    if label and label not in memory_units:
+                        memory_units.append(label)
+    return {
+        "type": "assessment_blueprint",
+        "coverage_basis": "source_fragment_occurrence",
+        "knowledge_units": ordered,
+        "student_priority_units": memory_units,
+        "provenance_fields": ["source_name", "locator", "page_number", "slide_number", "time_offset_seconds", "time_range"],
+    }
+
+
+def evaluate_answer(payload: dict[str, Any]) -> dict[str, Any]:
+    answer = str(payload.get("student_answer") or "")
+    criteria = payload.get("criteria") or payload.get("expected_concepts") or []
+    if not isinstance(criteria, list):
+        raise ValueError("criteria must be a list")
+    normalized_answer = re.sub(r"\s+", " ", answer).casefold()
+    results: list[dict[str, Any]] = []
+    for raw in criteria:
+        if isinstance(raw, dict):
+            criterion_id = str(raw.get("criterion_id") or raw.get("id") or raw.get("label") or "criterion")
+            label = str(raw.get("label") or raw.get("expected_concept") or raw.get("text") or criterion_id)
+            terms = raw.get("terms") or [label]
+            provenance = raw.get("provenance") or []
+        else:
+            criterion_id = re.sub(r"[^a-z0-9]+", "_", str(raw).casefold()).strip("_") or "criterion"
+            label = str(raw)
+            terms = [label]
+            provenance = []
+        normalized_terms = [str(term).strip().casefold() for term in terms if str(term).strip()]
+        matched_terms = [term for term in normalized_terms if term in normalized_answer]
+        results.append({
+            "criterion_id": criterion_id,
+            "label": label,
+            "status": "addressed" if normalized_terms and matched_terms else "not_evidenced",
+            "matched_terms": matched_terms,
+            "provenance": provenance,
+        })
+    addressed = sum(item["status"] == "addressed" for item in results)
+    return {
+        "type": "answer_evaluation",
+        "evaluation_basis": "explicit_criteria_term_evidence",
+        "criteria_count": len(results),
+        "addressed_count": addressed,
+        "criterion_coverage": round(addressed / len(results), 4) if results else None,
+        "criteria": results,
+        "strengths": [item["label"] for item in results if item["status"] == "addressed"],
+        "revision_priorities": [item["label"] for item in results if item["status"] == "not_evidenced"],
+        "mark_awarded": None,
+    }
+
+
+def build_timed_practice(blueprint: dict[str, Any], duration_minutes: int) -> dict[str, Any]:
+    if duration_minutes <= 0:
+        raise ValueError("duration_minutes must be positive")
+    units = list(blueprint.get("knowledge_units") or [])
+    if not units:
+        raise ValueError("assessment blueprint has no knowledge units")
+    selected = units[: min(len(units), duration_minutes)]
+    base, remainder = divmod(duration_minutes, len(selected))
+    cursor = 0
+    slots: list[dict[str, Any]] = []
+    for index, unit in enumerate(selected):
+        minutes = base + (1 if index < remainder else 0)
+        start = cursor
+        cursor += minutes
+        slots.append({
+            "order": index + 1,
+            "knowledge_unit": unit.get("knowledge_unit"),
+            "duration_minutes": minutes,
+            "time_provenance": {"start_minute": start, "end_minute": cursor},
+            "source_provenance": unit.get("provenance") or [],
+        })
+    return {
+        "type": "timed_practice",
+        "duration_minutes": duration_minutes,
+        "slots": slots,
+    }
+
+
 def self_test() -> None:
     text = "1. Which of the following is correct? A) x B) y\n2. Explain the mechanism. 10 marks\n3. Practical data: calculate the rate from the graph."
     result = analyze_text(text)
@@ -1082,6 +1222,31 @@ def self_test() -> None:
             xml = zf.read("word/document.xml").decode("utf-8")
             assert "Describe sodium conductance" in xml
             assert "final answer" not in xml.lower()
+    blueprint = build_assessment_blueprint([{
+        "source_id": "S1",
+        "source_name": "Lecture 1.pdf",
+        "page_number": 4,
+        "knowledge_unit_candidates": [{"label": "Signal transduction"}],
+        "text": "Signal transduction uses receptor activation.",
+    }, {
+        "source_id": "S2",
+        "source_name": "Lecture 2.pptx",
+        "slide_number": 8,
+        "knowledge_unit_candidates": [{"label": "Signal transduction"}],
+        "text": "Receptor activation continues.",
+    }])
+    assert blueprint["knowledge_units"][0]["source_occurrences"] == 2
+    evaluation = evaluate_answer({
+        "student_answer": "Receptor activation initiates the pathway.",
+        "criteria": [
+            {"label": "Receptor activation", "terms": ["receptor activation"]},
+            {"label": "Kinase cascade", "terms": ["kinase cascade"]},
+        ],
+    })
+    assert evaluation["criterion_coverage"] == 0.5
+    assert "Kinase cascade" in evaluation["revision_priorities"]
+    timed = build_timed_practice(blueprint, 20)
+    assert sum(item["duration_minutes"] for item in timed["slots"]) == 20
 
 
 def main() -> None:
@@ -1090,6 +1255,8 @@ def main() -> None:
     parser.add_argument("--input")
     parser.add_argument("--source-scan")
     parser.add_argument("--question")
+    parser.add_argument("--memory")
+    parser.add_argument("--duration-minutes", type=int)
     parser.add_argument("--out")
     parser.add_argument("--out-docx")
     parser.add_argument("--self-test", action="store_true")
@@ -1130,6 +1297,24 @@ def main() -> None:
         if args.out_docx:
             write_organized_questions_docx(Path(args.out_docx), result)
             result["docx_path"] = args.out_docx
+    elif args.command == "build-blueprint":
+        fragments = (scan or {}).get("fragments") if scan else load_json(args.input)
+        if isinstance(fragments, dict):
+            fragments = fragments.get("fragments")
+        if not isinstance(fragments, list):
+            parser.error("build-blueprint requires --source-scan or --input containing fragments")
+        memory = load_json(args.memory) if args.memory else None
+        result = build_assessment_blueprint(fragments, memory if isinstance(memory, list) else None)
+    elif args.command == "evaluate-answer":
+        payload = load_json(args.input)
+        if not isinstance(payload, dict):
+            parser.error("evaluate-answer requires --input")
+        result = evaluate_answer(payload)
+    elif args.command == "build-timed-practice":
+        blueprint = load_json(args.input)
+        if not isinstance(blueprint, dict) or not args.duration_minutes:
+            parser.error("build-timed-practice requires --input and --duration-minutes")
+        result = build_timed_practice(blueprint, args.duration_minutes)
     else:
         result = analyze_text(text)
     rendered = json.dumps(result, indent=2, ensure_ascii=False)

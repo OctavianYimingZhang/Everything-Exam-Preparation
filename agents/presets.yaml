@@ -1,169 +1,25 @@
 presets:
-  exam_prep_notes:
-    output: docx_notes
-    conditional_output: exam_type_related_addon_docx_when_past_paper_or_question_practical_material_exists
-    conditional_worked_solutions: practical_worked_solutions_docx_when_practical_calculation_problem_material_exists
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: explanation_only_notes
-    formula_policy: domain_neutral_visible_formula_blocks
-    visual_policy: academic_cropped_pdf_visual_region_assets
+  notes:
+    skill: exam-prep-notes
+    output: explanation-first course Notes
     actions:
-      - source_inventory
-      - fragment_index
-      - practice_material_knowledge_signal_review
-      - human_review_exam_material_output_confirmation
-      - coverage_calibration
-      - course_knowledge_map
-      - exam_prep_notes
-      - question_based_exam_type_related_addon_when_triggered
-      - practical_worked_solutions_when_triggered
-  exam_mode_diagnosis:
-    output: chat_report
+      - process sources and slide triage
+      - build course coverage audit
+      - explain connected knowledge units
+      - render and inspect the document
+  practice:
+    skill: exam-prep-practice
+    output: requested question-based artifact
     actions:
-      - source_inventory
-      - human_review_exam_material_output_confirmation
-      - exam_mode_diagnosis
-  mcq_preparation:
-    output: mcq_exam_type_related_addon
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: exam_type_related_addon
-    formula_policy: domain_neutral_visible_formula_blocks
+      - process course and question sources
+      - run the selected practice capability
+      - preserve useful provenance
+      - verify the output
+  essay:
+    skill: exam-prep-essay
+    output: requested essay-support artifact
     actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - coverage_calibration
-      - past_paper_recurrence_analysis
-      - result_only_exam_needed_knowledge_points
-  short_answer_preparation:
-    output: short_answer_exam_type_related_addon
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: exam_type_related_addon
-    formula_policy: domain_neutral_visible_formula_blocks
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - coverage_calibration
-      - past_paper_recurrence_analysis
-      - result_only_exam_needed_knowledge_points
-  long_answer_preparation:
-    output: long_answer_practical_data_problem_exam_type_related_addon
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: exam_type_related_addon
-    formula_policy: domain_neutral_visible_formula_blocks
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - coverage_calibration
-      - practice_question_walkthroughs
-      - example_answers
-  essay_preparation:
-    output: essay_exam_type_related_addon
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: exam_type_related_addon
-    formula_policy: domain_neutral_visible_formula_blocks
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - coverage_calibration
-      - exam_ready_paragraphs
-      - module_covering_essay_questions
-      - example_essays
-  worked_solution_preparation:
-    output: practical_worked_solutions_docx
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: worked_solution_teaching_report
-    formula_policy: domain_neutral_visible_formula_blocks
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - coverage_calibration
-      - worked_solution_question_extraction
-      - worked_solution_teaching_notes
-  online_essay_exam_drafting:
-    output: online_essay_exam_draft
-    optional_output: online_essay_exam_draft_docx_if_requested
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: online_essay_exam_draft
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - online_materials_permission_review
-      - lecture_materials_permission_review
-      - online_essay_exam_brief_lock
-      - allowed_source_evidence_map
-      - paragraph_level_structure_plan
-      - planning_approval
-      - online_essay_exam_draft_generation
-      - online_essay_exam_qa
-  mixed_exam_preparation:
-    output: exam_type_related_addon_docx
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: selected_route_reports
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - confirmed_mixed_routes
-      - selected_route_follow_up_questions
-      - run_selected_sub_skills
-  question_solving:
-    output: question_solution_report
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: source_grounded_question_solution
-    actions:
-      - source_inventory
-      - fragment_index
-      - target_question_analysis
-      - match_question_to_knowledge_unit
-      - strict_same_knowledge_point_question_retrieval
-      - question_solution_report
-  question_organizing:
-    output: organized_questions_docx
-    output_name_policy: user_requested_or_generated_from_context
-    student_surface: organized_question_list
-    actions:
-      - source_inventory
-      - fragment_index
-      - lecture_order_knowledge_map
-      - past_paper_practice_question_extraction
-      - sort_questions_by_latest_matching_lecture
-      - organized_questions_docx
-  assessment_blueprint:
-    output: assessment_blueprint
-    output_language: en_unless_explicit_task_override
-    student_surface: source_grounded_assessment_coverage
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - relevant_everything_university_memory_load
-      - assessment_blueprint_generation
-      - assessment_blueprint_qa
-  answer_evaluation:
-    output: answer_evaluation_report
-    output_language: en_unless_explicit_task_override
-    student_surface: source_grounded_answer_feedback
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - answer_and_evaluation_criteria_confirmation
-      - source_grounded_answer_evaluation
-      - mastery_history_update_if_enabled
-  timed_practice:
-    output: timed_practice_session
-    output_language: en_unless_explicit_task_override
-    student_surface: timed_assessment_practice
-    actions:
-      - source_inventory
-      - fragment_index
-      - human_review_exam_material_output_confirmation
-      - assessment_blueprint_load_or_generation
-      - timed_practice_duration_confirmation
-      - timed_practice_generation
+      - analyse question and course evidence
+      - establish Online Essay permissions when needed
+      - integrate reliable Extra Reading
+      - verify argument and source use

@@ -1,52 +1,32 @@
 ---
 name: exam-prep-notes
-description: Generate explanation-only DOCX exam-preparation notes from lecture, course, textbook, handout, slide, or revision material, with visible formulas, academic source visuals, and worked examples when they teach the relevant knowledge unit.
+description: Create explanation-first course Notes from lecture slides, PDFs, documents, recordings, revision material, and past papers used for emphasis. Includes slide triage, coverage auditing, useful source visuals, equations, methods, and worked examples.
 ---
 
 # Exam Prep Notes
 
-Create student-facing Notes that teach the lecture and exam-relevant knowledge the student needs to master. Notes are broad lecture reconstruction documents for weakly prepared students, not concise Past Paper priority reports. Use this Skill after `exam-prep-index` has analyzed the material and the user has accepted Notes, or when the user explicitly asks for Notes with no exam-specific report.
+Create course-complete teaching Notes for a student preparing for assessment.
 
-Default public output is English. Change the language only when the user explicitly overrides it for the current task; examples in another language do not change the default.
-
-## Load First
-
-Read these shared resources before drafting:
+## Read First
 
 - `references/input_and_evidence_protocol.md`
 - `references/exam_prep_notes_protocol.md`
-- `references/language_quality_contract.md`
-- `../exam-prep-slide-triage/SKILL.md` when the input includes slide decks or slide-like PDFs
-- `references/extra_reading_workflow.md` only when the confirmed Exam type includes essay and the Notes need essay-context enrichment
 
-When this Skill is read from the source checkout instead of an installed local skill, shared resources live two directories up from this file.
-
-## Direct Invocation Gate
-
-If this Skill is invoked directly without a confirmed `exam-prep-index` review state, apply the Direct Invocation Gate in `references/input_and_evidence_protocol.md` before public Notes generation. A user request for Notes confirms the Notes route only; still confirm Material type/source roles and any plan-changing route or output fields that remain unresolved.
+Shared resources are two directories above this file in the source checkout.
 
 ## Workflow
 
-1. Reuse the source map, fragment index, confirmed source roles, and confirmed Notes decision from `exam-prep-index` when available.
-2. If this Skill is invoked directly, read supplied files, build a source map, and ask the user whether Notes should be generated before public document generation.
-3. Use `scripts/extract_sources.py` and `scripts/build_fragment_index.py` when local extraction or a reusable fragment index improves reliability.
-4. Identify source roles and open knowledge signals: definitions, mechanisms, methods, comparisons, calculations, evidence, applications, visuals, and explanatory examples.
-5. For slide decks and slide-like PDFs, apply slide triage before writing: `use` substantive knowledge slides, `merge_with_previous` supporting or repeated slides, and keep `exclude` slides only in the internal `slide_triage_audit`.
-6. Group connected signals into lecture-unit complete knowledge units in source order. Preserve lecture/source order for Notes instead of sorting the public Notes primarily by exam frequency or signal score.
-7. Apply content triage: cover `core_lecture_content`, include or compress `supporting_example`, and exclude `reading_reference`, `admin_or_boilerplate`, or `low_exam_relevance_context` unless directly examinable.
-8. Calibrate teaching depth from source complexity, knowledge density, novelty, and exam relevance. Expand dense or unfamiliar lecture units enough for a student who has not learned the lecture well.
-9. Generate DOCX Notes with `scripts/generate_exam_prep_notes_docx.py` when appropriate.
+1. Inventory every supplied source and apply the user's stated source roles.
+2. Run `scripts/extract_sources.py` to extract content, preserve locators, triage slide-like material, build the fragment index, and produce a coverage audit.
+3. Organise substantive teaching content into connected knowledge units in a course-logical order.
+4. Explain definitions, mechanisms, methods, comparisons, calculations, evidence, interpretation, and application at the depth needed to learn the course.
+5. Integrate recap and interactive material into the relevant knowledge units.
+6. Use practice material to calibrate emphasis and explanation depth while keeping Notes course-complete.
+7. Select source visuals that materially improve understanding and label each with the source filename and slide or page locator.
+8. Generate the requested document and complete structural and rendered-page verification.
 
-## Output Contract
+## Output
 
-Write as a strong tutor. Explain what each topic means, why it matters, how it works, and how it is interpreted or applied.
+Use the user's requested language and default to English. Use black academic text, restrained hierarchy, and a single main title. Add supplementary title text when requested.
 
-Use `coverage_policy: lecture_unit_complete`. The intended output is near slide-by-slide coverage at the level of substantive lecture units, not literal commentary on every slide or image. Cover most definitions, mechanisms, methods, pathways, comparisons, diagram meanings, important examples, and conceptual applications from the lecture material.
-
-Slide triage is not a detail-level grading system. It prevents non-teaching slides from becoming detailed public explanation while preserving useful lecture structure. ILOs, agendas, topic boundaries, section dividers, summaries, non-core visuals, non-essential data, examples, and recap slides may guide topic order or merge into nearby units, but should not become long Notes explanations unless they contain substantive course knowledge.
-
-Include visible formulas, tables, academic source visuals, method explanations, mechanism explanations, and worked examples only where they strengthen the relevant knowledge unit. Keep source intake narration, extraction notes, route planning, QA, and workflow records internal.
-
-Keep Notes separate from MCQ, SAQ, and other Specific Research Reports. Reports provide concise exam-priority reinforcement; Notes provide broad lecture walkthrough teaching.
-
-Use Arial, 2.5 cm margins, 1.5 line spacing, centered main title, left-aligned headings, justified body text, compact academic tables, centered display formulas, academically useful source visuals, and clear knowledge sections.
+The public document contains teaching content. The internal coverage audit records every instructional source and its use, merge, or exclusion decision.

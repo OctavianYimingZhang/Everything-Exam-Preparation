@@ -1,156 +1,64 @@
 {
-    "schema_version": 2,
-    "plugin_version": "2.0.0",
+  "schema_version": 3,
+  "plugin_version": "3.0.0",
   "skill_id": "everything-exam-preparation",
   "repo": "OctavianYimingZhang/Everything-Exam-Preparation",
   "branch": "main",
   "entrypoint": "SKILL.md",
   "multi_skill_system": true,
-  "plugin_router_skill": {
-    "name": "everything-exam-preparation",
-    "path": "skills/everything-exam-preparation/SKILL.md",
-    "route": "plugin_router"
-  },
-  "index_skill": "skills/exam-prep-index/SKILL.md",
-    "default_output": "docx_notes",
-    "default_output_language": "en",
-    "capability_manifest": "plugin_capability_manifest.json",
-    "supported_context_versions": [
-        1
-    ],
-    "context_contracts": {
-        "academic_task_context": "contracts/academic-task-context-v1.schema.json",
-        "task_run_state": "contracts/task-run-state-v1.schema.json",
-        "source_record": "contracts/source-record-v1.schema.json",
-        "local_bridge_protocol": "contracts/local-bridge-protocol-v1.schema.json",
-        "plugin_capability_manifest": "contracts/plugin-capability-manifest-v2.schema.json"
-    },
-    "route_adapter": "scripts/soleil_adapter.py",
-    "mastery_history": {
-        "default_enabled": true,
-        "scope": "per_course",
-        "operations": [
-            "enable",
-            "disable",
-            "export",
-            "delete"
-        ],
-        "entrypoint": "scripts/mastery_history.py"
-    },
-    "source_provenance": [
-        "page_number",
-        "slide_number",
-        "time_offset_seconds",
-        "time_range"
-    ],
-  "notes_coverage_policy": "lecture_unit_complete",
-  "slide_triage_policy": "notes_material_analysis_use_merge_or_exclude_not_detail_level_grading",
-  "online_essay_exam_policy": "parallel_drafting_branch_with_source_rules_and_explicit_complete_draft_permission_gate",
-  "output_name_policy": "user_requested_or_generated_from_context",
-  "human_review_required": true,
-  "human_review_targets": [
-    "exam_type_route",
-    "material_type_source_roles",
-    "notes_output_choice",
-        "confirmed_mixed_routes",
-        "route_specific_follow_up_choices",
-        "online_essay_exam_source_permissions",
-        "online_essay_exam_complete_draft_permission",
-        "assessment_blueprint_scope",
-        "answer_evaluation_criteria",
-        "timed_practice_duration"
-  ],
-  "routes": [
-    "exam_prep_notes",
-    "mcq_preparation",
-    "short_answer_preparation",
-    "long_answer_preparation",
-    "worked_solution_preparation",
-    "essay_preparation",
-    "online_essay_exam_drafting",
-    "mixed_exam_preparation",
-        "question_solving",
-        "question_organizing",
-        "assessment_blueprint",
-        "answer_evaluation",
-        "timed_practice"
-  ],
-  "removed_focused_skills": [
-    "exam-prep-exam-mode"
-  ],
-  "focused_skills": [
+  "default_output": "docx",
+  "default_output_language": "en",
+  "public_skills": [
     {
-      "name": "exam-prep-index",
-      "path": "skills/exam-prep-index/SKILL.md",
-      "route": "index"
+      "name": "everything-exam-preparation",
+      "path": "skills/everything-exam-preparation/SKILL.md",
+      "purpose": "intent_router"
     },
     {
       "name": "exam-prep-notes",
       "path": "skills/exam-prep-notes/SKILL.md",
-      "route": "exam_prep_notes"
+      "purpose": "course_notes"
     },
     {
-      "name": "exam-prep-slide-triage",
-      "path": "skills/exam-prep-slide-triage/SKILL.md",
-      "route": "notes_material_analysis"
-    },
-    {
-      "name": "exam-prep-mcq",
-      "path": "skills/exam-prep-mcq/SKILL.md",
-      "route": "mcq_preparation"
-    },
-    {
-      "name": "exam-prep-short-answer",
-      "path": "skills/exam-prep-short-answer/SKILL.md",
-      "route": "short_answer_preparation"
-    },
-    {
-      "name": "exam-prep-long-answer",
-      "path": "skills/exam-prep-long-answer/SKILL.md",
-      "route": "long_answer_preparation"
-    },
-    {
-      "name": "exam-prep-worked-solutions",
-      "path": "skills/exam-prep-worked-solutions/SKILL.md",
-      "route": "worked_solution_preparation"
+      "name": "exam-prep-practice",
+      "path": "skills/exam-prep-practice/SKILL.md",
+      "purpose": "question_based_practice"
     },
     {
       "name": "exam-prep-essay",
       "path": "skills/exam-prep-essay/SKILL.md",
-      "route": "essay_preparation"
-    },
-    {
-      "name": "exam-prep-online-essay-exam",
-      "path": "skills/exam-prep-online-essay-exam/SKILL.md",
-      "route": "online_essay_exam_drafting"
-    },
-    {
-      "name": "exam-prep-extra-reading",
-      "path": "skills/exam-prep-extra-reading/SKILL.md",
-      "route": "extra_reading_enrichment"
-    },
-    {
-      "name": "exam-prep-question-solver",
-      "path": "skills/exam-prep-question-solver/SKILL.md",
-      "route": "question_solving"
-    },
-    {
-      "name": "exam-prep-question-organizer",
-      "path": "skills/exam-prep-question-organizer/SKILL.md",
-      "route": "question_organizing"
+      "purpose": "essay_support"
     }
   ],
-  "publish": {
-    "github_push": "python3 scripts/publish_skill.py --push",
-    "dependency_update": "python3 -m pip install --upgrade -r requirements.txt",
-    "local_skill_update": "python3 scripts/publish_skill.py --sync-local-skill",
-    "local_multi_skill_update": "python3 scripts/publish_skill.py --sync-local-skill",
-    "installed_drift_check": "python3 scripts/publish_skill.py --check-installed",
-    "push_and_update": "python3 scripts/publish_skill.py --push --sync-local-skill"
+  "references": [
+    "references/input_and_evidence_protocol.md",
+    "references/exam_prep_notes_protocol.md",
+    "references/exam_mode_and_addons_protocol.md",
+    "references/essay_exam_prep_protocol.md"
+  ],
+  "tools": {
+    "sources": "scripts/extract_sources.py",
+    "notes": "scripts/generate_exam_prep_notes_docx.py",
+    "practice": "scripts/exam_mode_tools.py",
+    "essay": "scripts/essay_exam_tools.py",
+    "validation": "scripts/validate_skill_contracts.py",
+    "installation": "scripts/publish_skill.py"
   },
-  "post_update_commands": [
-    "python3 -m pip install --upgrade -r requirements.txt",
-    "python3 scripts/publish_skill.py --sync-local-skill",
-    "python3 scripts/publish_skill.py --check-installed"
-  ]
+  "removed_focused_skills": [
+    "exam-prep-index",
+    "exam-prep-slide-triage",
+    "exam-prep-mcq",
+    "exam-prep-short-answer",
+    "exam-prep-long-answer",
+    "exam-prep-worked-solutions",
+    "exam-prep-online-essay-exam",
+    "exam-prep-extra-reading",
+    "exam-prep-question-solver",
+    "exam-prep-question-organizer",
+    "exam-prep-exam-mode"
+  ],
+  "publish": {
+    "local_skill_update": "python3 scripts/publish_skill.py --sync-local-skill",
+    "installed_drift_check": "python3 scripts/publish_skill.py --check-installed"
+  }
 }

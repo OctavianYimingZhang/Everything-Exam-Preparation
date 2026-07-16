@@ -1,57 +1,13 @@
 prompt_cards:
-  - id: exam_prep_notes
-    title: Exam Preparation Notes
-    purpose: Review the preliminary route with the user, then build explanation-only Notes with worked examples and separate outputs when Past Paper or Practical material is confirmed.
-    route: exam_prep_notes
-  - id: exam_mode_diagnosis
-    title: Exam Mode Diagnosis
-    purpose: Identify how the course is examined, show the preliminary diagnosis, and ask the user to confirm or correct it.
-    route: exam_mode_diagnosis
-  - id: mcq_preparation
-    title: MCQ Exam Type Related Add-on
-    purpose: Confirm the MCQ route and source roles, then build a result-only lecture-order report of recurring exam-needed knowledge points from Past Papers and Mock Papers.
-    route: mcq_preparation
-  - id: short_answer_preparation
-    title: Short Answer Exam Type Related Add-on
-    purpose: Confirm the Short Answer route and source roles, then build a result-only lecture-order report of recurring exam-needed knowledge points from Past Papers and Mock Papers.
-    route: short_answer_preparation
-  - id: long_answer_preparation
-    title: Long Answer Exam Type Related Add-on
-    purpose: Confirm the Long Answer or Practical/Data/Problem route, then build a separate add-on with example answers and academic analysis/prediction results.
-    route: long_answer_preparation
-  - id: practical_worked_solutions
-    title: Detailed Worked Solutions
-    purpose: Confirm worked-solution signals, then build a separate DOCX for calculation, derivation, estimate, proof, data, or problem questions.
-    route: worked_solution_preparation
-  - id: essay_preparation
-    title: Essay Exam Type Related Add-on
-    purpose: Confirm the Essay route and source roles, then build a separate essay add-on with plans, claims, evidence integration, and example essays.
-    route: essay_preparation
-  - id: online_essay_exam_drafting
-    title: Online Essay Exam Drafting
-    purpose: Confirm Online Essay Exam, source rules, explicit assessment permission for a complete draft, allowed sources, citation expectation, and output format before evidence mapping, planning, drafting, or optional Notes support.
-    route: online_essay_exam_drafting
-  - id: mixed_exam_preparation
-    title: Mixed Exam Preparation
-    purpose: Confirm the selected component routes, Material type, and Notes choice, then run every selected route-specific follow-up and output branch.
-    route: mixed_exam_preparation
-  - id: question_solving
-    title: Question Solving
-    purpose: Confirm the target question and supplied source roles, then produce a source-grounded solution with strict same-knowledge-point transfer practice.
-    route: question_solving
-  - id: question_organizing
-    title: Question Organization
-    purpose: Confirm supplied question sources and lecture-order basis, then organize Past Paper and Practice Material questions by lecture knowledge-unit order.
-    route: question_organizing
-  - id: assessment_blueprint
-    title: Assessment Blueprint
-    purpose: Confirm the route, source roles, and blueprint scope, then map evidenced course knowledge units with page, slide, or time provenance.
-    route: assessment_blueprint
-  - id: answer_evaluation
-    title: Answer Evaluation
-    purpose: Confirm the supplied answer and source-grounded criteria, then evaluate coverage and update per-course mastery history when enabled.
-    route: answer_evaluation
-  - id: timed_practice
-    title: Timed Practice
-    purpose: Confirm the duration and blueprint, then build a timed practice session with per-slot time and source provenance.
-    route: timed_practice
+  - id: notes
+    title: Course Notes
+    skill: exam-prep-notes
+    prompt: Create explanation-first course Notes from these materials.
+  - id: practice
+    title: Exam Practice
+    skill: exam-prep-practice
+    prompt: Prepare the requested question-based practice from these course and assessment materials.
+  - id: essay
+    title: Essay Support
+    skill: exam-prep-essay
+    prompt: Build the requested essay plan, evidence support, feedback, or permitted draft.
