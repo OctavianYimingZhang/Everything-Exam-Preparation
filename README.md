@@ -4,7 +4,7 @@ Everything Exam Preparation is a Codex Plugin that turns trusted course and asse
 
 ## Structure
 
-The Plugin has four public Skill entries:
+The manifest currently exposes these Skill entries:
 
 | Skill | Responsibility |
 | --- | --- |
@@ -14,6 +14,8 @@ The Plugin has four public Skill entries:
 | `exam-prep-essay` | Handles ordinary and Online Essay support plus Extra Reading. |
 
 The router selects the artifact from the user's request. It asks a concise question only when an indispensable input or a materially different output choice is unresolved.
+
+The focused Skill list is manifest-driven. Split a Skill when its learning intent, evidence role, workflow, toolchain, or output is materially independent; merge it when those boundaries are shared.
 
 ## Core Workflow
 
@@ -41,7 +43,7 @@ Four references define the shared behaviour:
 | `scripts/exam_mode_tools.py` | Practice analysis and generation. |
 | `scripts/essay_exam_tools.py` | Essay and Extra Reading analysis. |
 | `scripts/validate_skill_contracts.py` | Unified repository validation. |
-| `scripts/publish_skill.py` | Local four-Skill synchronisation and drift checking. |
+| `scripts/publish_skill.py` | Manifest-driven local synchronisation and drift checking. |
 
 ## Installation
 
@@ -60,20 +62,23 @@ python3 scripts/publish_skill.py --check-installed
 python3 -m compileall -q scripts
 python3 scripts/validate_skill_contracts.py
 python3 scripts/publish_skill.py --self-test
+for skill in skills/*; do
+  test -f "$skill/SKILL.md" && python3 "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" "$skill"
+done
 python3 "$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py" .
 ```
 
-The unified validator checks the four public Skills, four references, metadata consistency, retained tool self-tests, retired structure, and installation declarations.
+The unified validator checks the manifest-declared Skills, references, metadata consistency, retained tool self-tests, retired structure, and installation declarations.
 
 ## Repository Map
 
 | Path | Responsibility |
 | --- | --- |
 | `SKILL.md` | Package router and shared rules. |
-| `skills/` | Four Plugin-discoverable Skill entries. |
+| `skills/` | Manifest-declared Plugin Skill entries. |
 | `references/` | Source, Notes, Practice, and Essay protocols. |
 | `scripts/` | Core processing, rendering, validation, and synchronisation. |
-| `agents/` | Four-entry presets and prompt metadata. |
+| `agents/` | Optional presets, prompt cards, and setup metadata. |
 | `.codex-plugin/plugin.json` | Plugin metadata. |
 | `skill_manifest.json` | Version, public Skill list, tools, and local cleanup list. |
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Synchronise, compare, or push manifest-declared Exam Preparation Skills."""
+
 from __future__ import annotations
 
 import argparse
@@ -12,11 +14,10 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+
 ROOT = Path(__file__).resolve().parents[1]
-LEGACY_SKILL_ID = "everything-exam-preparation"
+MANIFEST_PATH = ROOT / "skill_manifest.json"
 DEFAULT_LOCAL_SKILL_ROOT = Path.home() / ".codex" / "skills"
-DEFAULT_LOCAL_SKILL_DIR = DEFAULT_LOCAL_SKILL_ROOT / LEGACY_SKILL_ID
-MULTI_SKILL_SOURCE_DIR = ROOT / "skills"
 SHARED_RESOURCE_DIRS = ("references", "scripts")
 SHARED_RESOURCE_FILES = ("requirements.txt", "LICENSE", "skill_manifest.json")
 SKIP_DIRS = {
@@ -32,15 +33,209 @@ SKIP_DIRS = {
     ".skill_assets",
 }
 SKIP_SUFFIXES = {".pyc", ".pyo", ".docx", ".pdf", ".pptx", ".xlsx", ".zip", ".jsonl"}
-PLUGIN_ROUTER_SKILLS = {"everything-exam-preparation"}
 
 
-def run(cmd: list[str], dry_run: bool) -> dict[str, Any]:
-    if dry_run:
-        return {"cmd": cmd, "status": "planned"}
-    proc = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True)
+def load_manifest() -> dict[str, Any]:
+    value = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise RuntimeError("skill_manifest.json must be an object")
+    return value
+
+
+def ignored(_: str, names: list[str]) -> set[str]:
     return {
-        "cmd": cmd,
+        name
+        for name in names
+        if name in SKIP_DIRS or name == ".DS_Store" or Path(name).suffix in SKIP_SUFFIXES
+    }
+
+
+def skill_name(skill_md: Path) -> str:
+    match = re.search(r"^name:\s*([a-z0-9-]+)\s*$", skill_md.read_text(encoding="utf-8"), re.MULTILINE)
+    if not match:
+        raise RuntimeError(f"Cannot read Skill name: {skill_md}")
+    return match.group(1)
+
+
+def public_skills() -> list[dict[str, Any]]:
+    manifest = load_manifest()
+    raw = manifest.get("public_skills", [])
+    if not isinstance(raw, list) or len(raw) < 2:
+        raise RuntimeError("The manifest must declare a Router and at least one focused Skill")
+    entries: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            raise RuntimeError(f"Invalid public Skill declaration: {item!r}")
+        name = str(item.get("name", ""))
+        source_file = ROOT / str(item.get("path", ""))
+        if (
+            source_file != ROOT / "skills" / name / "SKILL.md"
+            or not source_file.is_file()
+            or skill_name(source_file) != name
+        ):
+            raise RuntimeError(f"Invalid public Skill declaration: {item!r}")
+        entries.append({"name": name, "source": source_file.parent})
+    names = [entry["name"] for entry in entries]
+    architecture = manifest.get("architecture", {})
+    if len(set(names)) != len(names) or names[0] != manifest.get("skill_id"):
+        raise RuntimeError("The first unique public Skill must be the manifest Router")
+    if architecture.get("router") != names[0] or architecture.get("focused_skill_policy") != "manifest_driven":
+        raise RuntimeError("The architecture must declare a manifest-driven Router")
+    return entries
+
+
+def is_package_root() -> bool:
+    try:
+        entries = public_skills()
+    except (OSError, ValueError, RuntimeError, json.JSONDecodeError):
+        return False
+    return (ROOT / "SKILL.md").is_file() and bool(entries)
+
+
+def copy_child_resources(source: Path, destination: Path) -> None:
+    for item in source.iterdir():
+        if item.name == "SKILL.md" or item.name in SKIP_DIRS or item.name == ".DS_Store":
+            continue
+        target = destination / item.name
+        if item.is_dir():
+            shutil.copytree(item, target, ignore=ignored)
+        elif item.suffix not in SKIP_SUFFIXES:
+            shutil.copy2(item, target)
+
+
+def install_focused(source: Path, destination: Path) -> None:
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source / "SKILL.md", destination / "SKILL.md")
+    copy_child_resources(source, destination)
+    for dirname in SHARED_RESOURCE_DIRS:
+        shared = ROOT / dirname
+        if shared.exists():
+            shutil.copytree(shared, destination / dirname, ignore=ignored)
+    for filename in SHARED_RESOURCE_FILES:
+        shared = ROOT / filename
+        if shared.exists():
+            shutil.copy2(shared, destination / filename)
+
+
+def removed_ids() -> list[str]:
+    public = {entry["name"] for entry in public_skills()}
+    removed = [str(item) for item in load_manifest().get("removed_focused_skills", []) if item]
+    if public & set(removed):
+        raise RuntimeError("A public Skill cannot also be retired")
+    return removed
+
+
+def cleanup_removed(install_root: Path, dry_run: bool) -> list[dict[str, str]]:
+    results = []
+    for name in removed_ids():
+        destination = install_root / name
+        if dry_run:
+            status = "planned"
+        elif destination.exists():
+            shutil.rmtree(destination)
+            status = "removed"
+        else:
+            status = "absent"
+        results.append({"name": name, "destination": str(destination), "status": status})
+    return results
+
+
+def synchronise(destination: Path, dry_run: bool = False) -> dict[str, Any]:
+    if not is_package_root():
+        return {"status": "error", "error": "Run this helper from the Exam Preparation package root."}
+    entries = public_skills()
+    install_root = destination.parent
+    if dry_run:
+        return {
+            "status": "planned",
+            "router": str(destination),
+            "focused_skills": [
+                {"name": entry["name"], "destination": str(install_root / entry["name"]), "status": "planned"}
+                for entry in entries[1:]
+            ],
+            "removed_focused_skills": cleanup_removed(install_root, dry_run=True),
+        }
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(ROOT, destination, ignore=ignored)
+    focused = []
+    for entry in entries[1:]:
+        focused_destination = install_root / entry["name"]
+        install_focused(entry["source"], focused_destination)
+        focused.append(
+            {"name": entry["name"], "destination": str(focused_destination), "status": "synchronised"}
+        )
+    return {
+        "status": "ok",
+        "router": str(destination),
+        "focused_skills": focused,
+        "removed_focused_skills": cleanup_removed(install_root, dry_run=False),
+    }
+
+
+def tree_manifest(root: Path) -> dict[str, str]:
+    result: dict[str, str] = {}
+    if not root.exists():
+        return result
+    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+        relative = path.relative_to(root)
+        if any(part in SKIP_DIRS or part == ".DS_Store" for part in relative.parts):
+            continue
+        if path.suffix in SKIP_SUFFIXES:
+            continue
+        result[relative.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return result
+
+
+def compare(expected: Path, actual: Path, name: str) -> dict[str, Any]:
+    left = tree_manifest(expected)
+    right = tree_manifest(actual)
+    missing = sorted(left.keys() - right.keys())
+    unexpected = sorted(right.keys() - left.keys())
+    changed = sorted(key for key in left.keys() & right.keys() if left[key] != right[key])
+    return {
+        "name": name,
+        "status": "ok" if not missing and not unexpected and not changed else "drift",
+        "missing": missing,
+        "unexpected": unexpected,
+        "changed": changed,
+    }
+
+
+def check_installed(destination: Path) -> dict[str, Any]:
+    entries = public_skills()
+    with tempfile.TemporaryDirectory() as temporary:
+        expected_root = Path(temporary) / "skills"
+        expected_router = expected_root / entries[0]["name"]
+        result = synchronise(expected_router)
+        if result.get("status") != "ok":
+            return result
+        checks = [
+            compare(
+                expected_root / entry["name"],
+                destination.parent / entry["name"],
+                entry["name"],
+            )
+            for entry in entries
+        ]
+    retired_present = [name for name in removed_ids() if (destination.parent / name).exists()]
+    return {
+        "status": "ok" if all(item["status"] == "ok" for item in checks) and not retired_present else "drift",
+        "checks": checks,
+        "retired_present": retired_present,
+    }
+
+
+def run_push(dry_run: bool) -> dict[str, Any]:
+    command = ["git", "push", "origin", "HEAD:main"]
+    if dry_run:
+        return {"cmd": command, "status": "planned"}
+    proc = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
+    return {
+        "cmd": command,
         "status": "ok" if proc.returncode == 0 else "error",
         "returncode": proc.returncode,
         "stdout": proc.stdout.strip(),
@@ -48,277 +243,65 @@ def run(cmd: list[str], dry_run: bool) -> dict[str, Any]:
     }
 
 
-def ignore(_: str, names: list[str]) -> set[str]:
-    ignored = set()
-    for name in names:
-        path = Path(name)
-        if name in SKIP_DIRS or path.suffix in SKIP_SUFFIXES or name == ".DS_Store":
-            ignored.add(name)
-    return ignored
+def self_test() -> None:
+    manifest = load_manifest()
+    entries = public_skills()
+    assert manifest.get("architecture", {}).get("focused_skill_policy") == "manifest_driven"
+    assert len(entries) >= 2
+    with tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary) / "skills"
+        destination = root / entries[0]["name"]
+        for name in removed_ids()[:2]:
+            (root / name).mkdir(parents=True)
+        result = synchronise(destination)
+        assert result["status"] == "ok"
+        assert all((root / entry["name"] / "SKILL.md").exists() for entry in entries)
+        assert not any((root / name).exists() for name in removed_ids())
+        assert check_installed(destination)["status"] == "ok"
+        drift_target = root / entries[-1]["name"] / "requirements.txt"
+        drift_target.write_text("drift\n", encoding="utf-8")
+        assert check_installed(destination)["status"] == "drift"
 
 
-def is_package_root() -> bool:
-    return (
-        (ROOT / "SKILL.md").exists()
-        and (ROOT / "skills" / "exam-prep-notes" / "SKILL.md").exists()
-        and (ROOT / "skills" / "exam-prep-practice" / "SKILL.md").exists()
-        and (ROOT / "skills" / "exam-prep-essay" / "SKILL.md").exists()
-        and (ROOT / "skill_manifest.json").exists()
-    )
-
-
-def sync_local_skill(destination: Path, dry_run: bool) -> dict[str, Any]:
-    if not is_package_root():
-        return {
-            "legacy_destination": str(destination),
-            "status": "error",
-            "error": "sync_local_skill must be run from the Everything Exam Preparation package root, not from a focused installed Skill.",
-        }
-    if dry_run:
-        focused = [
-            {"name": item["name"], "destination": str(destination.parent / item["name"])}
-            for item in discover_focused_skills()
-        ]
-        removed = cleanup_removed_focused_skills(destination.parent, dry_run=True)
-        return {"legacy_destination": str(destination), "focused_skills": focused, "removed_focused_skills": removed, "status": "planned"}
-    if destination.exists():
-        shutil.rmtree(destination)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(ROOT, destination, ignore=ignore)
-    focused = [sync_focused_skill(item, destination.parent, dry_run=False) for item in discover_focused_skills()]
-    removed = cleanup_removed_focused_skills(destination.parent, dry_run=False)
-    return {"legacy_destination": str(destination), "focused_skills": focused, "removed_focused_skills": removed, "status": "ok"}
-
-
-def read_skill_name(skill_md: Path) -> str:
-    text = skill_md.read_text(encoding="utf-8")
-    match = re.search(r"^name:\s*([a-z0-9-]+)\s*$", text, flags=re.MULTILINE)
-    if match:
-        return match.group(1)
-    return skill_md.parent.name
-
-
-def discover_focused_skills() -> list[dict[str, Any]]:
-    if not MULTI_SKILL_SOURCE_DIR.exists():
-        return []
-    focused = []
-    for skill_dir in sorted(path for path in MULTI_SKILL_SOURCE_DIR.iterdir() if path.is_dir()):
-        if skill_dir.name in PLUGIN_ROUTER_SKILLS:
-            continue
-        skill_md = skill_dir / "SKILL.md"
-        if skill_md.exists():
-            focused.append({"name": read_skill_name(skill_md), "source": skill_dir})
-    return focused
-
-
-def removed_focused_skill_ids() -> list[str]:
-    manifest_path = ROOT / "skill_manifest.json"
-    if not manifest_path.exists():
-        return []
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    removed = manifest.get("removed_focused_skills", [])
-    return [str(item) for item in removed if item]
-
-
-def cleanup_removed_focused_skills(local_skill_root: Path, dry_run: bool) -> list[dict[str, Any]]:
-    results = []
-    for skill_id in removed_focused_skill_ids():
-        destination = local_skill_root / skill_id
-        if dry_run:
-            results.append({"name": skill_id, "destination": str(destination), "status": "planned"})
-        elif destination.exists():
-            shutil.rmtree(destination)
-            results.append({"name": skill_id, "destination": str(destination), "status": "removed"})
-        else:
-            results.append({"name": skill_id, "destination": str(destination), "status": "absent"})
-    return results
-
-
-def sync_focused_skill(skill: dict[str, Any], local_skill_root: Path, dry_run: bool) -> dict[str, Any]:
-    destination = local_skill_root / skill["name"]
-    if dry_run:
-        return {"name": skill["name"], "destination": str(destination), "status": "planned"}
-    if destination.exists():
-        shutil.rmtree(destination)
-    destination.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(skill["source"] / "SKILL.md", destination / "SKILL.md")
-    copy_child_local_resources(skill["source"], destination)
-    for dirname in SHARED_RESOURCE_DIRS:
-        source = ROOT / dirname
-        if source.exists():
-            shutil.copytree(source, destination / dirname, ignore=ignore)
-    for filename in SHARED_RESOURCE_FILES:
-        source = ROOT / filename
-        if source.exists():
-            shutil.copy2(source, destination / filename)
-    return {"name": skill["name"], "destination": str(destination), "status": "ok"}
-
-
-def tree_manifest(root: Path) -> dict[str, str]:
-    manifest: dict[str, str] = {}
-    if not root.exists():
-        return manifest
-    for path in sorted(item for item in root.rglob("*") if item.is_file()):
-        relative = path.relative_to(root)
-        if (
-            any(part in SKIP_DIRS or part == ".DS_Store" for part in relative.parts)
-            or path.suffix in SKIP_SUFFIXES
-        ):
-            continue
-        manifest[relative.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
-    return manifest
-
-
-def compare_managed_tree(expected: Path, actual: Path, name: str) -> dict[str, Any]:
-    expected_files = tree_manifest(expected)
-    actual_files = tree_manifest(actual)
-    missing = sorted(expected_files.keys() - actual_files.keys())
-    unexpected = sorted(actual_files.keys() - expected_files.keys())
-    changed = sorted(
-        path
-        for path in expected_files.keys() & actual_files.keys()
-        if expected_files[path] != actual_files[path]
-    )
-    return {
-        "name": name,
-        "destination": str(actual),
-        "status": "ok" if not missing and not unexpected and not changed else "error",
-        "missing": missing,
-        "unexpected": unexpected,
-        "changed": changed,
-    }
-
-
-def check_installed_skills(destination: Path) -> dict[str, Any]:
-    if not is_package_root():
-        return {
-            "status": "error",
-            "error": "check_installed_skills must be run from the Everything Exam Preparation package root.",
-        }
-    with tempfile.TemporaryDirectory() as tmp:
-        expected_root = Path(tmp) / "expected"
-        expected_router = expected_root / LEGACY_SKILL_ID
-        shutil.copytree(ROOT, expected_router, ignore=ignore)
-        checks = [compare_managed_tree(expected_router, destination, LEGACY_SKILL_ID)]
-        for skill in discover_focused_skills():
-            sync_focused_skill(skill, expected_root, dry_run=False)
-            checks.append(
-                compare_managed_tree(
-                    expected_root / skill["name"],
-                    destination.parent / skill["name"],
-                    skill["name"],
-                )
-            )
-    return {
-        "status": "ok" if all(check["status"] == "ok" for check in checks) else "error",
-        "checks": checks,
-    }
-
-
-def copy_child_local_resources(source_dir: Path, destination: Path) -> None:
-    for item in source_dir.iterdir():
-        if item.name == "SKILL.md" or item.name in SKIP_DIRS or item.suffix in SKIP_SUFFIXES or item.name == ".DS_Store":
-            continue
-        target = destination / item.name
-        if item.is_dir():
-            shutil.copytree(item, target, ignore=ignore)
-        elif item.is_file():
-            shutil.copy2(item, target)
-
-
-def basic_status() -> dict[str, Any]:
-    manifest_path = ROOT / "skill_manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
-    return {
-        "repo": manifest.get("repo", "OctavianYimingZhang/Everything-Exam-Preparation"),
-        "entrypoint_exists": (ROOT / "SKILL.md").exists(),
-        "focused_skill_count": len(discover_focused_skills()),
-        "manifest_exists": manifest_path.exists(),
-        "default_output": manifest.get("default_output"),
-        "output_name_policy": manifest.get("output_name_policy"),
-    }
-
-
-def publish(
-    push: bool,
-    sync_local: bool,
-    check_installed: bool,
-    destination: Path,
-    dry_run: bool,
-) -> dict[str, Any]:
-    result: dict[str, Any] = {"status": basic_status(), "steps": []}
-    if push:
-        result["steps"].append(run(["git", "push", "origin", "HEAD:main"], dry_run))
-    if sync_local:
-        result["steps"].append(sync_local_skill(destination, dry_run))
-    if check_installed:
-        result["steps"].append(check_installed_skills(destination))
-    if not push and not sync_local and not check_installed:
-        result["steps"].append(
-            {"status": "nothing_requested", "hint": "Use --push, --sync-local-skill, and/or --check-installed."}
-        )
-    return result
-
-
-def has_error(result: Any) -> bool:
-    if isinstance(result, dict):
-        if result.get("status") == "error":
+def has_failure(value: Any) -> bool:
+    if isinstance(value, dict):
+        if value.get("status") in {"error", "drift"}:
             return True
-        return any(has_error(value) for value in result.values())
-    if isinstance(result, list):
-        return any(has_error(item) for item in result)
+        return any(has_failure(item) for item in value.values())
+    if isinstance(value, list):
+        return any(has_failure(item) for item in value)
     return False
 
 
-def self_test() -> None:
-    assert is_package_root()
-    with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp) / "skills"
-        legacy = root / LEGACY_SKILL_ID
-        result = sync_local_skill(legacy, dry_run=False)
-        assert result["status"] == "ok", result
-        assert not (legacy / "outputs").exists()
-        assert not any(legacy.rglob("*.docx"))
-        assert sorted(item.name for item in root.iterdir() if item.is_dir()) == [
-            "everything-exam-preparation",
-            "exam-prep-essay",
-            "exam-prep-notes",
-            "exam-prep-practice",
-        ]
-        assert (root / "exam-prep-practice" / "scripts" / "exam_mode_tools.py").exists()
-        assert (root / "exam-prep-essay" / "scripts" / "essay_exam_tools.py").exists()
-        assert check_installed_skills(legacy)["status"] == "ok"
-        (root / "exam-prep-practice" / "requirements.txt").write_text("drift\n", encoding="utf-8")
-        assert check_installed_skills(legacy)["status"] == "error"
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Minimal publish/update helper for Everything Exam Preparation.")
-    parser.add_argument("--push", action="store_true", help="Run git push from the repository root.")
-    parser.add_argument("--sync-local-skill", action="store_true", help="Copy this repository into the local Codex skill directory.")
-    parser.add_argument(
-        "--check-installed",
-        action="store_true",
-        help="Fail when the installed router or any focused Skill differs from the packaged source.",
-    )
-    parser.add_argument("--local-skill-dir", default=str(DEFAULT_LOCAL_SKILL_DIR))
-    parser.add_argument("--dry-run", action="store_true", help="Print planned actions without changing anything.")
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--push", action="store_true")
+    parser.add_argument("--sync-local-skill", action="store_true")
+    parser.add_argument("--check-installed", action="store_true")
+    parser.add_argument("--local-skill-dir")
+    parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
+
     if args.self_test:
         self_test()
-        return
-    result = publish(
-        args.push,
-        args.sync_local_skill,
-        args.check_installed,
-        Path(args.local_skill_dir),
-        args.dry_run,
-    )
+        print("OK: publish_skill self-test passed")
+        return 0
+
+    router = public_skills()[0]["name"]
+    destination = Path(args.local_skill_dir or DEFAULT_LOCAL_SKILL_ROOT / router).expanduser().resolve()
+    result: dict[str, Any] = {"steps": []}
+    if args.sync_local_skill:
+        result["steps"].append({"sync": synchronise(destination, args.dry_run)})
+    if args.check_installed:
+        result["steps"].append({"installed_check": check_installed(destination)})
+    if args.push:
+        result["steps"].append({"push": run_push(args.dry_run)})
+    if not result["steps"]:
+        result["steps"].append({"status": "nothing_requested"})
     print(json.dumps(result, indent=2, ensure_ascii=False))
-    if has_error(result):
-        sys.exit(1)
+    return 1 if has_failure(result) else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

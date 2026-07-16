@@ -13,6 +13,10 @@ Turn trusted course material into the exam-preparation output the student explic
 - `exam-prep-practice`: MCQ, short answer, long answer, calculations, worked solutions, question solving and organisation, assessment blueprints, answer evaluation, and timed practice.
 - `exam-prep-essay`: essay plans, model answers, permitted Online Essay work, and Extra Reading.
 
+## Skill Boundaries
+
+Treat the manifest-declared Skill list as the current architecture rather than a fixed quota. Split a focused Skill when its learning intent, evidence role, workflow, toolchain, or output is materially independent. Merge focused Skills when those elements are shared and one workflow can handle the variants reliably.
+
 ## Routing
 
 1. Read the request and supplied material.
@@ -47,7 +51,7 @@ For DOCX output, use A4, Arial, 2.5 cm margins, 1.5 line spacing, a centred main
 - `scripts/exam_mode_tools.py`: analyse and generate Practice outputs.
 - `scripts/essay_exam_tools.py`: prepare essays and Extra Reading support.
 - `scripts/validate_skill_contracts.py`: validate the Plugin, Skills, scripts, metadata, and installation declarations.
-- `scripts/publish_skill.py`: synchronise and compare the four local Skill installations.
+- `scripts/publish_skill.py`: synchronise and compare the manifest-declared local Skill installations.
 
 ## Completion
 

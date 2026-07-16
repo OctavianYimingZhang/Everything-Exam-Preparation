@@ -1,11 +1,16 @@
 {
   "schema_version": 3,
-  "plugin_version": "3.0.0",
+  "plugin_version": "3.1.0",
   "skill_id": "everything-exam-preparation",
   "repo": "OctavianYimingZhang/Everything-Exam-Preparation",
   "branch": "main",
   "entrypoint": "SKILL.md",
   "multi_skill_system": true,
+  "architecture": {
+    "router": "everything-exam-preparation",
+    "focused_skill_policy": "manifest_driven",
+    "boundary_rule": "Split when learning intent, evidence role, workflow, toolchain, or output is materially independent; merge when those elements are shared."
+  },
   "default_output": "docx",
   "default_output_language": "en",
   "public_skills": [

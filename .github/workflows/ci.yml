@@ -20,3 +20,5 @@ jobs:
           python3 -m compileall -q scripts
           python3 scripts/validate_skill_contracts.py
           python3 scripts/publish_skill.py --self-test
+          python3 scripts/publish_skill.py --local-skill-dir "$RUNNER_TEMP/codex-skills/everything-exam-preparation" --sync-local-skill
+          python3 scripts/publish_skill.py --local-skill-dir "$RUNNER_TEMP/codex-skills/everything-exam-preparation" --check-installed

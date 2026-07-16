@@ -1,10 +1,6 @@
 name: Everything Exam Preparation
-version: 3.0.0
+version: 3.1.0
 default_skill: everything-exam-preparation
-skills:
-  - everything-exam-preparation
-  - exam-prep-notes
-  - exam-prep-practice
-  - exam-prep-essay
+skills_manifest: skill_manifest.json
 default_output_language: English
 workflow: select the requested artifact, process trusted sources, generate, validate
