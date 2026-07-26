@@ -25,7 +25,8 @@ VISUAL_KEYWORDS = ["figure", "fig.", "diagram", "graph", "plot", "table", "chart
 QUESTION_KEYWORDS = ["?", "which of the following", "define", "state", "list", "outline", "explain", "compare", "evaluate", "discuss", "calculate", "interpret"]
 PRACTICAL_QUESTION_KEYWORDS = ["question", "task", "data", "problem", "calculate", "interpret", "graph", "table", "readout", "control"]
 PRACTICAL_WORKED_KEYWORDS = ["calculate", "derive", "show", "estimate", "prove", "data", "problem", "interpret", "graph", "table", "fit", "plot", "uncertainty", "error", "unit"]
-ADMIN_BOILERPLATE_KEYWORDS = ["copyright", "licensed under", "creative commons", "attendance", "password", "office hour", "email", "assessment deadline", "housekeeping"]
+ADMIN_BOILERPLATE_KEYWORDS = ["attendance", "password", "office hour", "email", "assessment deadline", "housekeeping"]
+RIGHTS_OR_CREDIT_KEYWORDS = ["copyright", "licensed under", "creative commons", "photo by", "image by", "source:", "credit:"]
 READING_REFERENCE_KEYWORDS = ["reading:", "recommended reading", "further reading", "textbook", "edition", "publisher", "kortext", "doi", "pmid"]
 LOW_RELEVANCE_CONTEXT_KEYWORDS = ["sustainable development goals", "environmental awareness", "public awareness", "news article", "policy awareness"]
 EXAMPLE_KEYWORDS = ["for example", "e.g.", "case study", "example", "photo by", "image by"]
@@ -49,7 +50,7 @@ STRUCTURE_SLIDE_KEYWORDS = [
     "take home",
     "key points",
 ]
-DECORATIVE_OR_CREDIT_KEYWORDS = ["photo by", "image by", "source:", "credit:", "copyright", "licensed under", "creative commons"]
+DECORATIVE_OR_CREDIT_KEYWORDS = RIGHTS_OR_CREDIT_KEYWORDS
 CONTINUATION_KEYWORDS = ["continued", "cont.", "same example", "case study continued", "example continued"]
 AUTHOR_YEAR_RE = re.compile(r"\b[A-Z][A-Za-z\-]+\s+et\s+al\.?\s*\(?\d{4}\)?|\b[A-Z][A-Za-z\-]+\s*\(\d{4}\)")
 DOI_RE = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Za-z0-9]+")
@@ -127,8 +128,11 @@ def is_lecture_source(path: str | Path, text: str = "") -> bool:
 def content_triage(text: str) -> str:
     lower = (text or "").lower()
     signals = set(knowledge_signals(text))
-    if has_any(lower, ADMIN_BOILERPLATE_KEYWORDS):
+    teaching_signals = {"definition", "mechanism", "method", "comparison", "calculation", "data_interpretation", "evidence", "application"}
+    if has_any(lower, ADMIN_BOILERPLATE_KEYWORDS) and not (signals & teaching_signals):
         return "admin_or_boilerplate"
+    if has_any(lower, RIGHTS_OR_CREDIT_KEYWORDS) and not (signals & teaching_signals):
+        return "rights_or_credit_context"
     if has_any(lower, READING_REFERENCE_KEYWORDS) and not (signals & {"definition", "mechanism", "method", "comparison", "calculation", "data_interpretation"}):
         return "reading_reference"
     if has_any(lower, LOW_RELEVANCE_CONTEXT_KEYWORDS) and not (signals & {"definition", "mechanism", "method", "calculation", "data_interpretation"}):
@@ -143,12 +147,16 @@ def notes_obligation(content_role: str) -> str:
         return "must_cover"
     if content_role == "supporting_example":
         return "compress_if_repetitive"
-    return "exclude_unless_directly_examinable"
+    if content_role == "admin_or_boilerplate":
+        return "exclude_if_verified_non_teaching"
+    return "review_before_exclusion"
 
 
 def notes_obligation_for_slide(content_role: str, triage: dict[str, Any]) -> str:
+    if triage.get("manual_review_required"):
+        return "review_visual_before_final_decision"
     if triage["slide_decision"] == "exclude":
-        return "exclude_unless_directly_examinable"
+        return "exclude_with_verified_non_teaching_reason"
     if triage["slide_decision"] == "merge_with_previous":
         return "merge_with_previous_unit"
     if not triage["detailed_explanation_allowed"]:
@@ -342,38 +350,51 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
 
     if not clean or words <= 2:
         return {
-            "slide_decision": "exclude",
-            "notes_role": "non_teaching_material",
+            "slide_decision": "use",
+            "notes_role": "visual_review_required",
             "detailed_explanation_allowed": False,
-            "triage_reason": "empty_or_textless_slide",
+            "manual_review_required": True,
+            "triage_reason": "text_sparse_slide_requires_visual_review",
         }
-    if has_any(lower, ADMIN_BOILERPLATE_KEYWORDS) or (has_any(lower, DECORATIVE_OR_CREDIT_KEYWORDS) and not (signals & strong_signals)):
+    if has_any(lower, ADMIN_BOILERPLATE_KEYWORDS) and not (signals & (strong_signals | direct_data_signals)):
         return {
             "slide_decision": "exclude",
             "notes_role": "non_teaching_material",
             "detailed_explanation_allowed": False,
-            "triage_reason": "administrative_copyright_or_source_credit",
+            "manual_review_required": False,
+            "triage_reason": "verified_operational_administration_without_teaching_content",
+        }
+    if has_any(lower, DECORATIVE_OR_CREDIT_KEYWORDS) and (words <= 20 or not (signals & strong_signals)):
+        return {
+            "slide_decision": "use",
+            "notes_role": "visual_review_required",
+            "detailed_explanation_allowed": False,
+            "manual_review_required": True,
+            "triage_reason": "rights_or_credit_text_cannot_determine_visual_teaching_content",
         }
     if content_role == "reading_reference":
         return {
-            "slide_decision": "exclude",
-            "notes_role": "non_teaching_material",
+            "slide_decision": "use",
+            "notes_role": "visual_review_required",
             "detailed_explanation_allowed": False,
-            "triage_reason": "reading_or_textbook_reference_without_teaching_content",
+            "manual_review_required": True,
+            "triage_reason": "reference_like_text_requires_visual_review_before_exclusion",
         }
     if content_role == "low_exam_relevance_context" and not (signals & (strong_signals | direct_data_signals)):
         return {
-            "slide_decision": "exclude",
-            "notes_role": "non_teaching_material",
+            "slide_decision": "use",
+            "notes_role": "visual_review_required",
             "detailed_explanation_allowed": False,
-            "triage_reason": "generic_context_without_course_knowledge",
+            "manual_review_required": True,
+            "triage_reason": "context_slide_requires_course_and_visual_review",
         }
     if high_text_overlap(clean, previous_text):
         return {
             "slide_decision": "merge_with_previous",
             "notes_role": "example_or_summary_support",
             "detailed_explanation_allowed": False,
-            "triage_reason": "duplicate_or_near_duplicate_of_previous_slide",
+            "manual_review_required": True,
+            "triage_reason": "duplicate_text_requires_visual_comparison_before_merge",
         }
 
     title = likely_slide_title(text).lower()
@@ -383,6 +404,7 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
             "slide_decision": "use",
             "notes_role": "structure_marker",
             "detailed_explanation_allowed": False,
+            "manual_review_required": False,
             "triage_reason": "structure_or_learning_outcome_slide_for_topic_order",
         }
     if has_any(lower, CONTINUATION_KEYWORDS) or (content_role == "supporting_example" and previous_text):
@@ -390,6 +412,7 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
             "slide_decision": "merge_with_previous",
             "notes_role": "example_or_summary_support",
             "detailed_explanation_allowed": False,
+            "manual_review_required": True,
             "triage_reason": "supporting_example_or_continuation_of_previous_unit",
         }
     if has_visual_signal(clean) and not (signals & (strong_signals | direct_data_signals)):
@@ -397,6 +420,7 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
             "slide_decision": "merge_with_previous" if previous_text else "use",
             "notes_role": "visual_or_data_support",
             "detailed_explanation_allowed": False,
+            "manual_review_required": True,
             "triage_reason": "visual_or_data_support_without_standalone_explanation_need",
         }
     if signals & strong_signals:
@@ -404,6 +428,7 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
             "slide_decision": "use",
             "notes_role": "knowledge_source",
             "detailed_explanation_allowed": True,
+            "manual_review_required": False,
             "triage_reason": "substantive_course_knowledge",
         }
     if signals & direct_data_signals:
@@ -412,6 +437,7 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
             "slide_decision": "use",
             "notes_role": "visual_or_data_support",
             "detailed_explanation_allowed": detailed,
+            "manual_review_required": not detailed,
             "triage_reason": "data_or_evidence_support_for_nearby_knowledge_unit",
         }
     if "learning_objective" in signals or "heading_or_topic_boundary" in signals:
@@ -419,19 +445,22 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
             "slide_decision": "use",
             "notes_role": "structure_marker",
             "detailed_explanation_allowed": False,
+            "manual_review_required": False,
             "triage_reason": "topic_boundary_or_learning_objective",
         }
     if words <= 8:
         return {
-            "slide_decision": "exclude",
-            "notes_role": "non_teaching_material",
+            "slide_decision": "use",
+            "notes_role": "visual_review_required",
             "detailed_explanation_allowed": False,
-            "triage_reason": "pure_transition_or_decorative_short_slide",
+            "manual_review_required": True,
+            "triage_reason": "short_slide_requires_visual_review_before_exclusion",
         }
     return {
         "slide_decision": "use",
         "notes_role": "example_or_summary_support",
         "detailed_explanation_allowed": False,
+        "manual_review_required": False,
         "triage_reason": "context_support_for_notes_structure",
     }
 
@@ -854,6 +883,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
                     "slide_decision": triage["slide_decision"],
                     "notes_role": triage["notes_role"],
                     "detailed_explanation_allowed": triage["detailed_explanation_allowed"],
+                    "manual_review_required": bool(triage.get("manual_review_required")),
                     "triage_reason": triage["triage_reason"],
                     "text": chunk,
                     "knowledge_signals": frag_signals,
@@ -959,6 +989,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
             "slide_decisions": slide_decisions,
             "notes_roles": notes_roles,
             "slide_like_fragment_count": sum(1 for frag in fragments if frag.get("slide_decision")),
+            "manual_review_required_count": sum(1 for frag in fragments if frag.get("manual_review_required")),
             "lecture_source_count": sum(1 for doc in documents if doc.get("lecture_source")),
             "knowledge_signals": signals,
             "knowledge_roles": roles,
@@ -1005,6 +1036,11 @@ def _scan_self_test() -> None:
                 "<p:sld><a:t>Protocell formation mechanism</a:t>"
                 "<a:t>The mechanism leads to membrane compartment formation and activates primitive metabolism.</a:t></p:sld>",
             )
+            zf.writestr(
+                "ppt/slides/slide4.xml",
+                "<p:sld><a:t>Copyright Example Press</a:t>"
+                "<a:t>Figure: membrane pathway</a:t></p:sld>",
+            )
         sources = [str(p1), str(p2), str(p3), str(p4), str(p5), str(p6)]
         try:
             import fitz  # type: ignore
@@ -1041,7 +1077,7 @@ def _scan_self_test() -> None:
         assert lecture_doc["lecture_order"] == 1
         assert lecture_doc["lecture_source"] is True
         lecture_frags = [frag for frag in scan["fragments"] if frag["source_name"] == "L1-Origin of Life.pptx"]
-        assert [frag["slide_number"] for frag in lecture_frags] == [1, 2, 3, 10]
+        assert [frag["slide_number"] for frag in lecture_frags] == [1, 2, 3, 4, 10]
         assert lecture_frags[0]["slide_decision"] == "use"
         assert lecture_frags[0]["notes_role"] == "structure_marker"
         assert lecture_frags[0]["detailed_explanation_allowed"] is False
@@ -1049,9 +1085,15 @@ def _scan_self_test() -> None:
         assert lecture_frags[1]["notes_role"] == "knowledge_source"
         assert lecture_frags[1]["detailed_explanation_allowed"] is True
         assert lecture_frags[2]["slide_decision"] == "merge_with_previous"
-        assert lecture_frags[3]["slide_decision"] == "exclude"
-        assert lecture_frags[3]["notes_role"] == "non_teaching_material"
+        assert lecture_frags[2]["manual_review_required"] is True
+        assert lecture_frags[3]["slide_decision"] == "use"
+        assert lecture_frags[3]["notes_role"] == "visual_review_required"
+        assert lecture_frags[3]["manual_review_required"] is True
+        assert lecture_frags[4]["slide_decision"] == "exclude"
+        assert lecture_frags[4]["notes_role"] == "non_teaching_material"
+        assert lecture_frags[4]["manual_review_required"] is False
         assert scan["summary"]["slide_decisions"]["exclude"] >= 1
+        assert scan["summary"]["manual_review_required_count"] >= 2
         assert any(frag["content_triage"] == "core_lecture_content" for frag in lecture_frags)
         timed_frag = next(frag for frag in scan["fragments"] if frag["source_name"] == "lecture_recording.vtt")
         assert timed_frag["time_range"] == {"start_seconds": 60.0, "end_seconds": 70.0}
@@ -1125,6 +1167,7 @@ def build_fragment_index(scan: dict[str, Any] | None, purpose: str = "notes") ->
             "use_count": sum(item.get("slide_decision") == "use" for item in source_items),
             "merge_count": sum(item.get("slide_decision") == "merge_with_previous" for item in source_items),
             "exclude_count": sum(item.get("slide_decision") == "exclude" for item in source_items),
+            "manual_review_required_count": sum(bool(item.get("manual_review_required")) for item in source_items),
             "visual_count": len(source_visuals),
             "extraction_notes": document.get("extraction_notes") or [],
         })

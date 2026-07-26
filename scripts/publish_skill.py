@@ -145,6 +145,11 @@ def cleanup_removed(install_root: Path, dry_run: bool) -> list[dict[str, str]]:
 def synchronise(destination: Path, dry_run: bool = False) -> dict[str, Any]:
     if not is_package_root():
         return {"status": "error", "error": "Run this helper from the Exam Preparation package root."}
+    if destination.resolve() == ROOT.resolve():
+        return {
+            "status": "error",
+            "error": "The install destination is the package source; refusing a destructive self-sync.",
+        }
     entries = public_skills()
     install_root = destination.parent
     if dry_run:
@@ -248,6 +253,7 @@ def self_test() -> None:
     entries = public_skills()
     assert manifest.get("architecture", {}).get("focused_skill_policy") == "manifest_driven"
     assert len(entries) >= 2
+    assert synchronise(ROOT)["status"] == "error"
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary) / "skills"
         destination = root / entries[0]["name"]

@@ -6,16 +6,20 @@ import base64
 import html
 import json
 import re
+import shutil
 import struct
+import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any
 
-MARGIN_TWIPS = 1417
+MARGIN_TWIPS = 1134
 LINE_SPACING = 360
+PAGE_WIDTH_TWIPS = 11906
+CONTENT_WIDTH_TWIPS = PAGE_WIDTH_TWIPS - (2 * MARGIN_TWIPS)
 EMU_PER_PIXEL = 9525
-MAX_IMAGE_WIDTH_EMU = 5_400_000
+MAX_IMAGE_WIDTH_EMU = 6_120_000
 IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
 IMAGE_CONTENT_TYPES = {
     ".png": "image/png",
@@ -23,6 +27,21 @@ IMAGE_CONTENT_TYPES = {
     ".jpeg": "image/jpeg",
     ".gif": "image/gif",
 }
+
+GENERIC_ALT_TEXT = {
+    "course visual",
+    "course concept diagram",
+    "concept diagram",
+    "source visual",
+    "teaching visual",
+    "diagram",
+    "figure",
+    "image",
+}
+SOURCE_LIKE_ALT_PATTERN = re.compile(
+    r"(?i)(?:\bsource\b|\bdoi\b|https?://|www\.|\bet\s+al\.?\b|"
+    r"\bjournal\b|\bvol(?:ume)?\.?\s*\d|^\s*figure\s*\d)"
+)
 
 INTERNAL_PUBLIC_HEADINGS = {
     "source and extraction limits",
@@ -64,7 +83,8 @@ ADDON_ONLY_FIELDS = {
 }
 
 RAW_FORMULA_PATTERNS = [
-    r"\bpartial\b",
+    r"\bpartial\s+[A-Za-z0-9_{}]+\s*/\s*partial\s+[A-Za-z0-9_{}]+",
+    r"\bpartial\s*/\s*partial\s+[A-Za-z0-9_{}]+",
     r"\\partial\b",
     r"\\frac\b",
     r"\\sqrt\b",
@@ -79,6 +99,19 @@ RAW_FORMULA_PATTERNS = [
     r"->|=>|<->|<=>|⇌|→",
     r"\b[A-Z][a-z]?\d+[A-Za-z0-9+-]*\b",
     r"\[[A-Za-z0-9+-]+\]",
+    r"\b(?:[A-Z][A-Za-z0-9]{0,7}|[a-z])_\{?[A-Za-z0-9+\-]{1,16}\}?",
+    r"(?<=[A-Za-z0-9\]\)])\^\{?[0-9+\-]{1,8}\}?",
+    r"(?<![A-Za-z0-9])(?:Na|K|Ca|Cl|Mg|H|OH)(?:\d+)?[+-](?![A-Za-z0-9])",
+]
+
+INLINE_SCRIPT_RE = re.compile(r"([_^])\{?([A-Za-z0-9+\-]{1,16})\}?")
+BROKEN_GLYPH_RE = re.compile(r"[□�]")
+UNRESOLVED_RAW_NOTATION_PATTERNS = [
+    r"\\(?:frac|sqrt|sum|prod|partial|left|right)\b",
+    r"\bsqrt\s*[({]",
+    r"\b(?:[A-Z][A-Za-z0-9]{0,7}|[a-z])_(?:\s|$)",
+    r"(?<=[A-Za-z0-9\]\)])\^(?:\s|$)",
+    r"(?<![A-Za-z0-9])(?:Na|K|Ca|Cl|Mg|H|OH)(?:\d+)?[+-](?![A-Za-z0-9])",
 ]
 
 SUPERSCRIPT = str.maketrans(
@@ -227,25 +260,48 @@ def visible_formula(value: Any) -> str:
     text = re.sub(r"\bdot\b", "·", text)
     text = re.sub(r"\bcross\b", "×", text)
     for raw, replacement in GREEK_AND_OPERATORS.items():
+        if raw == "partial":
+            continue
         text = re.sub(rf"\b{re.escape(raw)}\b", replacement, text)
     text = re.sub(r"\*\*", "^", text)
     text = re.sub(r"\s+", " ", text)
 
     def sup(match: re.Match[str]) -> str:
         token = match.group(1)
-        return token.translate(SUPERSCRIPT) if len(token) <= 4 else "^" + token
+        return token.translate(SUPERSCRIPT) if len(token) <= 4 and all(ord(char) in SUPERSCRIPT for char in token) else "^" + token
 
     def sub(match: re.Match[str]) -> str:
         token = match.group(1)
-        return token.translate(SUBSCRIPT) if len(token) <= 4 else "_" + token
+        return token.translate(SUBSCRIPT) if len(token) <= 4 and all(ord(char) in SUBSCRIPT for char in token) else "_" + token
 
-    text = re.sub(r"\^([A-Za-z0-9+\-=]{1,4})", sup, text)
-    text = re.sub(r"_([A-Za-z0-9+\-=()]{1,4})", sub, text)
+    text = re.sub(r"\^([A-Za-z0-9+\-]{1,4})", sup, text)
+    text = re.sub(r"_([A-Za-z0-9+\-]{1,4})", sub, text)
     return text
 
 
 def has_raw_formula_tokens(text: str) -> bool:
     return any(re.search(pattern, text, flags=re.I) for pattern in RAW_FORMULA_PATTERNS)
+
+
+def normalize_public_text(value: Any) -> str:
+    text = str(value or "")
+    if not text or looks_code_like(text) or not has_raw_formula_tokens(text):
+        return text
+    return visible_formula(text)
+
+
+def public_text_issues(value: Any) -> list[str]:
+    text = str(value or "")
+    issues: list[str] = []
+    if BROKEN_GLYPH_RE.search(text):
+        issues.append("missing_or_replacement_glyph")
+    if not text or looks_code_like(text):
+        return issues
+    normalised = normalize_public_text(text)
+    without_supported_scripts = INLINE_SCRIPT_RE.sub("", normalised)
+    if any(re.search(pattern, without_supported_scripts) for pattern in UNRESOLVED_RAW_NOTATION_PATTERNS):
+        issues.append("unresolved_raw_notation")
+    return issues
 
 
 def normalize_public_heading(value: Any) -> str:
@@ -265,11 +321,16 @@ def normalize_latex_like(text: str) -> str:
     text = re.sub(r"\\left|\\right", "", text)
     text = re.sub(r"\\mathrm\{([^{}]+)\}", r"\1", text)
     text = re.sub(r"\\text\{([^{}]+)\}", r"\1", text)
-    text = re.sub(r"\\frac\{([^{}]+)\}\{([^{}]+)\}", r"(\1)/(\2)", text)
-    text = re.sub(r"\\sqrt\{([^{}]+)\}", r"√(\1)", text)
+    latex_argument = r"(?:[^{}]|\{[^{}]*\})+"
+    text = re.sub(rf"\\frac\{{({latex_argument})\}}\{{({latex_argument})\}}", r"(\1)/(\2)", text)
+    text = re.sub(rf"\\sqrt\{{({latex_argument})\}}", r"√(\1)", text)
     text = re.sub(r"\\vec\{?([A-Za-z])\}?", r"\1⃗", text)
     text = re.sub(r"\\hat\{?([A-Za-z])\}?", r"\1̂", text)
     text = re.sub(r"\\bar\{?([A-Za-z])\}?", r"\1̄", text)
+    text = re.sub(r"\\(ln|log|exp|sin|cos|tan)\b", r"\1", text)
+    text = re.sub(r"\\cdot\b", "·", text)
+    text = re.sub(r"\\times\b", "×", text)
+    text = re.sub(r"\\pm\b", "±", text)
     text = re.sub(r"\\([A-Za-z]+)", lambda m: GREEK_AND_OPERATORS.get(m.group(1), m.group(0)), text)
     text = re.sub(r"_\{([^{}]+)\}", r"_\1", text)
     text = re.sub(r"\^\{([^{}]+)\}", r"^\1", text)
@@ -278,6 +339,8 @@ def normalize_latex_like(text: str) -> str:
 
 def normalize_named_constants(text: str) -> str:
     for raw, replacement in GREEK_AND_OPERATORS.items():
+        if raw == "partial":
+            continue
         text = re.sub(rf"\b{re.escape(raw)}\b", replacement, text)
     return text
 
@@ -346,6 +409,7 @@ def normalize_vectors(text: str) -> str:
     text = re.sub(r"\bhat\s+([A-Za-z])\b", r"\1̂", text)
     text = re.sub(r"\bdot\b", "·", text)
     text = re.sub(r"\bcross\b", "×", text)
+    text = re.sub(r"\btimes\b", "×", text)
     return text
 
 
@@ -491,69 +555,222 @@ def image_emu_size(path: Path) -> tuple[int, int]:
     return int(width), int(height)
 
 
-def paragraph_xml(text: str, style: str = "Normal", align: str = "both") -> str:
-    style_xml = "" if style == "Normal" else f'<w:pStyle w:val="{xml_escape(style)}"/>'
-    keep_next = "<w:keepNext/>" if style in {"Title", "Heading1", "Heading2"} else ""
+def paragraph_run_xml(text: str, style: str, vertical_align: str | None = None) -> str:
     bold = "<w:b/>" if style in {"Title", "Heading1", "Heading2"} else ""
     italic = "<w:i/>" if style == "Caption" else ""
     size = {"Title": "32", "Heading1": "26", "Heading2": "23", "Caption": "18", "Formula": "24"}.get(style, "21")
-    color = "000000"
+    vertical = f'<w:vertAlign w:val="{vertical_align}"/>' if vertical_align else ""
+    return (
+        "<w:r><w:rPr>"
+        f'<w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>{bold}{italic}<w:color w:val="000000"/><w:sz w:val="{size}"/>{vertical}'
+        "</w:rPr>"
+        f'<w:t xml:space="preserve">{xml_escape(text)}</w:t></w:r>'
+    )
+
+
+def paragraph_runs_xml(text: str, style: str) -> str:
+    raw = str(text or "")
+    visible = normalize_public_text(raw)
+    if looks_code_like(raw) or not has_raw_formula_tokens(raw):
+        return paragraph_run_xml(visible, style)
+    runs: list[str] = []
+    cursor = 0
+    for match in INLINE_SCRIPT_RE.finditer(visible):
+        if match.start() > cursor:
+            runs.append(paragraph_run_xml(visible[cursor:match.start()], style))
+        runs.append(paragraph_run_xml(match.group(2), style, "subscript" if match.group(1) == "_" else "superscript"))
+        cursor = match.end()
+    if cursor < len(visible):
+        runs.append(paragraph_run_xml(visible[cursor:], style))
+    return "".join(runs) or paragraph_run_xml(visible, style)
+
+
+def paragraph_xml(text: str, style: str = "Normal", align: str = "both") -> str:
+    style_xml = "" if style == "Normal" else f'<w:pStyle w:val="{xml_escape(style)}"/>'
+    keep_next = "<w:keepNext/>" if style in {"Title", "Heading1", "Heading2"} else ""
     return (
         "<w:p><w:pPr>"
         f"{style_xml}{keep_next}<w:jc w:val=\"{xml_escape(align)}\"/><w:spacing w:line=\"{LINE_SPACING}\" w:lineRule=\"auto\"/>"
-        "</w:pPr><w:r><w:rPr>"
-        f"<w:rFonts w:ascii=\"Arial\" w:hAnsi=\"Arial\"/>{bold}{italic}<w:color w:val=\"{color}\"/><w:sz w:val=\"{size}\"/>"
-        "</w:rPr>"
-        f"<w:t xml:space=\"preserve\">{xml_escape(text)}</w:t></w:r></w:p>"
+        "</w:pPr>"
+        f"{paragraph_runs_xml(text, style)}</w:p>"
     )
+
+
+def formula_run_xml(text: str, vertical_align: str | None = None) -> str:
+    vertical = f'<w:vertAlign w:val="{vertical_align}"/>' if vertical_align else ""
+    return (
+        '<w:r><w:rPr><w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math"/>'
+        f'<w:color w:val="000000"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:noProof/>{vertical}</w:rPr>'
+        f'<w:t xml:space="preserve">{xml_escape(text)}</w:t></w:r>'
+    )
+
+
+def formula_runs_xml(formula: str) -> str:
+    visible = visible_formula(formula)
+    runs: list[str] = []
+    cursor = 0
+    for match in INLINE_SCRIPT_RE.finditer(visible):
+        if match.start() > cursor:
+            runs.append(formula_run_xml(visible[cursor:match.start()]))
+        runs.append(formula_run_xml(match.group(2), "subscript" if match.group(1) == "_" else "superscript"))
+        cursor = match.end()
+    if cursor < len(visible):
+        runs.append(formula_run_xml(visible[cursor:]))
+    return "".join(runs) or formula_run_xml(visible)
 
 
 def formula_xml(formula: str) -> str:
-    formula = visible_formula(formula)
     return (
-        f'<w:p><w:pPr><w:jc w:val="center"/><w:shd w:fill="F6F7F8"/>'
-        f'<w:spacing w:line="{LINE_SPACING}" w:lineRule="auto"/></w:pPr>'
-        "<m:oMathPara><m:oMath><m:r><m:rPr><m:nor/></m:rPr>"
-        f"<m:t>{xml_escape(formula)}</m:t>"
-        "</m:r></m:oMath></m:oMathPara></w:p>"
+        f'<w:p><w:pPr><w:jc w:val="center"/><w:keepLines/>'
+        f'<w:spacing w:before="120" w:after="120" w:line="{LINE_SPACING}" w:lineRule="auto"/></w:pPr>'
+        f'{formula_runs_xml(formula)}</w:p>'
     )
 
 
-def table_cell_xml(text: Any, header: bool = False) -> str:
-    value = visible_formula(text) if has_raw_formula_tokens(str(text)) else str(text)
-    shading = '<w:shd w:fill="E9EEF3"/>' if header else ""
+def table_display_width(value: Any) -> int:
+    lines = str(value or "").splitlines() or [""]
+    return max(sum(2 if ord(char) > 0x2FF else 1 for char in line) for line in lines)
+
+
+def table_column_widths(rows: list[list[Any]], column_count: int) -> list[int]:
+    if column_count <= 0:
+        return []
+    scores: list[float] = []
+    for column in range(column_count):
+        widths = [table_display_width(row[column] if column < len(row) else "") for row in rows]
+        longest = max(widths, default=1)
+        average = sum(widths) / max(1, len(widths))
+        scores.append(max(1.0, (longest * 0.65) + (average * 0.35)) ** 0.5)
+    base = min(900, CONTENT_WIDTH_TWIPS // column_count)
+    remaining = max(0, CONTENT_WIDTH_TWIPS - (base * column_count))
+    score_total = sum(scores) or float(column_count)
+    result = [base + int(remaining * score / score_total) for score in scores]
+    result[-1] += CONTENT_WIDTH_TWIPS - sum(result)
+    return result
+
+
+def table_font_size(rows: list[list[Any]], column_widths: list[int]) -> int:
+    column_count = max(1, len(column_widths))
+    base_size = 21 if column_count <= 2 else 20 if column_count <= 4 else 19
+    density = 0.0
+    for row in rows:
+        for column, value in enumerate(row):
+            if column >= len(column_widths):
+                continue
+            estimated_chars = max(8.0, column_widths[column] / 105.0)
+            density = max(density, table_display_width(value) / estimated_chars)
+    if density > 4.0:
+        base_size -= 2
+    elif density > 2.5:
+        base_size -= 1
+    return max(17, base_size)
+
+
+def table_cell_alignment(value: str, header: bool) -> str:
+    if header:
+        return "center"
+    stripped = value.strip()
+    if len(stripped) <= 18 and (
+        bool(re.fullmatch(r"[-+−–—]?\d+(?:[.,]\d+)?(?:\s*[%A-Za-zμΩ/·⁻¹²³]*)?", stripped))
+        or bool(re.fullmatch(r"[A-Za-zΑ-Ωα-ω][A-Za-z0-9Α-Ωα-ω₀-₉⁰-⁹+−⁻]*", stripped))
+    ):
+        return "center"
+    return "left"
+
+
+def table_cell_runs_xml(value: str, header: bool, font_size: int) -> str:
     bold = "<w:b/>" if header else ""
+
+    def run_xml(text: str, vertical_align: str | None = None) -> str:
+        vertical = f'<w:vertAlign w:val="{vertical_align}"/>' if vertical_align else ""
+        run_properties = (
+            '<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
+            f'{bold}<w:color w:val="000000"/><w:sz w:val="{font_size}"/><w:szCs w:val="{font_size}"/>{vertical}</w:rPr>'
+        )
+        return f'<w:r>{run_properties}<w:t xml:space="preserve">{xml_escape(text)}</w:t></w:r>'
+
+    lines = value.splitlines() or [""]
+    runs: list[str] = []
+    for index, line in enumerate(lines):
+        if index:
+            runs.append("<w:r><w:br/></w:r>")
+        if looks_code_like(line) or not has_raw_formula_tokens(line):
+            runs.append(run_xml(normalize_public_text(line)))
+            continue
+        visible = normalize_public_text(line)
+        cursor = 0
+        for match in INLINE_SCRIPT_RE.finditer(visible):
+            if match.start() > cursor:
+                runs.append(run_xml(visible[cursor:match.start()]))
+            runs.append(run_xml(match.group(2), "subscript" if match.group(1) == "_" else "superscript"))
+            cursor = match.end()
+        if cursor < len(visible):
+            runs.append(run_xml(visible[cursor:]))
+        if not visible:
+            runs.append(run_xml(""))
+    return "".join(runs)
+
+
+def table_cell_xml(text: Any, header: bool = False, width_twips: int = 0, font_size: int = 20) -> str:
+    value = normalize_public_text(text)
+    shading = '<w:shd w:fill="EEF3F7"/>' if header else ""
+    alignment = table_cell_alignment(value, header)
     return (
         "<w:tc>"
-        f'<w:tcPr>{shading}</w:tcPr>'
-        '<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:line="360" w:lineRule="auto"/></w:pPr>'
-        f'<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>{bold}<w:color w:val="000000"/><w:sz w:val="20"/></w:rPr>'
-        f"<w:t>{xml_escape(value)}</w:t></w:r></w:p>"
+        f'<w:tcPr><w:tcW w:w="{width_twips}" w:type="dxa"/>{shading}<w:vAlign w:val="center"/>'
+        '<w:tcMar><w:top w:w="70" w:type="dxa"/><w:left w:w="90" w:type="dxa"/>'
+        '<w:bottom w:w="70" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tcMar></w:tcPr>'
+        f'<w:p><w:pPr><w:jc w:val="{alignment}"/><w:spacing w:before="0" w:after="0" w:line="280" w:lineRule="auto"/></w:pPr>'
+        f"{table_cell_runs_xml(value, header, font_size)}</w:p>"
         "</w:tc>"
     )
 
 
 def table_xml(rows: list[list[Any]]) -> str:
+    normalised_rows = [row if isinstance(row, list) else [row] for row in rows]
+    column_count = max((len(row) for row in normalised_rows), default=1)
+    normalised_rows = [row + ([""] * (column_count - len(row))) for row in normalised_rows]
+    column_widths = table_column_widths(normalised_rows, column_count)
+    font_size = table_font_size(normalised_rows, column_widths)
     rendered_rows = []
-    for idx, row in enumerate(rows):
-        cells = row if isinstance(row, list) else [row]
+    for idx, cells in enumerate(normalised_rows):
         row_properties = "<w:trPr><w:cantSplit/>" + ("<w:tblHeader/>" if idx == 0 else "") + "</w:trPr>"
         rendered_rows.append(
             "<w:tr>"
             + row_properties
-            + "".join(table_cell_xml(cell, header=(idx == 0)) for cell in cells)
+            + "".join(
+                table_cell_xml(cell, header=(idx == 0), width_twips=column_widths[column], font_size=font_size)
+                for column, cell in enumerate(cells)
+            )
             + "</w:tr>"
         )
     return (
-        "<w:tbl><w:tblPr><w:tblW w:w=\"0\" w:type=\"auto\"/>"
+        f'<w:tbl><w:tblPr><w:tblW w:w="{CONTENT_WIDTH_TWIPS}" w:type="dxa"/><w:tblLayout w:type="fixed"/>'
+        '<w:tblCellMar><w:top w:w="70" w:type="dxa"/><w:left w:w="90" w:type="dxa"/>'
+        '<w:bottom w:w="70" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar>'
+        '<w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/>'
         "<w:tblBorders>"
-        "<w:top w:val=\"single\" w:sz=\"4\"/><w:left w:val=\"single\" w:sz=\"4\"/>"
-        "<w:bottom w:val=\"single\" w:sz=\"4\"/><w:right w:val=\"single\" w:sz=\"4\"/>"
-        "<w:insideH w:val=\"single\" w:sz=\"4\"/><w:insideV w:val=\"single\" w:sz=\"4\"/>"
-        "</w:tblBorders></w:tblPr>"
+        '<w:top w:val="single" w:sz="3" w:color="B8C2CC"/><w:left w:val="single" w:sz="2" w:color="D5DCE3"/>'
+        '<w:bottom w:val="single" w:sz="3" w:color="B8C2CC"/><w:right w:val="single" w:sz="2" w:color="D5DCE3"/>'
+        '<w:insideH w:val="single" w:sz="2" w:color="D5DCE3"/><w:insideV w:val="single" w:sz="2" w:color="E2E7EC"/>'
+        "</w:tblBorders></w:tblPr><w:tblGrid>"
+        + "".join(f'<w:gridCol w:w="{width}"/>' for width in column_widths)
+        + "</w:tblGrid>"
         + "".join(rendered_rows)
         + "</w:tbl>"
     )
+
+
+def is_conceptual_alt_text(value: Any) -> bool:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    normalised = re.sub(r"[\s.:;_-]+", " ", text.casefold()).strip()
+    if not text or normalised in GENERIC_ALT_TEXT:
+        return False
+    if re.fullmatch(r"(?:course )?(?:concept )?(?:visual|diagram|figure|image)(?: \d+)?", normalised):
+        return False
+    if SOURCE_LIKE_ALT_PATTERN.search(text):
+        return False
+    return True
 
 
 def image_xml(block: dict[str, Any]) -> str:
@@ -563,15 +780,19 @@ def image_xml(block: dict[str, Any]) -> str:
     cx = int(block.get("cx") or 0)
     cy = int(block.get("cy") or 0)
     doc_id = int(block.get("doc_id") or 1)
-    alt = xml_escape(block.get("alt_text") or block.get("caption") or "Academic source visual")
+    raw_alt = block.get("alt_text")
+    if not is_conceptual_alt_text(raw_alt):
+        raise ValueError("image_alt_text_not_conceptual")
+    alt = xml_escape(raw_alt)
+    keep_next = "<w:keepNext/>" if block.get("keep_next") else ""
     return (
-        '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:drawing>'
+        f'<w:p><w:pPr>{keep_next}<w:jc w:val="center"/><w:spacing w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:drawing>'
         f'<wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{cx}" cy="{cy}"/>'
-        f'<wp:docPr id="{doc_id}" name="Source visual {doc_id}" descr="{alt}"/>'
+        f'<wp:docPr id="{doc_id}" name="Course visual {doc_id}" descr="{alt}"/>'
         '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>'
         '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
         '<pic:pic><pic:nvPicPr>'
-        f'<pic:cNvPr id="{doc_id}" name="Source visual {doc_id}"/><pic:cNvPicPr/>'
+        f'<pic:cNvPr id="{doc_id}" name="Course visual {doc_id}"/><pic:cNvPicPr/>'
         '</pic:nvPicPr><pic:blipFill>'
         f'<a:blip r:embed="{xml_escape(rid)}"/><a:stretch><a:fillRect/></a:stretch>'
         '</pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/>'
@@ -668,6 +889,34 @@ def prepare_media_blocks(blocks: list[Any]) -> tuple[list[Any], list[dict[str, A
     return prepared, media
 
 
+def validate_public_blocks(blocks: list[Any]) -> list[str]:
+    failures: list[str] = []
+
+    def check(value: Any) -> None:
+        for issue in public_text_issues(value):
+            if issue not in failures:
+                failures.append(issue)
+
+    for block in blocks:
+        if isinstance(block, tuple):
+            if block:
+                check(block[0])
+            continue
+        if not isinstance(block, dict):
+            check(block)
+            continue
+        kind = block.get("kind")
+        if kind == "table":
+            for row in block.get("rows", []) or []:
+                for cell in row if isinstance(row, list) else [row]:
+                    check(cell)
+        elif kind == "formula":
+            check(block.get("formula"))
+        elif kind == "image":
+            check(block.get("alt_text"))
+    return failures
+
+
 def document_rels_xml(media: list[dict[str, Any]]) -> str:
     relationships = [
         f'<Relationship Id="{xml_escape(item["rid"])}" Type="{IMAGE_REL_TYPE}" Target="media/{xml_escape(item["media_name"])}"/>'
@@ -707,6 +956,9 @@ def content_types_xml(media: list[dict[str, Any]]) -> str:
 
 
 def write_minimal_docx(path: Path, blocks: list[Any]) -> None:
+    failures = validate_public_blocks(blocks)
+    if failures:
+        raise ValueError(";".join(failures))
     prepared_blocks, media = prepare_media_blocks(blocks)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("[Content_Types].xml", content_types_xml(media))
@@ -927,17 +1179,18 @@ def render_block(blocks: list[Any], block: dict[str, Any], include_addon: bool =
         render_worked_example(blocks, block, include_addon=include_addon)
     elif mode == "image_plus_kp_list":
         image_path = image_path_from_block(block)
-        caption = block.get("caption") or block.get("source_locator") or block.get("locator")
+        caption = block.get("caption") if block.get("display_caption") is True else None
+        points = block.get("points") or block.get("key_points") or block.get("content")
         if is_renderable_image_path(image_path):
             blocks.append({
                 "kind": "image",
                 "path": image_path,
-                "caption": caption,
-                "alt_text": block.get("alt_text") or caption or heading or "Academic source visual",
+                "alt_text": block.get("alt_text"),
+                "keep_next": bool(caption or points),
             })
         if caption and is_renderable_image_path(image_path):
             blocks.append((str(caption), "Caption", "center"))
-        add_text(blocks, block.get("points") or block.get("key_points") or block.get("content"), bullet=True, include_addon=include_addon, result_only=result_only)
+        add_text(blocks, points, bullet=True, include_addon=include_addon, result_only=result_only)
     elif mode == "kp_list":
         add_text(blocks, block.get("points") or block.get("key_points") or block.get("content"), bullet=True, include_addon=include_addon, result_only=result_only)
     elif mode == "mechanism_chain":
@@ -969,6 +1222,10 @@ def validate_plan_contract(plan: dict[str, Any]) -> list[str]:
                 failures.append(f"internal_public_heading:{block_heading}")
             if block.get("render_mode") == "formula_block" and not visible_formula(block.get("formula") or block.get("expression") or block.get("text")):
                 failures.append("empty_formula_block")
+            if block.get("render_mode") == "image_plus_kp_list":
+                image_path = image_path_from_block(block)
+                if is_renderable_image_path(image_path) and not is_conceptual_alt_text(block.get("alt_text")):
+                    failures.append(f"image_alt_text_not_conceptual:{block_heading or 'unnamed image'}")
     return failures
 
 
@@ -1031,13 +1288,105 @@ def generate(plan: dict[str, Any], output_target: str | Path = ".") -> Path:
     return out
 
 
+def rendered_pdf_text(docx_path: Path, work_dir: Path) -> tuple[Path, str]:
+    soffice = shutil.which("soffice")
+    if not soffice:
+        raise RuntimeError("LibreOffice is required for the rendered formula visibility test")
+    render_dir = work_dir / "rendered"
+    render_dir.mkdir(parents=True, exist_ok=True)
+    profile_dir = work_dir / "libreoffice-profile"
+    command = [
+        soffice,
+        f"-env:UserInstallation={profile_dir.resolve().as_uri()}",
+        "--headless",
+        "--convert-to",
+        "pdf",
+        "--outdir",
+        str(render_dir),
+        str(docx_path),
+    ]
+    completed = subprocess.run(command, text=True, capture_output=True)
+    if completed.returncode:
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        raise RuntimeError(f"LibreOffice render failed: {detail}")
+    pdf_path = render_dir / f"{docx_path.stem}.pdf"
+    if not pdf_path.is_file():
+        raise RuntimeError("LibreOffice did not produce the expected PDF")
+    from pypdf import PdfReader
+
+    rendered_text = "\n".join(page.extract_text() or "" for page in PdfReader(pdf_path).pages)
+    return pdf_path, rendered_text
+
+
+def rendered_formula_visibility_test() -> None:
+    with tempfile.TemporaryDirectory() as temporary:
+        work_dir = Path(temporary)
+        plan = {
+            "title": "Visibility check",
+            "output_name": "formula_visibility.docx",
+            "sections": [
+                {
+                    "blocks": [
+                        {
+                            "render_mode": "formula_block",
+                            "formula": r"E_{ion} = \frac{RT}{zF} \ln\left(\frac{[ion]_{out}}{[ion]_{in}}\right)",
+                        },
+                        {
+                            "render_mode": "formula_block",
+                            "formula": "I = G(V - E)",
+                        },
+                        {
+                            "render_mode": "formula_block",
+                            "formula": r"K_w = [H^+][OH^-] = 1.0 \times 10^{-14} M^2",
+                        },
+                    ]
+                }
+            ],
+        }
+        docx_path = generate(plan, work_dir)
+        _, rendered_text = rendered_pdf_text(docx_path, work_dir)
+        compact = re.sub(r"\s+", "", rendered_text)
+        for required in ("RT", "zF", "ln", "[ion]", "ₒ", "ₜ", "ₙ", "G(V-E)", "[H", "OH", "10"):
+            if required not in compact:
+                raise AssertionError(f"Rendered formula lost visible content: {required!r} not found in {compact!r}")
+
+
 def self_test() -> None:
     assert visible_formula("partial rho/partial t + nabla dot J = 0") == "∂ρ/∂t + ∇ · J = 0"
+    assert visible_formula("A partial agonist → a lower system response") == "A partial agonist → a lower system response"
+    assert not has_raw_formula_tokens("A partial agonist has lower intrinsic efficacy.")
     assert visible_formula("sum_i x_i^2 + sqrt(y^2)") == "∑ᵢ xᵢ² + √(y²)"
     assert visible_formula("d^2x/dt^2 = -omega^2 x") == "d²x/dt² = -ω² x"
     assert visible_formula("HCO3- + H+ <=> CO2 + H2O") == "HCO₃⁻ + H⁺ ⇌ CO₂ + H₂O"
     assert visible_formula("Km = (k-1 + k2)/k1; Vmax = kcat[E]") == "Kₘ = (k⁻¹ + k₂)/k₁; Vₘₐₓ = kcat[E]"
+    assert visible_formula(r"E_{ion} = \frac{RT}{zF} \ln\left(\frac{[ion]_{out}}{[ion]_{in}}\right)") == "Eᵢₒₙ = (RT)/(zF) ln(([ion]ₒᵤₜ)/([ion]ᵢₙ))"
+    assert visible_formula(r"K_w = [H^+][OH^-] = 1.0 \times 10^{-14} M^2") == "K_w = [H⁺][OH⁻] = 1.0 × 10⁻¹⁴ M²"
+    assert '<w:vertAlign w:val="subscript"/>' in formula_xml("K_w")
+    assert has_raw_formula_tokens("E_K, GABA_A and Ca2+ are technical notation.")
+    normal_paragraph = paragraph_xml("E_K, GABA_A and Ca2+ are technical notation.")
+    assert "E_K" not in normal_paragraph
+    assert "GABA_A" not in normal_paragraph
+    assert "Ca²⁺" in normal_paragraph
+    assert normal_paragraph.count('<w:vertAlign w:val="subscript"/>') >= 2
+    normal_table_cell = table_cell_xml("E_Na and Ca2+")
+    assert "E_Na" not in normal_table_cell
+    assert "Ca²⁺" in normal_table_cell
+    assert '<w:vertAlign w:val="subscript"/>' in normal_table_cell
+    assert public_text_issues("Malformed E_") == ["unresolved_raw_notation"]
+    assert public_text_issues("Broken glyph □") == ["missing_or_replacement_glyph"]
     assert visible_formula("if (x[i] != y[j]) return x_i;") == "if (x[i] != y[j]) return x_i;"
+    assert is_conceptual_alt_text(
+        "Dose-response curves compare full and partial agonists relative to basal receptor activity."
+    )
+    assert not is_conceptual_alt_text("Course concept diagram")
+    assert not is_conceptual_alt_text("Course visual 2")
+    assert not is_conceptual_alt_text("Sprenger et al. (2012), Current Biology 22:1019")
+    adaptive_widths = table_column_widths(
+        [["Term", "Short", "Long explanatory comparison column"], ["A", "1", "Detailed meaning and interpretation"]],
+        3,
+    )
+    assert sum(adaptive_widths) == CONTENT_WIDTH_TWIPS
+    assert len(set(adaptive_widths)) > 1
     with tempfile.TemporaryDirectory() as td:
         image_path = Path(td) / "source_visual.png"
         image_path.write_bytes(base64.b64decode(
@@ -1094,7 +1443,12 @@ def self_test() -> None:
                             "render_mode": "image_plus_kp_list",
                             "heading": "Source visual",
                             "asset_path": str(image_path),
+                            "alt_text": (
+                                "Two-pixel teaching image used to verify that a conceptual accessibility "
+                                "description is embedded for the visual."
+                            ),
                             "caption": "Figure 1. Academic source visual.",
+                            "source_locator": "Lecture 4, slide 9",
                             "key_points": ["The visual is tied to the knowledge unit."],
                         },
                         {
@@ -1137,7 +1491,8 @@ def self_test() -> None:
             assert "word/document.xml" in zf.namelist()
             assert "word/media/image1.png" in zf.namelist()
             assert 'Target="media/image1.png"' in rels
-            assert "Figure 1. Academic source visual." in raw
+            assert "Figure 1. Academic source visual." not in raw
+            assert "Lecture 4, slide 9" not in raw
             assert "Question: Given E = 2 V/m and H = 3 A/m, calculate the Poynting magnitude." in raw
             assert "Step-by-step solution:" in raw
             assert "1. Write the magnitude relation S = EH." in raw
@@ -1145,12 +1500,19 @@ def self_test() -> None:
             assert "3. Second example first step." not in raw
             assert "S = 2*3 = 6 W m⁻²" in raw
             assert "Final answer: S = 6 W m⁻²" in raw
-            assert "Unit check: V/m times A/m = W m⁻²." in raw
+            assert "Unit check: V/m × A/m = W m⁻²." in raw
             assert "w:drawing" in raw
+            assert "Two-pixel teaching image used to verify that a conceptual accessibility" in raw
             assert "Figure 2. Missing source visual." not in raw
             assert "w:numPr" not in raw
-            assert 'w:shd w:fill="F6F7F8"' in raw
-            assert 'w:shd w:fill="E9EEF3"' in raw
+            assert 'w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math"' in raw
+            assert "m:oMathPara" not in raw
+            assert 'w:shd w:fill="F6F7F8"' not in raw
+            assert 'w:shd w:fill="EEF3F7"' in raw
+            assert '<w:tblLayout w:type="fixed"/>' in raw
+            assert '<w:tblGrid>' in raw
+            assert 'w:color="D5DCE3"' in raw
+            assert '<w:jc w:val="center"/>' in raw
             assert "∂ρ/∂t + ∇ · J = 0" in raw
             assert "partial" not in raw
             assert "This should not render" not in raw
@@ -1167,6 +1529,41 @@ def self_test() -> None:
             assert "internal_public_heading:exam practice" in str(exc)
         else:
             raise AssertionError("Exam Type Related add-on heading rendered inside Notes")
+        try:
+            generate(
+                {
+                    "title": "Bad image alt Notes",
+                    "sections": [
+                        {
+                            "heading": "Visual",
+                            "blocks": [
+                                {
+                                    "render_mode": "image_plus_kp_list",
+                                    "asset_path": str(image_path),
+                                    "alt_text": "Course concept diagram",
+                                }
+                            ],
+                        }
+                    ],
+                },
+                td,
+            )
+        except ValueError as exc:
+            assert "image_alt_text_not_conceptual" in str(exc)
+        else:
+            raise AssertionError("Generic image alt text was accepted")
+        try:
+            generate(
+                {
+                    "title": "Broken glyph Notes",
+                    "sections": [{"heading": "Ion transport", "blocks": ["Ca2+ enters through a □ channel."]}],
+                },
+                td,
+            )
+        except ValueError as exc:
+            assert "missing_or_replacement_glyph" in str(exc)
+        else:
+            raise AssertionError("Missing-glyph placeholder was accepted")
         addon = generate(
             {
                 "title": "Exam Type Related Add-on",
@@ -1262,9 +1659,14 @@ def main() -> None:
     parser.add_argument("--plan")
     parser.add_argument("--out", default=".")
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--render-self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
         self_test()
+        return
+    if args.render_self_test:
+        rendered_formula_visibility_test()
+        print("OK: rendered formula visibility test passed")
         return
     plan = json.loads(Path(args.plan).read_text(encoding="utf-8")) if args.plan else {"title": "Exam Preparation Notes", "sections": []}
     print(generate(plan, args.out))

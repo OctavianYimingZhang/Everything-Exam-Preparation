@@ -2,16 +2,20 @@
 
 ## Intake
 
-Use the task, files, and source roles the user supplies. When a required file is missing, request that file directly. When the user has already named the requested artifact, begin that workflow.
+Use the task, files, and source roles the user supplies. When a required file is missing, request that file directly. When the user has already named the requested artifact, begin that workflow. For Notes creation, improvement, continuation, rebuild, and bulk course-file work, select Notes alone unless the user explicitly requests a separate Practice or Essay artifact.
 
 Common source roles are:
 
-- course knowledge: lectures, teaching notes, textbooks, practical teaching, recordings, and revision content;
+- coverage authority: lecture slides or other user-designated instructional sources whose substantive knowledge must be covered completely;
+- course knowledge: lectures, textbooks, practical teaching, recordings, and revision content that may expand or corroborate the coverage authority;
+- reference notes: text summaries used to identify emphasis, helpful phrasing, and organisation without replacing or narrowing the coverage authority;
 - practice: past papers, mock papers, question banks, and recap questions;
 - evaluation: mark schemes, rubrics, expected concepts, and model answers;
 - essay evidence: uploaded readings, reliable external academic sources, and permitted online material.
 
-Explicit user labels control source role. Content-based classification supplies a useful default for unlabeled material.
+Explicit user labels control source role. Content-based classification supplies a useful default for unlabeled material. Source type never grants permission to create a different artifact: question, rubric, or essay-assessment sources may inform Notes internally without triggering Practice or Essay output.
+
+For Notes, build the coverage ledger from the coverage authority. When the user says lecture slides are primary and text notes are reference material, require every substantive slide knowledge point to be represented even if the reference notes omit it. Use reference notes to adjust emphasis or expression; do not promote reference-only additions to required course content without corroboration or an explicit user instruction.
 
 ## Unified Source Flow
 
@@ -29,7 +33,7 @@ Keep extraction observations in the internal record. Surface a source problem wh
 
 ## Evidence Use
 
-Connect each substantive claim to the supplied course material or a reliable permitted source. Use past papers to understand assessment demand and relative emphasis. Use mark schemes and rubrics as evaluation criteria. Use reliable academic sources for essay enrichment.
+Connect each substantive claim to the supplied course material or a reliable permitted source. Preserve the distinction between coverage authority and reference material while drafting. For Notes, use past papers only to understand relative emphasis and keep assessment planning out of the public artifact. For explicitly requested Practice, use mark schemes and rubrics as evaluation criteria. For explicitly requested Essay work, use reliable academic sources for enrichment.
 
 Represent uncertainty plainly when a source is incomplete, ambiguous, or unreadable. Preserve locators wherever they support checking or later revision.
 

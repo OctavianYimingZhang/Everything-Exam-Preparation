@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -286,11 +287,66 @@ def check_merged_tools() -> None:
                 raise ValidationError(f"{relative} is missing merged function {function}")
 
 
+def check_notes_policy() -> None:
+    root_skill = read_text("SKILL.md")
+    skill = read_text("skills/exam-prep-notes/SKILL.md")
+    input_protocol = read_text("references/input_and_evidence_protocol.md")
+    protocol = read_text("references/exam_prep_notes_protocol.md")
+    combined = f"{root_skill}\n{skill}\n{input_protocol}\n{protocol}".lower()
+    if "visual-first" in combined:
+        raise ValidationError("Notes guidance must use a visual-value gate rather than visual-first composition")
+    required = {
+        "materially improves": "a material teaching-value threshold for images",
+        "no image quota": "an explicit no-quota image policy",
+        "original lecture-slide": "source-slide visual priority",
+        "knowledge density": "density-adaptive content length",
+        "longer paragraphs": "flexible paragraph composition",
+        "lecture boundary": "Lecture-boundary page-flow control",
+        "knowledge-only": "the knowledge-only Notes artifact boundary",
+        "source type never grants permission": "source evidence must not trigger another artifact",
+        "do not create a companion": "no unsolicited companion Practice or Essay output",
+        "assessment strategy": "assessment-planning content exclusion from public Notes",
+        "2 cm margins": "the shared 2 cm Notes page-margin specification",
+    }
+    for phrase, purpose in required.items():
+        if phrase not in combined:
+            raise ValidationError(f"Notes guidance is missing {purpose}: {phrase!r}")
+
+    generator = read_text("scripts/generate_exam_prep_notes_docx.py")
+    geometry_contract = {
+        r"(?m)^MARGIN_TWIPS\s*=\s*1134\s*$": "2 cm margins in Word twips",
+        r"(?m)^CONTENT_WIDTH_TWIPS\s*=\s*PAGE_WIDTH_TWIPS\s*-\s*\(2\s*\*\s*MARGIN_TWIPS\)\s*$": (
+            "content width derived from both 2 cm side margins"
+        ),
+        r"(?m)^MAX_IMAGE_WIDTH_EMU\s*=\s*6_120_000\s*$": (
+            "the 17 cm image-width ceiling inside the 2 cm margins"
+        ),
+    }
+    for pattern, purpose in geometry_contract.items():
+        if not re.search(pattern, generator):
+            raise ValidationError(f"Notes generator is missing {purpose}")
+    margin_attributes = set(
+        re.findall(r'w:(top|right|bottom|left)="\{MARGIN_TWIPS\}"', generator)
+    )
+    if margin_attributes != {"top", "right", "bottom", "left"}:
+        raise ValidationError("Notes generator does not apply the 2 cm margin token on all four sides")
+
+
 def run_check(command: list[str]) -> None:
     proc = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
     if proc.returncode:
         detail = proc.stderr.strip() or proc.stdout.strip()
         raise ValidationError(f"Command failed: {' '.join(command)}\n{detail}")
+
+
+def is_git_worktree() -> bool:
+    proc = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+    )
+    return proc.returncode == 0 and proc.stdout.strip() == "true"
 
 
 def main() -> int:
@@ -300,9 +356,13 @@ def main() -> int:
         check_metadata(manifest, skills)
         check_retirement(skills, references)
         check_merged_tools()
+        check_notes_policy()
         for key in ("sources", "notes", "practice", "essay", "installation"):
             run_check([sys.executable, str(manifest["tools"][key]), "--self-test"])
-        run_check(["git", "diff", "--check"])
+        if shutil.which("soffice"):
+            run_check([sys.executable, str(manifest["tools"]["notes"]), "--render-self-test"])
+        if is_git_worktree():
+            run_check(["git", "diff", "--check"])
     except (ValidationError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
