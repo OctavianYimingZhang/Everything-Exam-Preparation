@@ -18,6 +18,13 @@ MARGIN_TWIPS = 1134
 LINE_SPACING = 360
 PAGE_WIDTH_TWIPS = 11906
 CONTENT_WIDTH_TWIPS = PAGE_WIDTH_TWIPS - (2 * MARGIN_TWIPS)
+BODY_HALF_POINTS = 22
+TITLE_HALF_POINTS = 40
+HEADING1_HALF_POINTS = 31
+HEADING2_HALF_POINTS = 26
+FORMULA_HALF_POINTS = 23
+CAPTION_HALF_POINTS = 18
+TABLE_HALF_POINTS = 20
 EMU_PER_PIXEL = 9525
 MAX_IMAGE_WIDTH_EMU = 6_120_000
 IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
@@ -558,7 +565,13 @@ def image_emu_size(path: Path) -> tuple[int, int]:
 def paragraph_run_xml(text: str, style: str, vertical_align: str | None = None) -> str:
     bold = "<w:b/>" if style in {"Title", "Heading1", "Heading2"} else ""
     italic = "<w:i/>" if style == "Caption" else ""
-    size = {"Title": "32", "Heading1": "26", "Heading2": "23", "Caption": "18", "Formula": "24"}.get(style, "21")
+    size = {
+        "Title": TITLE_HALF_POINTS,
+        "Heading1": HEADING1_HALF_POINTS,
+        "Heading2": HEADING2_HALF_POINTS,
+        "Caption": CAPTION_HALF_POINTS,
+        "Formula": FORMULA_HALF_POINTS,
+    }.get(style, BODY_HALF_POINTS)
     vertical = f'<w:vertAlign w:val="{vertical_align}"/>' if vertical_align else ""
     return (
         "<w:r><w:rPr>"
@@ -600,7 +613,8 @@ def formula_run_xml(text: str, vertical_align: str | None = None) -> str:
     vertical = f'<w:vertAlign w:val="{vertical_align}"/>' if vertical_align else ""
     return (
         '<w:r><w:rPr><w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math" w:eastAsia="Cambria Math"/>'
-        f'<w:color w:val="000000"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:noProof/>{vertical}</w:rPr>'
+        f'<w:color w:val="000000"/><w:sz w:val="{FORMULA_HALF_POINTS}"/>'
+        f'<w:szCs w:val="{FORMULA_HALF_POINTS}"/><w:noProof/>{vertical}</w:rPr>'
         f'<w:t xml:space="preserve">{xml_escape(text)}</w:t></w:r>'
     )
 
@@ -651,7 +665,7 @@ def table_column_widths(rows: list[list[Any]], column_count: int) -> list[int]:
 
 def table_font_size(rows: list[list[Any]], column_widths: list[int]) -> int:
     column_count = max(1, len(column_widths))
-    base_size = 21 if column_count <= 2 else 20 if column_count <= 4 else 19
+    base_size = TABLE_HALF_POINTS if column_count <= 4 else TABLE_HALF_POINTS - 1
     density = 0.0
     for row in rows:
         for column, value in enumerate(row):
@@ -845,19 +859,19 @@ def styles_xml() -> str:
         f'<w:spacing w:line="{LINE_SPACING}" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
         '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/>'
         '<w:pPr><w:jc w:val="both"/></w:pPr><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="000000"/><w:sz w:val="21"/></w:rPr></w:style>'
+        f'<w:color w:val="000000"/><w:sz w:val="{BODY_HALF_POINTS}"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/>'
         '<w:pPr><w:jc w:val="center"/></w:pPr><w:rPr><w:b/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="000000"/><w:sz w:val="32"/></w:rPr></w:style>'
+        f'<w:color w:val="000000"/><w:sz w:val="{TITLE_HALF_POINTS}"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/>'
         '<w:pPr><w:jc w:val="left"/></w:pPr><w:rPr><w:b/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="000000"/><w:sz w:val="26"/></w:rPr></w:style>'
+        f'<w:color w:val="000000"/><w:sz w:val="{HEADING1_HALF_POINTS}"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/>'
         '<w:pPr><w:jc w:val="left"/></w:pPr><w:rPr><w:b/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="000000"/><w:sz w:val="23"/></w:rPr></w:style>'
+        f'<w:color w:val="000000"/><w:sz w:val="{HEADING2_HALF_POINTS}"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Caption"><w:name w:val="Caption"/>'
         '<w:pPr><w:jc w:val="center"/></w:pPr><w:rPr><w:i/><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
-        '<w:color w:val="000000"/><w:sz w:val="18"/></w:rPr></w:style>'
+        f'<w:color w:val="000000"/><w:sz w:val="{CAPTION_HALF_POINTS}"/></w:rPr></w:style>'
         "</w:styles>"
     )
 
@@ -1361,6 +1375,13 @@ def self_test() -> None:
     assert visible_formula("Km = (k-1 + k2)/k1; Vmax = kcat[E]") == "Kₘ = (k⁻¹ + k₂)/k₁; Vₘₐₓ = kcat[E]"
     assert visible_formula(r"E_{ion} = \frac{RT}{zF} \ln\left(\frac{[ion]_{out}}{[ion]_{in}}\right)") == "Eᵢₒₙ = (RT)/(zF) ln(([ion]ₒᵤₜ)/([ion]ᵢₙ))"
     assert visible_formula(r"K_w = [H^+][OH^-] = 1.0 \times 10^{-14} M^2") == "K_w = [H⁺][OH⁻] = 1.0 × 10⁻¹⁴ M²"
+    assert f'<w:sz w:val="{BODY_HALF_POINTS}"/>' in paragraph_run_xml("Body", "Normal")
+    assert f'<w:sz w:val="{TITLE_HALF_POINTS}"/>' in paragraph_run_xml("Title", "Title")
+    assert f'<w:sz w:val="{HEADING1_HALF_POINTS}"/>' in paragraph_run_xml("Heading", "Heading1")
+    assert f'<w:sz w:val="{HEADING2_HALF_POINTS}"/>' in paragraph_run_xml("Heading", "Heading2")
+    assert f'<w:sz w:val="{FORMULA_HALF_POINTS}"/>' in formula_run_xml("E")
+    assert f'<w:sz w:val="{CAPTION_HALF_POINTS}"/>' in paragraph_run_xml("Caption", "Caption")
+    assert table_font_size([["Term", "Meaning"], ["A", "Definition"]], [3000, 6000]) == TABLE_HALF_POINTS
     assert '<w:vertAlign w:val="subscript"/>' in formula_xml("K_w")
     assert has_raw_formula_tokens("E_K, GABA_A and Ca2+ are technical notation.")
     normal_paragraph = paragraph_xml("E_K, GABA_A and Ca2+ are technical notation.")

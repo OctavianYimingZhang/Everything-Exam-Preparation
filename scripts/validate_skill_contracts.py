@@ -307,6 +307,8 @@ def check_notes_policy() -> None:
         "do not create a companion": "no unsolicited companion Practice or Essay output",
         "assessment strategy": "assessment-planning content exclusion from public Notes",
         "2 cm margins": "the shared 2 cm Notes page-margin specification",
+        "partially cropped slide title": "complete-or-removed slide-title cropping",
+        "15.5 pt first-level headings": "the shared Notes heading scale",
     }
     for phrase, purpose in required.items():
         if phrase not in combined:
@@ -323,6 +325,19 @@ def check_notes_policy() -> None:
         ),
     }
     for pattern, purpose in geometry_contract.items():
+        if not re.search(pattern, generator):
+            raise ValidationError(f"Notes generator is missing {purpose}")
+
+    typography_contract = {
+        r"(?m)^BODY_HALF_POINTS\s*=\s*22\s*$": "Arial 11 pt body text",
+        r"(?m)^TITLE_HALF_POINTS\s*=\s*40\s*$": "20 pt title text",
+        r"(?m)^HEADING1_HALF_POINTS\s*=\s*31\s*$": "15.5 pt first-level headings",
+        r"(?m)^HEADING2_HALF_POINTS\s*=\s*26\s*$": "13 pt second-level headings",
+        r"(?m)^FORMULA_HALF_POINTS\s*=\s*23\s*$": "11.5 pt display equations",
+        r"(?m)^CAPTION_HALF_POINTS\s*=\s*18\s*$": "9 pt captions",
+        r"(?m)^TABLE_HALF_POINTS\s*=\s*20\s*$": "10 pt table text",
+    }
+    for pattern, purpose in typography_contract.items():
         if not re.search(pattern, generator):
             raise ValidationError(f"Notes generator is missing {purpose}")
     margin_attributes = set(

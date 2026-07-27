@@ -34,6 +34,8 @@ Use a diagram, graph, micrograph, process schematic, compact comparison table, o
 
 Prefer a suitable original lecture-slide image, crop, or complete slide page when it already teaches the relationship clearly at readable size. Create a new diagram only when the relationship has strong visual value and the supplied course material contains no adequate visual. Pair each retained visual with the definitions, causal links, or interpretation needed to make it self-contained.
 
+When a retained slide page or crop includes the slide title, keep that title complete or crop it out completely and use the document heading instead. Never leave a partially cropped slide title.
+
 Keep essential figure labels close to the surrounding reading size. At the intended embedded width, use a minimum effective label size of about 80% of the body-text size; with the standard 11 pt body this means approximately 9 pt or larger. Calculate raster-label size as `source font px × embedded width in × 72 ÷ source width px`, record the result in the internal figure-typography audit, and reflow, simplify, crop, enlarge, or split a visual when labels would fall below the relative floor.
 
 Do not print source filenames, slide/page locators, `Source:` lines, figure numbers, or figure legends under images unless the user explicitly asks for them. Retain provenance in the internal audit. Use a short public caption only when explicitly requested and set `display_caption: true` for that image block; otherwise supply explicit `alt_text` that identifies the visual's subject and the teaching relationship it shows. Treat a heading alone, `Course visual`, `Course concept diagram`, and bibliographic or source text as invalid accessibility descriptions.
@@ -50,7 +52,7 @@ Use tables only when exact comparison or mapping is clearer than prose. Apply li
 
 ## Document Design
 
-Use A4, Arial 11 pt body text, 2 cm margins, 1.5 line spacing, a centred main title, left-aligned headings, justified body text, black academic text, restrained hierarchy, and consistent visual placement.
+Use A4, Arial 11 pt body text, 2 cm margins, 1.5 line spacing, a centred 20 pt main title, left-aligned 15.5 pt first-level headings, 13 pt second-level headings, and 11.5 pt third-level headings. Use 10 pt table text and 9 pt captions by default, justified body text, black academic text, restrained hierarchy, and consistent visual placement. Reduce table text only when the content genuinely requires it and the rendered table remains readable.
 
 Keep the document in natural continuous flow. An intentional page break may introduce an actual Lecture boundary; knowledge units within the same Lecture flow continuously. Keep a heading with enough following content to identify its section without creating avoidable large blank areas.
 
