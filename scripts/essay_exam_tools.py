@@ -9,6 +9,37 @@ from pathlib import Path
 from typing import Any
 
 STOPWORDS = {"lecture", "module", "question", "answer", "using", "explain", "describe", "compare", "evaluate", "discuss", "material", "course", "student"}
+ONLINE_ASSESSMENT_STATES = {"active", "closed", "unknown"}
+PERMISSION_ALLOWED = {True, "allowed", "yes", "permitted", "true"}
+PERMISSION_DENIED = {False, "denied", "no", "not_allowed", "not permitted", "false"}
+ONLINE_ACTION_ALIASES = {
+    "outline": "plan",
+    "essay_plan": "plan",
+    "paragraph_plan": "plan",
+    "evidence_organisation": "evidence_map",
+    "evidence_organization": "evidence_map",
+    "draft": "complete_draft",
+    "full_draft": "complete_draft",
+    "submission_ready_draft": "complete_draft",
+    "external_source_research": "use_external_sources",
+    "online_research": "use_online_materials",
+}
+ONLINE_ACTION_PERMISSION = {
+    "use_lecture_materials": "lecture_materials",
+    "use_online_materials": "online_materials",
+    "use_uploaded_readings": "uploaded_readings",
+    "use_external_sources": "external_sources",
+    "complete_draft": "complete_draft",
+}
+ONLINE_SAFE_ACTIONS = {
+    "question_analysis",
+    "concept_explanation",
+    "permission_neutral_plan",
+    "plan",
+    "evidence_map",
+    "feedback_on_student_work",
+}
+ONLINE_KNOWN_ACTIONS = ONLINE_SAFE_ACTIONS | set(ONLINE_ACTION_PERMISSION)
 
 
 def frequent_topics(text: str, limit: int = 6) -> list[str]:
@@ -128,18 +159,161 @@ def build_extra_reading_enrichment(discovery: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def online_essay_permission_status(permissions: dict[str, Any] | None) -> dict[str, Any]:
+def normalize_assessment_state(value: Any) -> str:
+    if value is True:
+        return "active"
+    if value is False:
+        return "closed"
+    state = str(value or "unknown").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "open": "active",
+        "live": "active",
+        "in_progress": "active",
+        "finished": "closed",
+        "complete": "closed",
+        "completed": "closed",
+        "unclear": "unknown",
+        "unspecified": "unknown",
+    }
+    state = aliases.get(state, state)
+    return state if state in ONLINE_ASSESSMENT_STATES else "unknown"
+
+
+def permission_state(value: Any) -> str:
+    if not isinstance(value, (str, bool)):
+        return "unknown"
+    normalized = value.strip().lower() if isinstance(value, str) else value
+    if normalized in PERMISSION_ALLOWED:
+        return "allowed"
+    if normalized in PERMISSION_DENIED:
+        return "denied"
+    return "unknown"
+
+
+def normalize_requested_actions(value: Any) -> list[str]:
+    if value in (None, "", []):
+        return ["plan"]
+    raw_actions = value if isinstance(value, list) else [value]
+    actions: list[str] = []
+    for raw in raw_actions:
+        action = str(raw or "").strip().lower().replace("-", "_").replace(" ", "_")
+        action = ONLINE_ACTION_ALIASES.get(action, action)
+        if action and action not in actions:
+            actions.append(action)
+    return actions or ["plan"]
+
+
+def online_essay_permission_status(
+    permissions: dict[str, Any] | None,
+    assessment_state: str | None = None,
+    requested_actions: list[str] | str | None = None,
+) -> dict[str, Any]:
+    """Resolve Online Essay actions from lifecycle state and action-specific permissions."""
     permissions = permissions or {}
-    required = ("lecture_materials", "online_materials", "external_sources", "complete_draft")
-    unresolved = [key for key in required if permissions.get(key) in (None, "", "unclear")]
+    state = normalize_assessment_state(
+        assessment_state
+        if assessment_state is not None
+        else permissions.get("assessment_state", permissions.get("assessment_status"))
+    )
+    actions = normalize_requested_actions(
+        requested_actions
+        if requested_actions is not None
+        else permissions.get("requested_actions", permissions.get("requested_action"))
+    )
+    source_keys = ("lecture_materials", "online_materials", "uploaded_readings", "external_sources")
+    allowed_sources = [key for key in source_keys if permission_state(permissions.get(key)) == "allowed"]
+    allowed_actions = sorted(ONLINE_SAFE_ACTIONS - {"plan", "evidence_map"})
+    blocked_actions: list[dict[str, str]] = []
+    gaps: list[dict[str, str]] = []
+    advisories: list[dict[str, str]] = []
+    action_conditions: dict[str, str] = {}
+
+    if state == "closed":
+        for action in actions:
+            if action not in ONLINE_KNOWN_ACTIONS:
+                blocked_actions.append({"action": action, "reason": "unsupported_or_unclassified_action"})
+                continue
+            if action not in allowed_actions:
+                allowed_actions.append(action)
+            action_conditions[action] = "post_assessment_support_only"
+        if "complete_draft" in actions:
+            action_conditions["complete_draft"] = "post_assessment_model_answer_not_live_submission_support"
+        status = "restricted" if blocked_actions else "ready"
+    elif state == "unknown":
+        unknown_state_notice = {
+            "code": "unknown_assessment_state",
+            "field": "assessment_state",
+            "detail": "Confirm whether the Online Essay assessment is active or closed before restricted support.",
+        }
+        for action in actions:
+            if action in ONLINE_SAFE_ACTIONS:
+                if action not in allowed_actions:
+                    allowed_actions.append(action)
+                action_conditions[action] = "permission_neutral_until_assessment_state_is_confirmed"
+            else:
+                blocked_actions.append({
+                    "action": action,
+                    "reason": "assessment_state_unknown",
+                })
+        if blocked_actions:
+            gaps.append(unknown_state_notice)
+            status = "needs_clarification"
+        else:
+            advisories.append(unknown_state_notice)
+            status = "ready"
+    else:
+        for action in actions:
+            permission_key = ONLINE_ACTION_PERMISSION.get(action)
+            if permission_key is None:
+                if action in ONLINE_SAFE_ACTIONS:
+                    if action not in allowed_actions:
+                        allowed_actions.append(action)
+                    action_conditions[action] = "permission_neutral_or_feedback_support"
+                else:
+                    blocked_actions.append({"action": action, "reason": "unsupported_or_unclassified_action"})
+                continue
+            decision = permission_state(permissions.get(permission_key))
+            if decision == "allowed":
+                if action not in allowed_actions:
+                    allowed_actions.append(action)
+                action_conditions[action] = f"explicit_{permission_key}_permission"
+                if action == "use_external_sources" and permission_state(permissions.get("citation_expectations")) == "unknown":
+                    gaps.append({
+                        "code": "unresolved_citation_expectations",
+                        "field": "citation_expectations",
+                        "detail": "External-source use is allowed, but the required citation practice is unresolved.",
+                    })
+            elif decision == "denied":
+                blocked_actions.append({"action": action, "reason": f"{permission_key}_explicitly_denied"})
+            else:
+                blocked_actions.append({"action": action, "reason": f"{permission_key}_permission_unresolved"})
+                gaps.append({
+                    "code": "unresolved_online_essay_permission",
+                    "field": permission_key,
+                    "detail": f"Confirm {permission_key.replace('_', ' ')} permission for the requested action.",
+                })
+        status = "needs_clarification" if gaps else ("restricted" if blocked_actions else "ready")
+
+    unresolved = []
+    for item in gaps:
+        field = item.get("field")
+        if field and field not in unresolved:
+            unresolved.append(field)
     return {
-        "status": "ready" if not unresolved else "needs_clarification",
+        "type": "online_essay_permission_state",
+        "task_mode": "essay",
+        "assessment_state": state,
+        "status": status,
+        "gaps": gaps,
+        "advisories": advisories,
+        "degraded": status != "ready",
+        "requested_actions": actions,
+        "allowed_actions": sorted(set(allowed_actions)),
+        "blocked_actions": blocked_actions,
+        "action_conditions": action_conditions,
         "unresolved": unresolved,
-        "allowed_sources": [
-            key for key in ("lecture_materials", "online_materials", "uploaded_readings", "external_sources")
-            if permissions.get(key) in (True, "allowed", "yes")
-        ],
-        "complete_draft": permissions.get("complete_draft"),
+        "allowed_sources": allowed_sources,
+        "complete_draft": permission_state(permissions.get("complete_draft")),
     }
 
 
@@ -217,7 +391,61 @@ def self_test() -> None:
     discovery = discover_extra_reading(scan)
     assert discovery["supplied_extra_reading"][0]["source_name"] == "Review.pdf"
     assert build_extra_reading_enrichment(discovery)["essay_enrichment"]["paragraph_slots"]
-    assert online_essay_permission_status({"lecture_materials": "allowed"})["status"] == "needs_clarification"
+    active_plan = online_essay_permission_status(
+        {"assessment_state": "active"},
+        requested_actions=["plan"],
+    )
+    assert active_plan["status"] == "ready"
+    assert "plan" in active_plan["allowed_actions"]
+    assert not active_plan["gaps"]
+    active_draft_unknown = online_essay_permission_status(
+        {"assessment_state": "active"},
+        requested_actions=["complete_draft"],
+    )
+    assert active_draft_unknown["status"] == "needs_clarification"
+    assert active_draft_unknown["gaps"][0]["field"] == "complete_draft"
+    active_draft_denied = online_essay_permission_status(
+        {"assessment_state": "active", "complete_draft": "denied"},
+        requested_actions=["complete_draft"],
+    )
+    assert active_draft_denied["status"] == "restricted"
+    assert active_draft_denied["blocked_actions"][0]["reason"] == "complete_draft_explicitly_denied"
+    active_draft_allowed = online_essay_permission_status(
+        {"assessment_state": "active", "complete_draft": "allowed"},
+        requested_actions=["complete_draft"],
+    )
+    assert active_draft_allowed["status"] == "ready"
+    assert "complete_draft" in active_draft_allowed["allowed_actions"]
+    closed_draft = online_essay_permission_status(
+        {"assessment_state": "closed"},
+        requested_actions=["complete_draft"],
+    )
+    assert closed_draft["status"] == "ready"
+    assert closed_draft["action_conditions"]["complete_draft"].startswith("post_assessment")
+    closed_unknown_action = online_essay_permission_status(
+        {"assessment_state": "closed"},
+        requested_actions=["unsupported_action"],
+    )
+    assert closed_unknown_action["status"] == "restricted"
+    assert "unsupported_action" not in closed_unknown_action["allowed_actions"]
+    assert closed_unknown_action["blocked_actions"][0]["reason"] == "unsupported_or_unclassified_action"
+    unknown_draft = online_essay_permission_status(
+        {},
+        requested_actions=["complete_draft"],
+    )
+    assert unknown_draft["assessment_state"] == "unknown"
+    assert unknown_draft["status"] == "needs_clarification"
+    assert unknown_draft["blocked_actions"][0]["reason"] == "assessment_state_unknown"
+    unknown_plan = online_essay_permission_status({}, requested_actions=["plan"])
+    assert unknown_plan["status"] == "ready"
+    assert unknown_plan["gaps"] == []
+    assert unknown_plan["advisories"][0]["field"] == "assessment_state"
+    external_without_citation_rule = online_essay_permission_status(
+        {"assessment_state": "active", "external_sources": "allowed"},
+        requested_actions=["use_external_sources"],
+    )
+    assert external_without_citation_rule["status"] == "needs_clarification"
+    assert external_without_citation_rule["gaps"][0]["field"] == "citation_expectations"
 
 
 def main() -> None:
@@ -232,6 +460,8 @@ def main() -> None:
     parser.add_argument("--question")
     parser.add_argument("--readings")
     parser.add_argument("--permissions")
+    parser.add_argument("--assessment-state", choices=("active", "closed", "unknown"))
+    parser.add_argument("--requested-action", action="append")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
@@ -248,7 +478,11 @@ def main() -> None:
             parser.error("enrich-extra-reading requires --input")
         result = build_extra_reading_enrichment(discovery)
     elif args.command == "check-online-permissions":
-        result = online_essay_permission_status(load_json(args.permissions))
+        result = online_essay_permission_status(
+            load_json(args.permissions),
+            assessment_state=args.assessment_state,
+            requested_actions=args.requested_action,
+        )
     else:
         readings = args.readings or (Path(args.input).read_text(encoding="utf-8", errors="ignore") if args.input else "")
         result = build_essay_pack(args.question, readings, load_json(args.source_scan), load_json(args.extra_reading))

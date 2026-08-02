@@ -47,6 +47,10 @@ Read `references/input_and_evidence_protocol.md` for every task, then read the f
 
 Use the user's requested output language and default to English. Treat examples in another language as structural examples; use that language for output when requested.
 
+Each focused Skill may call `scripts/extract_sources.py --mode diagnostic --purpose <notes|practice|essay>` directly. Treat its `ExamFormatProfile`, `AssessmentArchitecture`, and `DiagnosticAssessment` records as evidence-only working contracts. Read `task_mode`, `status`, `gaps`, and `degraded`; proceed when the requested artifact remains supported, ask only for a blocking gap, and never infer absent assessment formats, weights, permissions, or marks.
+
+Return the public Skill result envelope from `references/input_and_evidence_protocol.md`. Keep internal readiness states separate from the public completion status. When a file is generated, declare its real format, source corpus identifiers, and QA state; never label a plan or payload as a generated artifact.
+
 Use the user's requested filename. Otherwise create a clear filename from the course and artifact.
 
 Keep public output focused on learning content. Maintain source roles, coverage, slide decisions, extraction observations, source locators, and verification results as internal working records.

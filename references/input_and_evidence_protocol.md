@@ -31,6 +31,22 @@ Use `scripts/extract_sources.py` to:
 
 Keep extraction observations in the internal record. Surface a source problem when it prevents reliable completion.
 
+## Shared Diagnostic Contracts
+
+Every focused Skill can call `scripts/extract_sources.py --mode diagnostic --purpose <notes|practice|essay>` without going through the Router. The lightweight result contains:
+
+- `ExamFormatProfile`: only question formats, durations, and mark values evidenced by assessment fragments;
+- `AssessmentArchitecture`: evidenced assessment components and explicit source percentages, without inferred weighting;
+- `DiagnosticAssessment`: capability readiness for the selected focused Skill.
+
+Each contract exposes `task_mode`, `status`, `gaps`, and `degraded`. `DiagnosticAssessment` also exposes `can_proceed`. Treat `blocked` gaps as indispensable missing inputs, `partial` as a usable but incomplete evidence state, and `ready` as sufficient for the requested capability. A degraded assessment profile does not block Notes when course-knowledge evidence is sufficient. Never convert source occurrence into assessment weight or an absent instruction into permission.
+
+## Public Skill Result Envelope
+
+Wrap the requested public result in schema `1.0` with `skill_id`, `task_mode`, one public `status`, `assumptions`, `gaps`, `evidence_summary`, `primary_output`, and `qa`. Use one status: `completed`, `completed_with_gaps`, `needs_material_input`, `source_conflict`, `artifact_generated`, or `analysis_only`. Diagnostic `ready`, `partial`, and `blocked` are internal readiness states and do not replace the public status.
+
+When a real file is created, include an artifact manifest with `artifact_id`, `artifact_type`, the actual `file_format`, `content_schema_version`, `source_corpus_ids`, and `qa_status`. Do not claim `docx`, `pdf`, or `artifact_generated` when only a plan, payload, or chat response exists. Name any fallback and the source or assessment gap that caused it.
+
 ## Evidence Use
 
 Connect each substantive claim to the supplied course material or a reliable permitted source. Preserve the distinction between coverage authority and reference material while drafting. For Notes, use past papers only to understand relative emphasis and keep assessment planning out of the public artifact. For explicitly requested Practice, use mark schemes and rubrics as evaluation criteria. For explicitly requested Essay work, use reliable academic sources for enrichment.

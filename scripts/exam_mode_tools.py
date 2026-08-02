@@ -985,43 +985,338 @@ def build_assessment_blueprint(
     }
 
 
+NEGATION_CUES = {
+    "not",
+    "no",
+    "never",
+    "neither",
+    "nor",
+    "without",
+    "cannot",
+    "cant",
+    "doesnt",
+    "dont",
+    "isnt",
+    "arent",
+    "wasnt",
+    "werent",
+    "fails",
+    "failed",
+    "lack",
+    "lacks",
+    "lacking",
+}
+EVALUATION_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "as",
+    "at",
+    "by",
+    "for",
+    "from",
+    "in",
+    "into",
+    "is",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "to",
+    "with",
+}
+
+
+def _evaluation_token(value: str) -> str:
+    token = value.casefold().replace("’", "'")
+    token = re.sub(r"[^a-z0-9]+", "", token)
+    if len(token) > 6 and token.endswith("ation"):
+        return token[:-5] + "ate"
+    if len(token) > 5 and token.endswith("ating"):
+        return token[:-3] + "e"
+    if len(token) > 5 and token.endswith("ated"):
+        return token[:-1]
+    if len(token) > 5 and token.endswith("ates"):
+        return token[:-1]
+    if len(token) > 5 and token.endswith("ies"):
+        return token[:-3] + "y"
+    if len(token) > 5 and token.endswith("ing"):
+        return token[:-3]
+    if len(token) > 4 and token.endswith("ed"):
+        return token[:-2]
+    if len(token) > 4 and token.endswith("s") and not token.endswith("ss"):
+        return token[:-1]
+    return token
+
+
+def _evaluation_tokens(value: str, keep_negation: bool = True) -> list[str]:
+    raw = re.findall(r"[A-Za-z0-9]+(?:['’][A-Za-z]+)?", value or "")
+    tokens = [_evaluation_token(item) for item in raw]
+    excluded = EVALUATION_STOPWORDS if keep_negation else EVALUATION_STOPWORDS | NEGATION_CUES | {"only"}
+    return [item for item in tokens if item and item not in excluded]
+
+
+def _answer_clauses(answer: str) -> list[str]:
+    clauses = re.split(
+        r"(?<=[.!?;])\s+|\b(?:but|however|whereas|although|yet)\b",
+        re.sub(r"\s+", " ", answer or "").strip(),
+        flags=re.I,
+    )
+    return [item.strip(" ,;:") for item in clauses if item.strip(" ,;:")]
+
+
+def _is_negated(tokens: list[str], positions: list[int]) -> bool:
+    if not positions:
+        return False
+    for position in positions:
+        start = max(0, position - 2)
+        for index in range(start, position):
+            token = tokens[index]
+            if token == "not" and index + 1 < len(tokens) and tokens[index + 1] == "only":
+                continue
+            if token in NEGATION_CUES:
+                return True
+    return False
+
+
+def _alias_clause_evidence(clause: str, alias: str) -> dict[str, Any]:
+    clause_tokens = _evaluation_tokens(clause)
+    alias_tokens = _evaluation_tokens(alias, keep_negation=False)
+    if not alias_tokens:
+        return {"coverage": 0.0, "negated": False, "excerpt": clause}
+    positions: list[int] = []
+    search_from = 0
+    for token in alias_tokens:
+        position = next(
+            (index for index in range(search_from, len(clause_tokens)) if clause_tokens[index] == token),
+            None,
+        )
+        if position is None:
+            continue
+        positions.append(position)
+        search_from = position + 1
+    coverage = len(positions) / len(alias_tokens)
+    return {
+        "coverage": round(coverage, 4),
+        "negated": _is_negated(clause_tokens, positions) if positions else False,
+        "excerpt": clause[:360],
+    }
+
+
+def _as_text_list(value: Any) -> list[str]:
+    values = value if isinstance(value, list) else ([] if value in (None, "") else [value])
+    return [str(item).strip() for item in values if str(item).strip()]
+
+
+def _concept_definitions(raw: dict[str, Any], label: str) -> list[dict[str, Any]]:
+    supplied = raw.get("concepts") or raw.get("required_concepts")
+    concepts: list[dict[str, Any]] = []
+    if isinstance(supplied, list) and supplied:
+        for item in supplied:
+            if isinstance(item, dict):
+                concept_label = str(item.get("label") or item.get("concept") or item.get("text") or "").strip()
+                aliases = _as_text_list(item.get("aliases") or item.get("terms") or item.get("synonyms") or concept_label)
+                polarity = str(item.get("expected_polarity") or raw.get("expected_polarity") or "positive").strip().lower()
+            else:
+                concept_label = str(item).strip()
+                aliases = [concept_label] if concept_label else []
+                polarity = str(raw.get("expected_polarity") or "positive").strip().lower()
+            if aliases:
+                concepts.append({
+                    "label": concept_label or aliases[0],
+                    "aliases": aliases,
+                    "expected_polarity": polarity,
+                })
+    if concepts:
+        return concepts
+    aliases = _as_text_list(raw.get("terms") or raw.get("aliases") or raw.get("synonyms") or label)
+    inferred_negative = any(
+        any(token in NEGATION_CUES for token in _evaluation_tokens(alias))
+        for alias in aliases
+    )
+    return [{
+        "label": label,
+        "aliases": aliases or [label],
+        "expected_polarity": str(raw.get("expected_polarity") or ("negative" if inferred_negative else "positive")).strip().lower(),
+    }]
+
+
+def _evaluate_concept(answer: str, concept: dict[str, Any]) -> dict[str, Any]:
+    best: dict[str, Any] = {"coverage": 0.0, "negated": False, "excerpt": ""}
+    for clause in _answer_clauses(answer):
+        for alias in concept.get("aliases") or []:
+            evidence = _alias_clause_evidence(clause, str(alias))
+            if evidence["coverage"] > best["coverage"]:
+                best = evidence
+            elif evidence["coverage"] == best["coverage"] == 1.0 and best["negated"] and not evidence["negated"]:
+                best = evidence
+    expected_negative = str(concept.get("expected_polarity") or "positive").lower() in {"negative", "negated", "false"}
+    if best["coverage"] == 1.0:
+        if bool(best["negated"]) == expected_negative:
+            status = "supported"
+        else:
+            status = "contradicted"
+    elif best["coverage"] >= 0.5:
+        status = "partial"
+    else:
+        status = "missing"
+    return {
+        "label": concept.get("label"),
+        "status": status,
+        "coverage": best["coverage"],
+        "negated": best["negated"],
+        "evidence_excerpt": best["excerpt"],
+    }
+
+
+def _explicit_phrase_hits(answer: str, phrases: Any) -> list[str]:
+    hits: list[str] = []
+    for phrase in _as_text_list(phrases):
+        if any(
+            (
+                evidence := _alias_clause_evidence(clause, phrase)
+            )["coverage"] == 1.0
+            and not evidence["negated"]
+            for clause in _answer_clauses(answer)
+        ):
+            hits.append(phrase)
+    return hits
+
+
+def _criterion_mark_value(raw: dict[str, Any]) -> float | None:
+    value = raw.get("marks", raw.get("max_marks", raw.get("points")))
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)) and value >= 0:
+        return float(value)
+    if isinstance(value, str) and re.fullmatch(r"\d+(?:\.\d+)?", value.strip()):
+        return float(value)
+    return None
+
+
+def _criteria_from_payload(payload: dict[str, Any]) -> tuple[list[Any], dict[str, Any]]:
+    rubric = payload.get("rubric") if isinstance(payload.get("rubric"), dict) else {}
+    criteria = payload.get("criteria") or payload.get("expected_concepts")
+    if not criteria and rubric:
+        criteria = rubric.get("criteria") or rubric.get("expected_concepts")
+    if not isinstance(criteria, list):
+        raise ValueError("criteria must be a list or a rubric containing a criteria list")
+    return criteria, rubric
+
+
 def evaluate_answer(payload: dict[str, Any]) -> dict[str, Any]:
     answer = str(payload.get("student_answer") or "")
-    criteria = payload.get("criteria") or payload.get("expected_concepts") or []
-    if not isinstance(criteria, list):
-        raise ValueError("criteria must be a list")
-    normalized_answer = re.sub(r"\s+", " ", answer).casefold()
+    criteria, rubric = _criteria_from_payload(payload)
     results: list[dict[str, Any]] = []
     for raw in criteria:
         if isinstance(raw, dict):
             criterion_id = str(raw.get("criterion_id") or raw.get("id") or raw.get("label") or "criterion")
             label = str(raw.get("label") or raw.get("expected_concept") or raw.get("text") or criterion_id)
-            terms = raw.get("terms") or [label]
             provenance = raw.get("provenance") or []
+            criterion = raw
         else:
             criterion_id = re.sub(r"[^a-z0-9]+", "_", str(raw).casefold()).strip("_") or "criterion"
             label = str(raw)
-            terms = [label]
             provenance = []
-        normalized_terms = [str(term).strip().casefold() for term in terms if str(term).strip()]
-        matched_terms = [term for term in normalized_terms if term in normalized_answer]
+            criterion = {"label": label, "terms": [label]}
+        concept_results = [
+            _evaluate_concept(answer, concept)
+            for concept in _concept_definitions(criterion, label)
+        ]
+        contradiction_hits = _explicit_phrase_hits(
+            answer,
+            criterion.get("contradictions") or criterion.get("contradictory_concepts"),
+        )
+        incorrect_hits = _explicit_phrase_hits(
+            answer,
+            criterion.get("incorrect_concepts") or criterion.get("incorrect_terms"),
+        )
+        supported = [item for item in concept_results if item["status"] == "supported"]
+        partial = [item for item in concept_results if item["status"] == "partial"]
+        contradicted = [item for item in concept_results if item["status"] == "contradicted"]
+        if contradiction_hits or contradicted:
+            status = "contradicted"
+        elif concept_results and len(supported) == len(concept_results):
+            status = "correct"
+        elif supported:
+            status = "partial"
+        elif incorrect_hits:
+            status = "incorrect"
+        elif partial:
+            status = "partial"
+        else:
+            status = "missing"
+        marks = _criterion_mark_value(criterion)
         results.append({
             "criterion_id": criterion_id,
             "label": label,
-            "status": "addressed" if normalized_terms and matched_terms else "not_evidenced",
-            "matched_terms": matched_terms,
+            "status": status,
+            "concepts": concept_results,
+            "supported_concepts": [item["label"] for item in supported],
+            "partial_concepts": [item["label"] for item in partial],
+            "contradicted_concepts": [item["label"] for item in contradicted],
+            "incorrect_evidence": incorrect_hits,
+            "contradiction_evidence": contradiction_hits,
+            "marks_available": int(marks) if marks is not None and marks.is_integer() else marks,
             "provenance": provenance,
         })
-    addressed = sum(item["status"] == "addressed" for item in results)
+    evidenced = sum(item["status"] in {"correct", "partial", "contradicted", "incorrect"} for item in results)
+    mark_values = [item.get("marks_available") for item in results]
+    marks_supported = bool(results) and all(isinstance(value, (int, float)) for value in mark_values)
+    mark_estimate: float | int | None = None
+    mark_possible: float | int | None = None
+    mark_basis = "unavailable_without_explicit_criterion_marks"
+    if marks_supported:
+        default_credit = {
+            "correct": 1.0,
+            "partial": 0.5,
+            "incorrect": 0.0,
+            "contradicted": 0.0,
+            "missing": 0.0,
+        }
+        rubric_credit = rubric.get("status_credit") if isinstance(rubric.get("status_credit"), dict) else {}
+        awarded = 0.0
+        possible = 0.0
+        for item in results:
+            maximum = float(item["marks_available"])
+            credit = rubric_credit.get(item["status"], default_credit[item["status"]])
+            try:
+                credit_value = min(1.0, max(0.0, float(credit)))
+            except (TypeError, ValueError):
+                credit_value = default_credit[item["status"]]
+            estimate = round(maximum * credit_value, 2)
+            item["estimated_mark"] = int(estimate) if estimate.is_integer() else estimate
+            awarded += estimate
+            possible += maximum
+        mark_estimate = round(awarded, 2)
+        mark_possible = round(possible, 2)
+        if float(mark_estimate).is_integer():
+            mark_estimate = int(mark_estimate)
+        if float(mark_possible).is_integer():
+            mark_possible = int(mark_possible)
+        mark_basis = (
+            "explicit_criterion_marks_and_rubric_status_credit"
+            if rubric_credit
+            else "explicit_criterion_marks_with_half_credit_for_partial"
+        )
     return {
         "type": "answer_evaluation",
-        "evaluation_basis": "explicit_criteria_term_evidence",
+        "task_mode": "practice",
+        "status": "ready" if results else "blocked",
+        "gaps": [] if results else [{"code": "missing_evaluation_criteria", "detail": "No evaluation criteria were supplied."}],
+        "degraded": not bool(results),
+        "evaluation_basis": "structured_concept_and_negation_evidence",
         "criteria_count": len(results),
-        "addressed_count": addressed,
-        "criterion_coverage": round(addressed / len(results), 4) if results else None,
+        "addressed_count": evidenced,
+        "criterion_coverage": round(evidenced / len(results), 4) if results else None,
         "criteria": results,
-        "strengths": [item["label"] for item in results if item["status"] == "addressed"],
-        "revision_priorities": [item["label"] for item in results if item["status"] == "not_evidenced"],
+        "status_counts": dict(collections.Counter(item["status"] for item in results)),
+        "strengths": [item["label"] for item in results if item["status"] == "correct"],
+        "revision_priorities": [item["label"] for item in results if item["status"] != "correct"],
+        "mark_estimate": mark_estimate,
+        "mark_possible": mark_possible,
+        "mark_estimate_basis": mark_basis,
         "mark_awarded": None,
     }
 
@@ -1245,6 +1540,93 @@ def self_test() -> None:
     })
     assert evaluation["criterion_coverage"] == 0.5
     assert "Kinase cascade" in evaluation["revision_priorities"]
+    assert [item["status"] for item in evaluation["criteria"]] == ["correct", "missing"]
+    assert evaluation["mark_estimate"] is None
+    assert evaluation["mark_awarded"] is None
+
+    semantic_evaluation = evaluate_answer({
+        "student_answer": (
+            "Activation of the receptor initiates signalling. "
+            "Receptor activation does not initiate the kinase cascade. "
+            "A phosphatase cascade is the only downstream response. "
+            "The revolution example is unrelated."
+        ),
+        "criteria": [
+            {
+                "label": "Receptor signalling sequence",
+                "concepts": [
+                    {"label": "Receptor activation", "aliases": ["receptor activation"]},
+                    {"label": "Kinase cascade", "aliases": ["kinase cascade"]},
+                ],
+                "marks": 4,
+            },
+            {
+                "label": "Activation initiates kinase signalling",
+                "terms": ["receptor activation initiates kinase cascade"],
+                "marks": 2,
+            },
+            {
+                "label": "Correct downstream enzyme class",
+                "terms": ["kinase cascade"],
+                "incorrect_concepts": ["phosphatase cascade"],
+                "marks": 2,
+            },
+            {
+                "label": "Ion",
+                "terms": ["ion"],
+                "marks": 1,
+            },
+        ],
+    })
+    assert semantic_evaluation["criteria"][0]["status"] == "contradicted"
+    assert semantic_evaluation["criteria"][1]["status"] == "contradicted"
+    assert semantic_evaluation["criteria"][2]["status"] == "contradicted"
+    assert semantic_evaluation["criteria"][3]["status"] == "missing"
+    assert semantic_evaluation["mark_estimate"] == 0
+    assert semantic_evaluation["mark_possible"] == 9
+
+    incorrect_evaluation = evaluate_answer({
+        "student_answer": "The downstream response is a phosphatase cascade.",
+        "criteria": [{
+            "label": "Kinase cascade",
+            "terms": ["kinase cascade"],
+            "incorrect_concepts": ["phosphatase cascade"],
+        }],
+    })
+    assert incorrect_evaluation["criteria"][0]["status"] == "incorrect"
+
+    partial_evaluation = evaluate_answer({
+        "student_answer": "Receptor activation occurs.",
+        "rubric": {
+            "criteria": [{
+                "label": "Receptor activation and kinase cascade",
+                "concepts": ["receptor activation", "kinase cascade"],
+                "marks": 4,
+            }],
+            "status_credit": {"partial": 0.25},
+        },
+    })
+    assert partial_evaluation["criteria"][0]["status"] == "partial"
+    assert partial_evaluation["mark_estimate"] == 1
+    assert partial_evaluation["mark_estimate_basis"] == "explicit_criterion_marks_and_rubric_status_credit"
+
+    reversed_relation = evaluate_answer({
+        "student_answer": "The kinase cascade initiates receptor activation.",
+        "criteria": [{
+            "label": "Activation initiates kinase signalling",
+            "terms": ["receptor activation initiates kinase cascade"],
+        }],
+    })
+    assert reversed_relation["criteria"][0]["status"] != "correct"
+
+    unrelated_negation = evaluate_answer({
+        "student_answer": "Receptor activation does not inhibit signalling and initiates the kinase cascade.",
+        "criteria": [{
+            "label": "Activation initiates kinase signalling",
+            "terms": ["receptor activation initiates kinase cascade"],
+        }],
+    })
+    assert unrelated_negation["criteria"][0]["status"] == "correct"
     timed = build_timed_practice(blueprint, 20)
     assert sum(item["duration_minutes"] for item in timed["slots"]) == 20
 

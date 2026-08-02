@@ -27,7 +27,9 @@ Question organisation extracts supplied questions and places them in lecture or 
 
 An assessment blueprint maps knowledge units evidenced by source fragments. Source occurrence may describe coverage; assessment weights come from explicit assessment evidence.
 
-Answer evaluation compares a supplied student answer with a rubric, mark scheme, or explicit expected concepts. Return criterion-level evidence, strengths, missing elements, and actionable revision guidance.
+Answer evaluation compares a supplied student answer with a rubric, mark scheme, or explicit expected concepts. Evaluate concept aliases and their relationships at token and clause level, including local negation; do not treat a substring as conceptual evidence. Return one criterion status from `correct`, `partial`, `incorrect`, `contradicted`, or `missing`, together with supporting or conflicting evidence and actionable revision guidance.
+
+Keep awarded marks distinct from estimates. Return no mark estimate when the criteria have no explicit mark allocation. When every criterion carries marks, an estimate may use rubric-supplied status credit; otherwise label the documented partial-credit heuristic and retain `mark_awarded: null`.
 
 Timed practice uses an explicit total duration and an assessment blueprint. Each slot records its time allocation and source basis.
 

@@ -8,7 +8,13 @@ Use examples and model answers to understand expected depth and structure. Use t
 
 ## Online Essay Assessment
 
-For an active Online Essay assessment, establish the allowed source set and the permitted level of drafting from the assessment instructions or the user. Clarify only unresolved permissions that affect the requested work:
+Classify Online Essay lifecycle state before applying permissions:
+
+- `active`: permit question analysis, concept explanation, feedback, and permission-neutral planning; permit source use and complete drafting only when the permission for that requested action is explicit;
+- `closed`: permit post-assessment review, reconstruction, and model-answer support under the normal source-access and citation rules;
+- `unknown`: permit only permission-neutral support and clarify lifecycle state before restricted source use or complete drafting.
+
+For an active assessment, establish only the permissions that affect the requested action:
 
 - lecture material use;
 - online material use;
@@ -17,7 +23,7 @@ For an active Online Essay assessment, establish the allowed source set and the 
 - citation expectations;
 - complete-draft permission.
 
-Proceed with the permitted plan, evidence organisation, feedback, or drafting level.
+Return the action-specific `allowed_actions`, `blocked_actions`, `gaps`, and conditions, then proceed only with the permitted plan, evidence organisation, feedback, source use, or drafting level. Do not ask about unrelated permissions.
 
 ## Extra Reading
 

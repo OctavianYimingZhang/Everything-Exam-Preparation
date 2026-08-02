@@ -1,5 +1,5 @@
 name: Everything Exam Preparation
-version: 3.1.7
+version: 3.2.0
 default_skill: everything-exam-preparation
 skills_manifest: skill_manifest.json
 default_output_language: English

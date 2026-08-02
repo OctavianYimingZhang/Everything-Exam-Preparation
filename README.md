@@ -23,6 +23,7 @@ The focused Skill list is manifest-driven. Split a Skill when its learning inten
 user request + trusted sources
     -> select Notes, Practice, or Essay
     -> process sources and preserve locators
+    -> diagnose task readiness and evidenced assessment architecture
     -> generate the requested artifact
     -> validate content and rendered output
 ```
@@ -38,7 +39,7 @@ Four references define the shared behaviour:
 
 | Script | Responsibility |
 | --- | --- |
-| `scripts/extract_sources.py` | Extraction, fragment indexing, readiness, slide triage, and coverage audit. |
+| `scripts/extract_sources.py` | Extraction, fragment indexing, focused-Skill diagnostics, exam-format profiling, assessment architecture, slide triage, and coverage audit. |
 | `scripts/generate_exam_prep_notes_docx.py` | Academic DOCX rendering. |
 | `scripts/exam_mode_tools.py` | Practice analysis and generation. |
 | `scripts/essay_exam_tools.py` | Essay and Extra Reading analysis. |

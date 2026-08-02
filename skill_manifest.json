@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "plugin_version": "3.1.7",
+  "plugin_version": "3.2.0",
   "skill_id": "everything-exam-preparation",
   "repo": "OctavianYimingZhang/Everything-Exam-Preparation",
   "branch": "main",
@@ -13,6 +13,25 @@
   },
   "default_output": "docx",
   "default_output_language": "en",
+  "result_contract": {
+    "schema_version": "1.0",
+    "statuses": [
+      "completed",
+      "completed_with_gaps",
+      "needs_material_input",
+      "source_conflict",
+      "artifact_generated",
+      "analysis_only"
+    ],
+    "artifact_required_fields": [
+      "artifact_id",
+      "artifact_type",
+      "file_format",
+      "content_schema_version",
+      "source_corpus_ids",
+      "qa_status"
+    ]
+  },
   "public_skills": [
     {
       "name": "everything-exam-preparation",

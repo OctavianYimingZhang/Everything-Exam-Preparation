@@ -272,7 +272,14 @@ def check_retirement(skills: list[tuple[str, str]], references: set[str]) -> Non
 
 def check_merged_tools() -> None:
     merged_functions = {
-        "scripts/extract_sources.py": ("process_sources", "build_fragment_index", "readiness_report"),
+        "scripts/extract_sources.py": (
+            "process_sources",
+            "build_fragment_index",
+            "readiness_report",
+            "build_exam_format_profile",
+            "build_assessment_architecture",
+            "build_diagnostic_assessment",
+        ),
         "scripts/exam_mode_tools.py": ("build_assessment_blueprint", "evaluate_answer", "build_timed_practice"),
         "scripts/essay_exam_tools.py": (
             "discover_extra_reading",
@@ -285,6 +292,67 @@ def check_merged_tools() -> None:
         for function in functions:
             if f"def {function}(" not in text:
                 raise ValidationError(f"{relative} is missing merged function {function}")
+
+
+def check_assessment_contracts() -> None:
+    shared_protocol = read_text("references/input_and_evidence_protocol.md")
+    source_tool = read_text("scripts/extract_sources.py")
+    for contract in ("ExamFormatProfile", "AssessmentArchitecture", "DiagnosticAssessment"):
+        if contract not in shared_protocol or f'"contract": "{contract}"' not in source_tool:
+            raise ValidationError(f"Shared diagnostic contract is incomplete: {contract}")
+    for field in ('"task_mode"', '"status"', '"gaps"', '"degraded"'):
+        if source_tool.count(field) < 3:
+            raise ValidationError(f"Shared diagnostic contracts are missing field {field}")
+
+    practice_protocol = read_text("references/exam_mode_and_addons_protocol.md")
+    practice_tool = read_text("scripts/exam_mode_tools.py")
+    for status in ("correct", "partial", "incorrect", "contradicted", "missing"):
+        if f'"{status}"' not in practice_tool or status not in practice_protocol:
+            raise ValidationError(f"Practice evaluation status is incomplete: {status}")
+    if "mark_estimate_basis" not in practice_tool or "explicit mark allocation" not in practice_protocol:
+        raise ValidationError("Practice mark estimates must remain evidence-gated")
+
+    essay_protocol = read_text("references/essay_exam_prep_protocol.md")
+    essay_tool = read_text("scripts/essay_exam_tools.py")
+    for state in ("active", "closed", "unknown"):
+        if f'"{state}"' not in essay_tool or state not in essay_protocol:
+            raise ValidationError(f"Online Essay lifecycle state is incomplete: {state}")
+    for field in ('"allowed_actions"', '"blocked_actions"', '"gaps"'):
+        if field not in essay_tool:
+            raise ValidationError(f"Online Essay permission result is missing {field}")
+
+
+def check_public_result_contract(manifest: dict[str, Any], skills: list[tuple[str, str]]) -> None:
+    expected_statuses = {
+        "completed",
+        "completed_with_gaps",
+        "needs_material_input",
+        "source_conflict",
+        "artifact_generated",
+        "analysis_only",
+    }
+    expected_artifact_fields = {
+        "artifact_id",
+        "artifact_type",
+        "file_format",
+        "content_schema_version",
+        "source_corpus_ids",
+        "qa_status",
+    }
+    contract = manifest.get("result_contract", {})
+    if contract.get("schema_version") != "1.0":
+        raise ValidationError("The public Skill result contract must use schema 1.0")
+    if set(contract.get("statuses", [])) != expected_statuses:
+        raise ValidationError("The public Skill result statuses are incomplete")
+    if set(contract.get("artifact_required_fields", [])) != expected_artifact_fields:
+        raise ValidationError("The public artifact manifest fields are incomplete")
+    protocol = read_text("references/input_and_evidence_protocol.md")
+    for token in expected_statuses | expected_artifact_fields | {"skill_id", "task_mode", "primary_output", "qa"}:
+        if token not in protocol:
+            raise ValidationError(f"The public Skill result contract is missing {token}")
+    for name, relative in skills:
+        if "input_and_evidence_protocol.md" not in read_text(relative):
+            raise ValidationError(f"{name} does not declare the shared public result contract")
 
 
 def check_notes_policy() -> None:
@@ -371,6 +439,8 @@ def main() -> int:
         check_metadata(manifest, skills)
         check_retirement(skills, references)
         check_merged_tools()
+        check_assessment_contracts()
+        check_public_result_contract(manifest, skills)
         check_notes_policy()
         for key in ("sources", "notes", "practice", "essay", "installation"):
             run_check([sys.executable, str(manifest["tools"][key]), "--self-test"])

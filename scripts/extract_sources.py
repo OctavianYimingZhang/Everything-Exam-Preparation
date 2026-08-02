@@ -59,6 +59,32 @@ TIMECODE_RE = re.compile(
     r"(?P<start>\d{1,2}:\d{2}(?::\d{2})?[,.]\d{3})\s*-->\s*(?P<end>\d{1,2}:\d{2}(?::\d{2})?[,.]\d{3})"
 )
 
+TASK_MODES = {"notes", "practice", "essay"}
+EXAM_FORMAT_PATTERNS: dict[str, list[str]] = {
+    "mcq": [r"\bmcq\b", r"\bmultiple choice\b", r"\bsingle best\b", r"\bwhich of the following\b"],
+    "short_answer": [r"\bshort answer\b", r"\bdefine\b", r"\bstate\b", r"\blist\b", r"\boutline\b"],
+    "long_answer": [r"\blong answer\b", r"\bexplain\b", r"\bcompare\b", r"\bevaluate\b", r"\bdiscuss\b"],
+    "essay": [r"\bessay\b", r"\bcritically\b", r"\bto what extent\b", r"\bthesis\b"],
+    "practical_data_problem": [r"\bpractical\b", r"\bdata\b", r"\bcalculate\b", r"\binterpret\b", r"\bgraph\b", r"\btable\b"],
+}
+ASSESSMENT_CATEGORIES = {"practice_material", "marking_material"}
+ASSESSMENT_DURATION_RE = re.compile(
+    r"\b(?:"
+    r"time\s+allowed|"
+    r"(?:assessment|exam(?:ination)?|paper)\s+(?:duration|time\s+allowed)|"
+    r"(?:assessment|exam(?:ination)?|paper)\s+(?:lasts?|is\s+scheduled\s+for)"
+    r")\s*[:\-=]?\s*(\d+(?:\.\d+)?)\s*(hours?|hrs?|minutes?|mins?)\b",
+    re.I,
+)
+ASSESSMENT_MARK_RE = re.compile(r"\b(\d+)\s*marks?\b", re.I)
+ASSESSMENT_WEIGHT_RE = re.compile(
+    r"\b("
+    r"[A-Za-z][A-Za-z0-9 /&()\-]{1,60}?"
+    r"(?:component|assessment|exam(?:ination)?|coursework|paper|section(?:\s+[A-Za-z0-9]+)?|part(?:\s+[A-Za-z0-9]+)?)"
+    r")\s*(?::|\-|=)\s*(\d{1,3}(?:\.\d+)?)\s*%",
+    re.I,
+)
+
 KNOWLEDGE_SIGNAL_PATTERNS: dict[str, list[str]] = {
     "heading_or_topic_boundary": [
         r"^\s*(lecture|topic|section|unit|part|chapter)\b",
@@ -1118,6 +1144,253 @@ def _count_values(items: list[dict[str, Any]], key: str) -> dict[str, int]:
     return counts
 
 
+def _task_mode(value: str) -> str:
+    mode = str(value or "").strip().lower()
+    if mode not in TASK_MODES:
+        raise ValueError(f"task_mode must be one of {sorted(TASK_MODES)}")
+    return mode
+
+
+def _gap(code: str, detail: str, severity: str = "blocking") -> dict[str, str]:
+    return {"code": code, "severity": severity, "detail": detail}
+
+
+def _assessment_fragments(scan: dict[str, Any]) -> list[dict[str, Any]]:
+    documents = {str(item.get("id")): item for item in scan.get("documents", [])}
+    selected: list[dict[str, Any]] = []
+    for fragment in scan.get("fragments", []):
+        source = documents.get(str(fragment.get("source_id")), {})
+        category = fragment.get("category") or source.get("category") or source.get("source_hint")
+        signals = source.get("question_signals", {}) or {}
+        if category in ASSESSMENT_CATEGORIES or signals.get("has_questions") or signals.get("has_solution_evidence"):
+            selected.append(fragment)
+    return selected
+
+
+def _fragment_provenance(fragment: dict[str, Any]) -> dict[str, Any]:
+    nested = fragment.get("provenance") if isinstance(fragment.get("provenance"), dict) else {}
+    return {
+        "source_id": nested.get("source_id") or fragment.get("source_id"),
+        "source_name": nested.get("source_name") or fragment.get("source_name"),
+        "locator": nested.get("locator") or fragment.get("locator"),
+        "page_number": nested.get("page_number") or fragment.get("page_number"),
+        "slide_number": nested.get("slide_number") or fragment.get("slide_number"),
+        "time_offset_seconds": nested.get("time_offset_seconds") or fragment.get("time_offset_seconds"),
+        "time_range": nested.get("time_range") or fragment.get("time_range"),
+    }
+
+
+def _unique_provenance(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    unique_items: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in items:
+        key = json.dumps(item, sort_keys=True, ensure_ascii=False)
+        if key not in seen:
+            seen.add(key)
+            unique_items.append(item)
+    return unique_items
+
+
+def _duration_minutes(text: str) -> list[int]:
+    values: set[int] = set()
+    for raw_value, unit in ASSESSMENT_DURATION_RE.findall(text or ""):
+        value = float(raw_value)
+        minutes = round(value * 60) if unit.lower().startswith(("hour", "hr")) else round(value)
+        if minutes > 0:
+            values.add(minutes)
+    return sorted(values)
+
+
+def build_exam_format_profile(scan: dict[str, Any] | None, task_mode: str = "practice") -> dict[str, Any]:
+    """Return an evidence-only ExamFormatProfile without inferring absent rules."""
+    mode = _task_mode(task_mode)
+    scan = scan or {"documents": [], "fragments": []}
+    fragments = _assessment_fragments(scan)
+    formats: list[dict[str, Any]] = []
+    durations: set[int] = set()
+    marks: set[int] = set()
+    for format_name, patterns in EXAM_FORMAT_PATTERNS.items():
+        matched = [
+            fragment for fragment in fragments
+            if any(re.search(pattern, str(fragment.get("text") or ""), flags=re.I) for pattern in patterns)
+        ]
+        if matched:
+            formats.append({
+                "format": format_name,
+                "evidence_count": len(matched),
+                "provenance": _unique_provenance([_fragment_provenance(item) for item in matched]),
+            })
+    for fragment in fragments:
+        text = str(fragment.get("text") or "")
+        durations.update(_duration_minutes(text))
+        marks.update(int(value) for value in ASSESSMENT_MARK_RE.findall(text))
+
+    gaps: list[dict[str, str]] = []
+    if not scan.get("documents") or not scan.get("fragments"):
+        gaps.append(_gap("missing_sources", "No readable source evidence is available for exam-format diagnosis."))
+        status = "blocked"
+    elif not fragments:
+        gaps.append(_gap(
+            "missing_assessment_format_evidence",
+            "No question, paper, rubric, or marking fragment establishes the assessment format.",
+            "advisory",
+        ))
+        status = "partial"
+    elif not formats:
+        gaps.append(_gap(
+            "unresolved_question_format",
+            "Assessment fragments are present, but no supported question format was detected.",
+            "advisory",
+        ))
+        status = "partial"
+    else:
+        status = "ready"
+    return {
+        "contract": "ExamFormatProfile",
+        "schema_version": 1,
+        "task_mode": mode,
+        "status": status,
+        "gaps": gaps,
+        "degraded": status != "ready",
+        "question_formats": formats,
+        "duration_minutes": sorted(durations),
+        "mark_values": sorted(marks),
+        "evidence_fragment_count": len(fragments),
+    }
+
+
+def build_assessment_architecture(
+    scan: dict[str, Any] | None,
+    task_mode: str = "practice",
+    exam_format_profile: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return source-evidenced components and weights without inventing missing percentages."""
+    mode = _task_mode(task_mode)
+    scan = scan or {"documents": [], "fragments": []}
+    profile = exam_format_profile or build_exam_format_profile(scan, mode)
+    fragments = _assessment_fragments(scan)
+    weights: list[dict[str, Any]] = []
+    seen_weights: set[tuple[str, float, str, str]] = set()
+    for fragment in fragments:
+        text = re.sub(r"\s+", " ", str(fragment.get("text") or ""))
+        provenance = _fragment_provenance(fragment)
+        for label, raw_weight in ASSESSMENT_WEIGHT_RE.findall(text):
+            weight = float(raw_weight)
+            if weight > 100:
+                continue
+            normalized_label = re.sub(r"\s+", " ", label).strip(" :-")[-80:]
+            key = (normalized_label.casefold(), weight, str(provenance.get("source_name")), str(provenance.get("locator")))
+            if key in seen_weights:
+                continue
+            seen_weights.add(key)
+            weights.append({
+                "component": normalized_label,
+                "weight_percent": int(weight) if weight.is_integer() else weight,
+                "provenance": provenance,
+            })
+    components = [
+        {
+            "component": item.get("format"),
+            "evidence_count": item.get("evidence_count"),
+            "provenance": item.get("provenance") or [],
+        }
+        for item in profile.get("question_formats", [])
+    ]
+    gaps = list(profile.get("gaps") or [])
+    if components and not weights:
+        gaps.append(_gap(
+            "missing_explicit_component_weights",
+            "No component percentages were found; the architecture reports coverage without inferred weights.",
+            "advisory",
+        ))
+    status = "blocked" if profile.get("status") == "blocked" else ("ready" if components else "partial")
+    return {
+        "contract": "AssessmentArchitecture",
+        "schema_version": 1,
+        "task_mode": mode,
+        "status": status,
+        "gaps": gaps,
+        "degraded": status != "ready",
+        "components": components,
+        "explicit_weights": weights,
+        "weighting_basis": "explicit_source_percentages_only",
+    }
+
+
+def _has_task_context_value(context: dict[str, Any], *keys: str) -> bool:
+    return any(bool(context.get(key)) for key in keys)
+
+
+def build_diagnostic_assessment(
+    scan: dict[str, Any] | None,
+    task_mode: str,
+    task_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compose a lightweight DiagnosticAssessment for any focused Skill."""
+    mode = _task_mode(task_mode)
+    scan = scan or {"documents": [], "fragments": []}
+    context = task_context or {}
+    profile = build_exam_format_profile(scan, mode)
+    architecture = build_assessment_architecture(scan, mode, profile)
+    source_counts = _count_values(scan.get("documents", []), "source_hint")
+    knowledge_count = source_counts.get("knowledge_material", 0)
+    assessment_count = sum(source_counts.get(key, 0) for key in ASSESSMENT_CATEGORIES)
+    has_direct_source = _has_task_context_value(context, "source_text", "readings", "source_materials_supplied")
+    gaps: list[dict[str, str]] = []
+
+    if not scan.get("documents") and not has_direct_source:
+        gaps.append(_gap("missing_sources", "No readable source or direct source text was supplied."))
+
+    capability = str(context.get("requested_capability") or context.get("capability") or "").strip().lower()
+    if mode == "notes":
+        if scan.get("documents") and knowledge_count == 0 and not has_direct_source:
+            gaps.append(_gap("missing_course_knowledge", "Notes require course-knowledge evidence."))
+    elif mode == "practice":
+        if capability in {"answer_evaluation", "evaluate_answer"}:
+            if not _has_task_context_value(context, "student_answer"):
+                gaps.append(_gap("missing_student_answer", "Answer evaluation requires the student's answer."))
+            if not _has_task_context_value(context, "criteria", "rubric", "mark_scheme"):
+                gaps.append(_gap("missing_evaluation_criteria", "Answer evaluation requires explicit expected concepts, a rubric, or a mark scheme."))
+        elif capability in {"question_recurrence", "question_organisation", "organize_questions"} and assessment_count == 0:
+            gaps.append(_gap("missing_question_evidence", "This Practice capability requires supplied question or paper evidence."))
+        elif capability in {"question_solving", "solve_question"}:
+            if not _has_task_context_value(context, "question", "target_question"):
+                gaps.append(_gap("missing_target_question", "Question solving requires a target question."))
+            if knowledge_count == 0 and not has_direct_source:
+                gaps.append(_gap("missing_course_knowledge", "Question solving requires course-knowledge evidence."))
+        elif capability in {"timed_practice", "build_timed_practice"}:
+            if not _has_task_context_value(context, "duration_minutes"):
+                gaps.append(_gap("missing_timed_duration", "Timed practice requires an explicit duration."))
+        elif scan.get("documents") and knowledge_count == 0 and assessment_count == 0 and not has_direct_source:
+            gaps.append(_gap("missing_practice_evidence", "Practice requires course knowledge, question evidence, or explicit evaluation criteria."))
+    else:
+        if capability not in {"extra_reading", "discover_extra_reading"} and not _has_task_context_value(context, "question", "target_question"):
+            gaps.append(_gap("missing_essay_question", "Essay preparation requires the target essay question."))
+        if knowledge_count == 0 and not has_direct_source:
+            gaps.append(_gap("missing_essay_evidence", "Essay preparation requires course material or supplied readings."))
+
+    blocking = [item for item in gaps if item.get("severity") == "blocking"]
+    advisory = [item for item in gaps if item.get("severity") != "blocking"]
+    status = "blocked" if blocking else ("partial" if advisory else "ready")
+    return {
+        "contract": "DiagnosticAssessment",
+        "schema_version": 1,
+        "task_mode": mode,
+        "status": status,
+        "gaps": gaps,
+        "degraded": status != "ready",
+        "can_proceed": status != "blocked",
+        "requested_capability": capability or None,
+        "source_summary": {
+            "document_count": len(scan.get("documents", [])),
+            "fragment_count": len(scan.get("fragments", [])),
+            "source_hint_counts": source_counts,
+        },
+        "exam_format_profile": profile,
+        "assessment_architecture": architecture,
+    }
+
+
 def build_fragment_index(scan: dict[str, Any] | None, purpose: str = "notes") -> dict[str, Any]:
     scan = scan or {"documents": [], "fragments": []}
     documents = {str(item.get("id")): item for item in scan.get("documents", [])}
@@ -1214,16 +1487,19 @@ def process_sources(
     asset_dir: str = ".skill_assets",
     visual_mode: str = "embedded_media",
     purpose: str = "notes",
+    task_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     scan = build_scan(paths, asset_dir, visual_mode)
     index = build_fragment_index(scan, purpose)
     readiness = readiness_report(scan, purpose)
+    diagnostic = build_diagnostic_assessment(scan, purpose, task_context)
     return {
         "schema_version": 3,
         "purpose": purpose,
         "scan": scan,
         "index": index,
         "readiness": readiness,
+        "diagnostic": diagnostic,
         "coverage_audit": index["coverage_profile"]["source_audit"],
     }
 
@@ -1257,14 +1533,113 @@ def self_test() -> None:
     readiness = readiness_report(scan)
     assert readiness["status"] == "ready"
     assert readiness["has_core_knowledge"]
+    notes_diagnostic = build_diagnostic_assessment(scan, "notes")
+    assert notes_diagnostic["contract"] == "DiagnosticAssessment"
+    assert notes_diagnostic["task_mode"] == "notes"
+    assert notes_diagnostic["status"] == "ready"
+    assert notes_diagnostic["degraded"] is False
+
+    assessment_scan = {
+        "documents": [
+            {
+                "id": "K1",
+                "name": "Lecture 1.pptx",
+                "source_hint": "knowledge_material",
+                "question_signals": {},
+            },
+            {
+                "id": "P1",
+                "name": "Assessment brief and past paper.pdf",
+                "source_hint": "practice_material",
+                "question_signals": {"has_questions": True, "has_past_paper": True},
+            },
+        ],
+        "fragments": [
+            {
+                "source_id": "K1",
+                "source_name": "Lecture 1.pptx",
+                "category": "knowledge_material",
+                "locator": "slide 3",
+                "text": "A receptor initiates a signalling mechanism.",
+            },
+            {
+                "source_id": "P1",
+                "source_name": "Assessment brief and past paper.pdf",
+                "category": "practice_material",
+                "locator": "page 2",
+                "text": "Time allowed: 90 minutes. MCQ component: 40%. Short answer component: 60%. Explain the mechanism. 10 marks.",
+            },
+        ],
+    }
+    profile = build_exam_format_profile(assessment_scan, "practice")
+    assert profile["contract"] == "ExamFormatProfile"
+    assert profile["status"] == "ready"
+    assert profile["duration_minutes"] == [90]
+    assert profile["mark_values"] == [10]
+    assert {item["format"] for item in profile["question_formats"]} >= {"mcq", "short_answer"}
+    architecture = build_assessment_architecture(assessment_scan, "practice", profile)
+    assert architecture["contract"] == "AssessmentArchitecture"
+    assert {item["weight_percent"] for item in architecture["explicit_weights"]} == {40, 60}
+
+    scientific_values_scan = {
+        "documents": [{
+            "id": "P2",
+            "name": "Experimental question.pdf",
+            "source_hint": "practice_material",
+            "question_signals": {"has_questions": True},
+        }],
+        "fragments": [{
+            "source_id": "P2",
+            "source_name": "Experimental question.pdf",
+            "category": "practice_material",
+            "locator": "page 4",
+            "text": "Cells were incubated for 15 minutes and viability fell by 50%. Explain these data.",
+        }],
+    }
+    scientific_profile = build_exam_format_profile(scientific_values_scan, "practice")
+    scientific_architecture = build_assessment_architecture(
+        scientific_values_scan,
+        "practice",
+        scientific_profile,
+    )
+    assert scientific_profile["duration_minutes"] == []
+    assert scientific_architecture["explicit_weights"] == []
+
+    false_source_flag = build_diagnostic_assessment(
+        {"documents": [], "fragments": []},
+        "notes",
+        {"source_materials_supplied": False},
+    )
+    assert false_source_flag["status"] == "blocked"
+    assert false_source_flag["can_proceed"] is False
+    assert any(item["code"] == "missing_sources" for item in false_source_flag["gaps"])
+    practice_diagnostic = build_diagnostic_assessment(
+        assessment_scan,
+        "practice",
+        {"requested_capability": "timed_practice", "duration_minutes": 90},
+    )
+    assert practice_diagnostic["status"] == "ready"
+    assert practice_diagnostic["can_proceed"] is True
+    blocked_evaluation = build_diagnostic_assessment(
+        assessment_scan,
+        "practice",
+        {"requested_capability": "answer_evaluation", "student_answer": "A short answer."},
+    )
+    assert blocked_evaluation["status"] == "blocked"
+    assert any(item["code"] == "missing_evaluation_criteria" for item in blocked_evaluation["gaps"])
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Extract sources, index fragments, report readiness, and audit coverage.")
     parser.add_argument("sources", nargs="*")
-    parser.add_argument("--mode", choices=("process", "scan", "index", "readiness"), default="process")
+    parser.add_argument(
+        "--mode",
+        choices=("process", "scan", "index", "readiness", "exam-format-profile", "assessment-architecture", "diagnostic"),
+        default="process",
+    )
     parser.add_argument("--source-scan")
     parser.add_argument("--purpose", choices=("notes", "practice", "essay"), default="notes")
+    parser.add_argument("--task-context")
     parser.add_argument("--out")
     parser.add_argument("--asset-dir", default=".skill_assets")
     parser.add_argument("--visual-mode", default="embedded_media")
@@ -1274,14 +1649,24 @@ def main() -> None:
         self_test()
         return
     existing_scan = _load_scan(args.source_scan)
+    task_context = _load_scan(args.task_context) or {}
+    analysis_scan = existing_scan
+    if analysis_scan is None and args.sources and args.mode in {"exam-format-profile", "assessment-architecture", "diagnostic"}:
+        analysis_scan = build_scan(args.sources, args.asset_dir, args.visual_mode)
     if args.mode == "scan":
         result = build_scan(args.sources, args.asset_dir, args.visual_mode)
     elif args.mode == "index":
         result = build_fragment_index(existing_scan, args.purpose)
     elif args.mode == "readiness":
         result = readiness_report(existing_scan, args.purpose)
+    elif args.mode == "exam-format-profile":
+        result = build_exam_format_profile(analysis_scan, args.purpose)
+    elif args.mode == "assessment-architecture":
+        result = build_assessment_architecture(analysis_scan, args.purpose)
+    elif args.mode == "diagnostic":
+        result = build_diagnostic_assessment(analysis_scan, args.purpose, task_context)
     else:
-        result = process_sources(args.sources, args.asset_dir, args.visual_mode, args.purpose)
+        result = process_sources(args.sources, args.asset_dir, args.visual_mode, args.purpose, task_context)
     rendered = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
         Path(args.out).write_text(rendered + "\n", encoding="utf-8")
