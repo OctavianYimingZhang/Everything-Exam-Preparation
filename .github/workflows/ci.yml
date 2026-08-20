@@ -13,12 +13,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
       - name: Install dependencies
         run: python3 -m pip install --upgrade -r requirements.txt
-      - name: Validate Plugin
+      - name: Compile scripts and tests
+        run: python3 -m compileall -q scripts tests
+      - name: Run all tests
+        run: python3 -m pytest -q -p no:cacheprovider tests
+      - name: Validate schemas, routing, artifacts, and Plugin contracts
+        run: python3 scripts/validate_skill_contracts.py
+      - name: Validate local publication model
         run: |
-          python3 -m compileall -q scripts
-          python3 scripts/validate_skill_contracts.py
           python3 scripts/publish_skill.py --self-test
           python3 scripts/publish_skill.py --local-skill-dir "$RUNNER_TEMP/codex-skills/everything-exam-preparation" --sync-local-skill
           python3 scripts/publish_skill.py --local-skill-dir "$RUNNER_TEMP/codex-skills/everything-exam-preparation" --check-installed
+      - name: Check patch whitespace
+        run: git diff --check

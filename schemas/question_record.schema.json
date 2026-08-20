@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/OctavianYimingZhang/Everything-Exam-Preparation/schemas/question_record.schema.json",
+  "title": "Exam Intelligence Question Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "question_id",
+    "source_id",
+    "source_name",
+    "source_role",
+    "source_locator",
+    "locator_status",
+    "formal_year",
+    "question_text",
+    "question_format",
+    "explicit_marks",
+    "family_id",
+    "mapping"
+  ],
+  "properties": {
+    "question_id": {"type": "string", "minLength": 1},
+    "source_id": {"type": "string", "minLength": 1},
+    "source_name": {"type": "string", "minLength": 1},
+    "source_role": {
+      "type": "string",
+      "enum": [
+        "formal_past_paper",
+        "official_mock_specimen",
+        "practice_worksheet",
+        "lecture_material",
+        "mark_scheme"
+      ]
+    },
+    "source_locator": {"type": "string", "minLength": 1},
+    "locator_status": {"type": "string", "enum": ["complete", "incomplete"]},
+    "formal_year": {
+      "oneOf": [
+        {"type": "integer", "minimum": 1900, "maximum": 2200},
+        {"type": "null"}
+      ]
+    },
+    "question_text": {"type": "string", "minLength": 1},
+    "question_format": {
+      "type": "string",
+      "enum": [
+        "mcq",
+        "short_answer",
+        "long_answer",
+        "calculation",
+        "data_interpretation",
+        "essay",
+        "other"
+      ]
+    },
+    "explicit_marks": {
+      "oneOf": [
+        {"type": "number", "exclusiveMinimum": 0},
+        {"type": "null"}
+      ]
+    },
+    "family_id": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {"type": "null"}
+      ]
+    },
+    "mapping": {"$ref": "#/$defs/mapping"}
+  },
+  "$defs": {
+    "nullableTarget": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {"type": "null"}
+      ]
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "lecture_id",
+        "unit_id",
+        "concept_ids",
+        "evidence",
+        "unresolved_reason"
+      ],
+      "properties": {
+        "status": {"type": "string", "enum": ["resolved", "unresolved"]},
+        "lecture_id": {"$ref": "#/$defs/nullableTarget"},
+        "unit_id": {"$ref": "#/$defs/nullableTarget"},
+        "concept_ids": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "evidence": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "unresolved_reason": {
+          "oneOf": [
+            {"type": "string", "minLength": 1},
+            {"type": "null"}
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "resolved"}}},
+          "then": {
+            "properties": {
+              "evidence": {"minItems": 1},
+              "unresolved_reason": {"type": "null"}
+            },
+            "anyOf": [
+              {"properties": {"lecture_id": {"type": "string", "minLength": 1}}},
+              {"properties": {"unit_id": {"type": "string", "minLength": 1}}},
+              {"properties": {"concept_ids": {"minItems": 1}}}
+            ]
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "unresolved"}}},
+          "then": {
+            "properties": {
+              "lecture_id": {"type": "null"},
+              "unit_id": {"type": "null"},
+              "concept_ids": {"maxItems": 0},
+              "unresolved_reason": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

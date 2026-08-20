@@ -17,7 +17,7 @@ Shared resources are two directories above this file in the source checkout.
 ## Workflow
 
 1. Inventory every supplied source and apply the user's stated source roles. When lecture slides are the coverage authority, audit every substantive slide; use text-only reference notes for emphasis and expression without letting them narrow slide coverage.
-2. Run `scripts/extract_sources.py` to extract content, preserve locators, triage slide-like material, build the fragment index, produce a coverage audit, and obtain the Notes `DiagnosticAssessment`. Ask only for a blocking gap; an absent exam-format profile does not block knowledge-only Notes.
+2. Accept the raw PPTX, PDF, DOCX, image, transcript, text, or archive inputs directly and run `scripts/extract_sources.py --purpose notes` to extract content, preserve locators, triage slide-like material, build the fragment index, produce a coverage audit, and obtain the Notes `DiagnosticAssessment`. Ask only for a blocking gap; an absent exam-format profile does not block knowledge-only Notes.
 3. Organise substantive teaching content into connected knowledge units in a course-logical order.
 4. Choose prose, learning-point lists, tables, equations, or visuals according to the knowledge relationship. Keep a visual only when it materially improves clarity beyond a well-written text or table explanation; prefer a suitable original slide image or slide page over making a new equivalent graphic.
 5. Integrate recap and interactive material into the relevant knowledge units.

@@ -1,13 +1,21 @@
 prompt_cards:
+  - id: atlas
+    title: Course Atlas
+    skill: exam-prep-atlas
+    prompt: Build a source-grounded Course Atlas ZIP from these raw files.
+  - id: analysis
+    title: Units Analysis
+    skill: exam-prep-analysis
+    prompt: Analyse these papers with formal recurrence kept separate from auxiliary evidence.
   - id: notes
     title: Course Notes
     skill: exam-prep-notes
-    prompt: Create explanation-first course Notes from these materials.
+    prompt: Create course-complete knowledge-only Notes from these materials.
   - id: practice
     title: Exam Practice
     skill: exam-prep-practice
-    prompt: Prepare the requested question-based practice from these course and assessment materials.
+    prompt: Create the requested practice, evaluation, or solution-book artifact.
   - id: essay
-    title: Essay Support
+    title: Exam Essay
     skill: exam-prep-essay
-    prompt: Build the requested essay plan, evidence support, feedback, or permitted draft.
+    prompt: Build clean and annotated views of one source-grounded exam model essay.

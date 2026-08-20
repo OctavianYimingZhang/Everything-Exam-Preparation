@@ -1,0 +1,354 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "course_atlas_package.schema.json",
+  "title": "Course Atlas build specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "package_id",
+    "course",
+    "nodes",
+    "relations",
+    "sources",
+    "past_paper_links",
+    "audit"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "package_id": {
+      "$ref": "atlas_node.schema.json#/$defs/nodeId"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "course": {
+      "$ref": "#/$defs/course"
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "atlas_node.schema.json"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "atlas_relation.schema.json"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "past_paper_links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pastPaperLink"
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coverage_ledger",
+        "exclusions",
+        "manual_review"
+      ],
+      "properties": {
+        "coverage_ledger": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/coverageRecord"
+          }
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/exclusionRecord"
+          }
+        },
+        "manual_review": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/manualReviewRecord"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "course": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "course_id",
+        "title",
+        "language"
+      ],
+      "properties": {
+        "course_id": {
+          "$ref": "atlas_node.schema.json#/$defs/nodeId"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "language": {
+          "type": "string",
+          "minLength": 2
+        },
+        "institution": {
+          "type": "string",
+          "minLength": 1
+        },
+        "academic_year": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_type",
+        "display_name",
+        "packaged"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "atlas_node.schema.json#/$defs/nodeId"
+        },
+        "source_type": {
+          "enum": [
+            "pptx",
+            "pdf",
+            "docx",
+            "transcript",
+            "image",
+            "text",
+            "markdown",
+            "other"
+          ]
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filename": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "packaged": {
+          "const": false
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "filename"
+          ]
+        },
+        {
+          "required": [
+            "source_label"
+          ]
+        }
+      ]
+    },
+    "pastPaperLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "link_id",
+        "paper_source_id",
+        "question_label",
+        "node_ids",
+        "source_refs"
+      ],
+      "properties": {
+        "link_id": {
+          "$ref": "atlas_node.schema.json#/$defs/nodeId"
+        },
+        "paper_source_id": {
+          "$ref": "atlas_node.schema.json#/$defs/nodeId"
+        },
+        "question_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "node_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "atlas_node.schema.json#/$defs/nodeId"
+          }
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "atlas_node.schema.json#/$defs/sourceRef"
+          }
+        }
+      }
+    },
+    "coverageRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "expected_points",
+        "covered_points",
+        "excluded_points",
+        "unresolved_points",
+        "status"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "atlas_node.schema.json#/$defs/nodeId"
+        },
+        "expected_points": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "covered_points": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_points": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unresolved_points": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "partial",
+            "incomplete",
+            "not_assessed"
+          ]
+        }
+      }
+    },
+    "exclusionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exclusion_id",
+        "category",
+        "summary",
+        "source_refs",
+        "decision"
+      ],
+      "properties": {
+        "exclusion_id": {
+          "$ref": "atlas_node.schema.json#/$defs/nodeId"
+        },
+        "category": {
+          "enum": [
+            "attendance",
+            "canvas_operation",
+            "seats_operation",
+            "mentimeter_operation",
+            "email_admin",
+            "submission_instruction",
+            "course_administration",
+            "decorative",
+            "ai_instruction",
+            "other_non_knowledge"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "atlas_node.schema.json#/$defs/sourceRef"
+          }
+        },
+        "decision": {
+          "const": "excluded"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "manualReviewRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "review_id",
+        "issue_type",
+        "status",
+        "summary",
+        "node_ids",
+        "source_refs"
+      ],
+      "properties": {
+        "review_id": {
+          "$ref": "atlas_node.schema.json#/$defs/nodeId"
+        },
+        "issue_type": {
+          "enum": [
+            "locator",
+            "hierarchy",
+            "coverage",
+            "relation",
+            "content",
+            "other"
+          ]
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "resolved"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "node_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "atlas_node.schema.json#/$defs/nodeId"
+          }
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "atlas_node.schema.json#/$defs/sourceRef"
+          }
+        }
+      }
+    }
+  }
+}

@@ -18,7 +18,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "skill_manifest.json"
 DEFAULT_LOCAL_SKILL_ROOT = Path.home() / ".codex" / "skills"
-SHARED_RESOURCE_DIRS = ("references", "scripts")
+SHARED_RESOURCE_DIRS = ("references", "schemas", "scripts")
 SHARED_RESOURCE_FILES = ("requirements.txt", "LICENSE", "skill_manifest.json")
 SKIP_DIRS = {
     ".git",

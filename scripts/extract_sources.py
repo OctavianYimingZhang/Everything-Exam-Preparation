@@ -3,16 +3,24 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import html
 import json
 import re
+import shutil
 import tempfile
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 TEXT_SUFFIXES = {".txt", ".md", ".json", ".yaml", ".yml", ".csv", ".vtt", ".srt"}
 MEDIA_PREFIXES = {".docx": "word/media/", ".pptx": "ppt/media/"}
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp", ".heic"}
+OFFICE_SUFFIXES = {".pptx", ".pdf", ".docx"}
+ARCHIVE_SUFFIXES = {".zip"}
+SUPPORTED_INPUT_SUFFIXES = TEXT_SUFFIXES | OFFICE_SUFFIXES | IMAGE_SUFFIXES | ARCHIVE_SUFFIXES
 LECTURE_FILENAME_RE = re.compile(r"(?i)(?:^|[\s_\-])L(?:ecture)?\s*(\d{1,3})(?:\b|[\s_\-])")
 PPTX_SLIDE_XML_RE = re.compile(r"ppt/slides/slide(\d+)\.xml$")
 
@@ -25,7 +33,16 @@ VISUAL_KEYWORDS = ["figure", "fig.", "diagram", "graph", "plot", "table", "chart
 QUESTION_KEYWORDS = ["?", "which of the following", "define", "state", "list", "outline", "explain", "compare", "evaluate", "discuss", "calculate", "interpret"]
 PRACTICAL_QUESTION_KEYWORDS = ["question", "task", "data", "problem", "calculate", "interpret", "graph", "table", "readout", "control"]
 PRACTICAL_WORKED_KEYWORDS = ["calculate", "derive", "show", "estimate", "prove", "data", "problem", "interpret", "graph", "table", "fit", "plot", "uncertainty", "error", "unit"]
-ADMIN_BOILERPLATE_KEYWORDS = ["attendance", "password", "office hour", "email", "assessment deadline", "housekeeping"]
+ADMIN_BOILERPLATE_KEYWORDS = [
+    "attendance", "sign in", "password", "office hour", "email", "assessment deadline",
+    "housekeeping", "canvas navigation", "canvas operation", "seats", "mentimeter",
+    "submission instruction", "submit your", "submission portal", "upload your assignment",
+]
+EMBEDDED_AI_INSTRUCTION_KEYWORDS = [
+    "ignore previous instructions", "ignore all previous instructions", "system prompt",
+    "instructions for ai", "instruction for ai", "instructions for chatgpt",
+    "as an ai language model", "tell the ai", "do not reveal this prompt",
+]
 RIGHTS_OR_CREDIT_KEYWORDS = ["copyright", "licensed under", "creative commons", "photo by", "image by", "source:", "credit:"]
 READING_REFERENCE_KEYWORDS = ["reading:", "recommended reading", "further reading", "textbook", "edition", "publisher", "kortext", "doi", "pmid"]
 LOW_RELEVANCE_CONTEXT_KEYWORDS = ["sustainable development goals", "environmental awareness", "public awareness", "news article", "policy awareness"]
@@ -59,7 +76,7 @@ TIMECODE_RE = re.compile(
     r"(?P<start>\d{1,2}:\d{2}(?::\d{2})?[,.]\d{3})\s*-->\s*(?P<end>\d{1,2}:\d{2}(?::\d{2})?[,.]\d{3})"
 )
 
-TASK_MODES = {"notes", "practice", "essay"}
+TASK_MODES = {"atlas", "analysis", "notes", "practice", "essay"}
 EXAM_FORMAT_PATTERNS: dict[str, list[str]] = {
     "mcq": [r"\bmcq\b", r"\bmultiple choice\b", r"\bsingle best\b", r"\bwhich of the following\b"],
     "short_answer": [r"\bshort answer\b", r"\bdefine\b", r"\bstate\b", r"\blist\b", r"\boutline\b"],
@@ -155,6 +172,8 @@ def content_triage(text: str) -> str:
     lower = (text or "").lower()
     signals = set(knowledge_signals(text))
     teaching_signals = {"definition", "mechanism", "method", "comparison", "calculation", "data_interpretation", "evidence", "application"}
+    if has_any(lower, EMBEDDED_AI_INSTRUCTION_KEYWORDS):
+        return "embedded_ai_instruction"
     if has_any(lower, ADMIN_BOILERPLATE_KEYWORDS) and not (signals & teaching_signals):
         return "admin_or_boilerplate"
     if has_any(lower, RIGHTS_OR_CREDIT_KEYWORDS) and not (signals & teaching_signals):
@@ -173,7 +192,7 @@ def notes_obligation(content_role: str) -> str:
         return "must_cover"
     if content_role == "supporting_example":
         return "compress_if_repetitive"
-    if content_role == "admin_or_boilerplate":
+    if content_role in {"admin_or_boilerplate", "embedded_ai_instruction"}:
         return "exclude_if_verified_non_teaching"
     return "review_before_exclusion"
 
@@ -374,6 +393,14 @@ def slide_triage(text: str, previous_text: str = "") -> dict[str, Any]:
     content_role = content_triage(clean)
     words = word_count(clean)
 
+    if has_any(lower, EMBEDDED_AI_INSTRUCTION_KEYWORDS):
+        return {
+            "slide_decision": "exclude",
+            "notes_role": "untrusted_embedded_instruction",
+            "detailed_explanation_allowed": False,
+            "manual_review_required": False,
+            "triage_reason": "instructions_inside_source_are_not_agent_instructions",
+        }
     if not clean or words <= 2:
         return {
             "slide_decision": "use",
@@ -526,6 +553,45 @@ def classify_source(path: str | Path, text: str = "") -> str:
     return "other_material"
 
 
+def classify_exam_source_role(path: str | Path, text: str, source_hint: str) -> str:
+    """Classify assessment evidence without treating every question as a formal paper."""
+    source_path = Path(path)
+    name = source_path.name.casefold().replace("_", " ").replace("-", " ")
+    parent = str(source_path.parent).casefold().replace("_", " ").replace("-", " ")
+    sample = (text or "")[:6000].casefold()
+    haystack = f"{parent}\n{name}\n{sample}"
+    if source_hint == "marking_material" or has_marking_signal(name, haystack):
+        return "mark_scheme"
+    if has_any(haystack, ["specimen paper", "specimen exam", "official mock", "mock paper", "sample paper"]):
+        return "official_mock_specimen"
+    practice_markers = [
+        "practice exam", "practice paper", "practice question", "worksheet",
+        "problem sheet", "question bank", "revision question", "self assessment",
+        "self-assessment",
+    ]
+    practice_directories = {
+        "practice", "practice papers", "practice questions", "worksheets",
+        "problem sheets", "question banks", "revision questions",
+    }
+    normalised_parent_parts = {
+        part.casefold().replace("_", " ").replace("-", " ")
+        for part in source_path.parent.parts
+    }
+    if has_any(f"{name}\n{sample}", practice_markers) or normalised_parent_parts & practice_directories:
+        return "practice_worksheet"
+    if (
+        "past papers" in parent
+        or has_any(haystack, ["past paper", "question paper", "exam paper", "answer all questions"])
+        or ("time allowed" in haystack and "examination" in haystack)
+    ):
+        return "formal_past_paper"
+    if source_hint == "practice_material":
+        return "practice_worksheet"
+    if source_hint == "knowledge_material":
+        return "lecture_material"
+    return "other"
+
+
 def clean_xml_text(raw: bytes) -> str:
     text = raw.decode("utf-8", errors="ignore")
     text = re.sub(r"<[^>]+>", " ", text)
@@ -547,13 +613,60 @@ def clean_pptx_slide_text(raw: bytes) -> str:
     return clean_xml_text(raw)
 
 
-def read_docx_text(path: Path) -> str:
-    chunks: list[str] = []
+def read_docx_paragraph_units(path: Path) -> list[dict[str, Any]]:
+    """Read DOCX body paragraphs with stable paragraph and heading-path locators."""
+    word_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    ns = {"w": word_ns}
     with zipfile.ZipFile(path) as zf:
-        for name in sorted(zf.namelist()):
-            if name.startswith("word/") and name.endswith(".xml"):
-                chunks.append(clean_xml_text(zf.read(name)))
-    return "\n".join(chunks).strip()
+        root = ElementTree.fromstring(zf.read("word/document.xml"))
+    units: list[dict[str, Any]] = []
+    heading_path: list[str] = []
+    paragraph_number = 0
+    for paragraph in root.findall(".//w:body//w:p", ns):
+        text = "".join(node.text or "" for node in paragraph.findall(".//w:t", ns)).strip()
+        if not text:
+            continue
+        paragraph_number += 1
+        style_node = paragraph.find("./w:pPr/w:pStyle", ns)
+        style = ""
+        if style_node is not None:
+            style = str(style_node.attrib.get(f"{{{word_ns}}}val") or "")
+        heading_match = re.match(r"(?i)heading\s*([1-9])", style)
+        if heading_match:
+            level = int(heading_match.group(1))
+            heading_path = heading_path[: level - 1]
+            heading_path.append(text)
+        path_label = " > ".join(heading_path)
+        locator = f"paragraph {paragraph_number}"
+        if path_label:
+            locator = f"{path_label}; {locator}"
+        units.append({
+            "paragraph_start": paragraph_number,
+            "paragraph_end": paragraph_number,
+            "heading_path": list(heading_path),
+            "locator": locator,
+            "text": text,
+            "likely_slide_title": heading_path[-1] if heading_path else "",
+        })
+    return units
+
+
+def read_docx_text(path: Path) -> str:
+    return "\n".join(item["text"] for item in read_docx_paragraph_units(path)).strip()
+
+
+def read_image_text(path: Path) -> tuple[str, list[str]]:
+    """Use optional local OCR; otherwise retain the image for direct visual review."""
+    try:
+        import pytesseract  # type: ignore
+        from PIL import Image  # type: ignore
+
+        text = str(pytesseract.image_to_string(Image.open(path)) or "").strip()
+        if text:
+            return text, ["image_text_extracted_with_local_ocr"]
+        return "", ["image_ocr_returned_no_text", "direct_visual_review_required"]
+    except Exception:
+        return "", ["local_image_ocr_unavailable", "direct_visual_review_required"]
 
 
 def read_pptx_text(path: Path) -> str:
@@ -624,6 +737,16 @@ def slide_like_units(path: Path, page_texts: list[str]) -> list[dict[str, Any]]:
             }
             for idx, text in enumerate(page_texts, 1)
         ]
+    if path.suffix.lower() == ".docx":
+        return read_docx_paragraph_units(path)
+    if path.suffix.lower() in IMAGE_SUFFIXES:
+        text, _ = read_image_text(path)
+        return [{
+            "image_number": 1,
+            "locator": "image 1",
+            "text": text,
+            "likely_slide_title": path.stem,
+        }]
     return []
 
 
@@ -643,6 +766,8 @@ def read_source_text(path: Path) -> tuple[str, list[str]]:
             return read_pptx_text(path), notes
         if suffix == ".pdf":
             return read_pdf_text(path)
+        if suffix in IMAGE_SUFFIXES:
+            return read_image_text(path)
         return "", ["automatic_text_reader_not_configured_for_this_file_type"]
     except Exception as exc:
         return "", [f"text_extraction_note:{type(exc).__name__}"]
@@ -689,12 +814,34 @@ def extract_media(path: Path, source_id: str, asset_dir: Path) -> list[dict[str,
                     "source_id": source_id,
                     "asset_path": str(out),
                     "media_name": Path(name).name,
-                    "locator": name,
-                    "provenance": provenance_record(source_id, path.name, locator=name),
+                    "package_member": name,
+                    "locator": None,
+                    "locator_status": "incomplete",
+                    "locator_reason": "embedded_media_relationship_not_resolved_to_slide_or_paragraph",
+                    "knowledge_status": "incomplete",
+                    "manual_review_required": True,
+                    "provenance": provenance_record(source_id, path.name),
                 })
     except Exception:
         return []
     return visuals
+
+
+def preserve_direct_image(path: Path, source_id: str, asset_dir: Path) -> dict[str, Any]:
+    """Copy an image to the durable task asset directory before archive temp files disappear."""
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    out = asset_dir / f"{source_id}_{path.name}"
+    if path.resolve() != out.resolve():
+        shutil.copy2(path, out)
+    return {
+        "visual_id": f"{source_id}_V1",
+        "source_id": source_id,
+        "locator": "image 1",
+        "locator_status": "complete",
+        "asset_path": str(out),
+        "media_name": out.name,
+        "extraction_method": "direct_image_copy",
+    }
 
 
 def expanded_rect(rect: Any, page_rect: Any, pad: float = 18.0) -> Any:
@@ -784,7 +931,7 @@ def unique_rects(rects: list[Any], page_rect: Any) -> list[Any]:
 
 
 def extract_pdf_page_visuals(path: Path, source_id: str, asset_dir: Path, page_texts: list[str]) -> list[dict[str, Any]]:
-    if path.suffix.lower() != ".pdf" or not any(has_visual_signal(text) for text in page_texts):
+    if path.suffix.lower() != ".pdf":
         return []
     try:
         import fitz  # type: ignore
@@ -796,9 +943,13 @@ def extract_pdf_page_visuals(path: Path, source_id: str, asset_dir: Path, page_t
             asset_dir.mkdir(parents=True, exist_ok=True)
             for page_index, page in enumerate(doc):
                 page_text = page_texts[page_index] if page_index < len(page_texts) else (page.get_text("text") or "")
-                if not has_visual_signal(page_text):
-                    continue
                 rects = pdf_visual_rects(page)
+                full_page_review = False
+                if not rects and not page_text.strip():
+                    rects = [page.rect]
+                    full_page_review = True
+                if not rects:
+                    continue
                 for rect_index, rect in enumerate(rects, 1):
                     crop = expanded_rect(rect, page.rect)
                     pix = page.get_pixmap(matrix=fitz.Matrix(1.6, 1.6), clip=crop, alpha=False)
@@ -818,9 +969,11 @@ def extract_pdf_page_visuals(path: Path, source_id: str, asset_dir: Path, page_t
                         "page_number": page_index + 1,
                         "bbox": [round(crop.x0, 2), round(crop.y0, 2), round(crop.x1, 2), round(crop.y1, 2)],
                         "locator": f"page {page_index + 1}",
+                        "locator_status": "complete",
                         "caption": (caption_match.group(0).strip() if caption_match else ""),
                         "nearby_text": re.sub(r"\s+", " ", page_text).strip(),
-                        "extraction_method": "pdf_page_visible_render",
+                        "extraction_method": "pdf_page_review_render" if full_page_review else "pdf_page_visible_render",
+                        "manual_review_required": full_page_review or not has_visual_signal(page_text),
                         "knowledge_signals": knowledge_signals(page_text),
                         "provenance": provenance_record(
                             source_id,
@@ -834,34 +987,131 @@ def extract_pdf_page_visuals(path: Path, source_id: str, asset_dir: Path, page_t
     return visuals
 
 
-def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: str = "embedded_media") -> dict[str, Any]:
+def _zip_member_is_symlink(info: zipfile.ZipInfo) -> bool:
+    return ((info.external_attr >> 16) & 0o170000) == 0o120000
+
+
+def _extract_archive_sources(
+    archive: Path,
+    logical_archive: str,
+    destination: Path,
+) -> list[tuple[Path, str]]:
+    selected: list[tuple[Path, str]] = []
+    destination.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive) as zf:
+        for info in zf.infolist():
+            member = Path(info.filename)
+            if info.is_dir() or member.is_absolute() or ".." in member.parts or _zip_member_is_symlink(info):
+                continue
+            if member.suffix.lower() not in SUPPORTED_INPUT_SUFFIXES:
+                continue
+            target = (destination / member).resolve()
+            if destination.resolve() not in target.parents:
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(info) as source, target.open("wb") as output:
+                shutil.copyfileobj(source, output)
+            logical = f"{logical_archive}!/{member.as_posix()}"
+            if target.suffix.lower() in ARCHIVE_SUFFIXES:
+                selected.extend(_extract_archive_sources(target, logical, target.parent / f".{target.stem}_expanded"))
+            else:
+                selected.append((target, logical))
+    return selected
+
+
+def _is_within(path: Path, roots: tuple[Path, ...]) -> bool:
+    resolved = path.expanduser().resolve()
+    return any(resolved == root or root in resolved.parents for root in roots)
+
+
+@contextmanager
+def expanded_source_inputs(paths: list[str], excluded_dirs: tuple[Path, ...] = ()):
+    """Yield physical files and stable logical paths for files, directories, and ZIPs."""
+    with tempfile.TemporaryDirectory(prefix="everything-exam-preparation-") as temporary:
+        temp_root = Path(temporary)
+        selected: list[tuple[Path, str]] = []
+        for index, raw in enumerate(paths, 1):
+            path = Path(raw).expanduser()
+            if not path.exists():
+                raise FileNotFoundError(f"Source does not exist: {path}")
+            if path.is_dir():
+                for child in sorted(item for item in path.rglob("*") if item.is_file() and not item.is_symlink()):
+                    if _is_within(child, excluded_dirs):
+                        continue
+                    if child.suffix.lower() not in SUPPORTED_INPUT_SUFFIXES:
+                        continue
+                    if child.suffix.lower() in ARCHIVE_SUFFIXES:
+                        selected.extend(_extract_archive_sources(
+                            child,
+                            str(child),
+                            temp_root / f"archive_{index}_{len(selected) + 1}",
+                        ))
+                    else:
+                        selected.append((child, str(child)))
+            elif path.suffix.lower() in ARCHIVE_SUFFIXES:
+                selected.extend(_extract_archive_sources(path, str(path), temp_root / f"archive_{index}"))
+            else:
+                selected.append((path, str(path)))
+        yield selected
+
+
+def _source_display_name(logical_path: str) -> str:
+    if "!/" in logical_path:
+        archive, member = logical_path.split("!/", 1)
+        return f"{Path(archive).name}!/{member}"
+    return Path(logical_path).name
+
+
+def build_scan(
+    paths: list[str],
+    asset_dir: str = ".skill_assets",
+    visual_mode: str = "embedded_media",
+    excluded_dirs: tuple[Path, ...] = (),
+) -> dict[str, Any]:
+    asset_root = Path(asset_dir).expanduser().resolve()
+    generated_dirs = tuple(dict.fromkeys((*excluded_dirs, asset_root)))
+    with expanded_source_inputs(paths, generated_dirs) as expanded:
+        return _build_scan_expanded(expanded, asset_dir, visual_mode)
+
+
+def _build_scan_expanded(
+    paths: list[tuple[Path, str]],
+    asset_dir: str = ".skill_assets",
+    visual_mode: str = "embedded_media",
+) -> dict[str, Any]:
+    asset_root = Path(asset_dir).expanduser().resolve()
     documents: list[dict[str, Any]] = []
     fragments: list[dict[str, Any]] = []
     visuals: list[dict[str, Any]] = []
     extraction_notes: list[str] = []
-    for idx, raw in enumerate(paths, 1):
-        path = Path(raw)
+    for idx, (path, logical_path) in enumerate(paths, 1):
+        display_name = _source_display_name(logical_path)
+        classification_path = Path(logical_path.replace("!/", "/"))
         source_id = f"S{idx}"
         text, notes = read_source_text(path)
         page_texts = pdf_page_texts(path) if path.suffix.lower() == ".pdf" else []
         if not text:
             notes = notes + ["no_text_extracted_automatically"]
-        hint = classify_source(path, text)
-        lecture_order = lecture_order_from_path(path)
-        lecture_source = is_lecture_source(path, text)
+        hint = classify_source(classification_path, text)
+        exam_source_role = classify_exam_source_role(classification_path, text, hint)
+        lecture_order = lecture_order_from_path(classification_path)
+        lecture_source = is_lecture_source(classification_path, text)
         doc_content_role = content_triage(text)
         doc_signals = knowledge_signals(text)
         doc_roles = knowledge_roles(doc_signals)
         doc_units = knowledge_unit_candidates(text)
-        doc_question_signals = question_signals(path, text, hint)
-        slide_units = slide_like_units(path, page_texts) if (path.suffix.lower() == ".pptx" or (path.suffix.lower() == ".pdf" and lecture_source and hint == "knowledge_material")) else []
+        doc_question_signals = question_signals(classification_path, text, hint)
+        slide_units = slide_like_units(path, page_texts) if path.suffix.lower() in (OFFICE_SUFFIXES | IMAGE_SUFFIXES) else []
+        if not slide_units and path.suffix.lower() in (OFFICE_SUFFIXES | IMAGE_SUFFIXES):
+            slide_units = [{"locator": None, "text": "", "likely_slide_title": path.stem}]
         time_units = timed_text_units(path)
         documents.append({
             "id": source_id,
-            "path": str(path),
-            "name": path.name,
+            "path": logical_path,
+            "name": display_name,
             "source_hint": hint,
             "category": hint,
+            "exam_source_role": exam_source_role,
             "source_order": idx,
             "lecture_order": lecture_order,
             "lecture_source": lecture_source,
@@ -880,29 +1130,37 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
         if slide_units:
             for frag_idx, unit in enumerate(slide_units, 1):
                 chunk = str(unit.get("text") or "")
+                unit_locator = unit.get("locator")
                 frag_signals = knowledge_signals(chunk)
                 frag_content_role = content_triage(chunk)
                 triage = slide_triage(chunk, previous_slide_text)
                 fragments.append({
                     "id": f"{source_id}_F{frag_idx}",
                     "source_id": source_id,
-                    "source_name": path.name,
+                    "source_name": display_name,
                     "source_hint": hint,
                     "category": hint,
+                    "exam_source_role": exam_source_role,
                     "source_order": idx,
                     "fragment_order": frag_idx,
                     "lecture_order": lecture_order,
                     "lecture_source": lecture_source,
                     "content_triage": frag_content_role,
                     "notes_obligation": notes_obligation_for_slide(frag_content_role, triage),
-                    "locator": unit.get("locator") or f"slide {frag_idx}",
+                    "locator": unit_locator,
                     "slide_number": unit.get("slide_number"),
                     "page_number": unit.get("page_number"),
+                    "paragraph_start": unit.get("paragraph_start"),
+                    "paragraph_end": unit.get("paragraph_end"),
+                    "heading_path": unit.get("heading_path"),
+                    "image_number": unit.get("image_number"),
+                    "locator_status": "complete" if unit_locator else "incomplete",
+                    "knowledge_status": "incomplete" if not chunk else "complete",
                     "likely_slide_title": unit.get("likely_slide_title") or likely_slide_title(chunk),
                     "provenance": provenance_record(
                         source_id,
-                        path.name,
-                        locator=str(unit.get("locator") or f"slide {frag_idx}"),
+                        display_name,
+                        locator=str(unit_locator) if unit_locator else None,
                         page_number=unit.get("page_number"),
                         slide_number=unit.get("slide_number"),
                     ),
@@ -926,9 +1184,10 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
                 fragments.append({
                     "id": f"{source_id}_F{frag_idx}",
                     "source_id": source_id,
-                    "source_name": path.name,
+                    "source_name": display_name,
                     "source_hint": hint,
                     "category": hint,
+                    "exam_source_role": exam_source_role,
                     "source_order": idx,
                     "fragment_order": frag_idx,
                     "lecture_order": lecture_order,
@@ -940,7 +1199,7 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
                     "time_range": unit.get("time_range"),
                     "provenance": provenance_record(
                         source_id,
-                        path.name,
+                        display_name,
                         locator=str(unit.get("locator") or ""),
                         time_offset_seconds=unit.get("time_offset_seconds"),
                         time_range=unit.get("time_range"),
@@ -957,9 +1216,10 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
                 fragments.append({
                     "id": f"{source_id}_F{frag_idx}",
                     "source_id": source_id,
-                    "source_name": path.name,
+                    "source_name": display_name,
                     "source_hint": hint,
                     "category": hint,
+                    "exam_source_role": exam_source_role,
                     "source_order": idx,
                     "fragment_order": frag_idx,
                     "lecture_order": lecture_order,
@@ -967,15 +1227,46 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
                     "content_triage": frag_content_role,
                     "notes_obligation": notes_obligation(frag_content_role),
                     "locator": f"chunk {frag_idx}",
-                    "provenance": provenance_record(source_id, path.name, locator=f"chunk {frag_idx}"),
+                    "provenance": provenance_record(source_id, display_name, locator=f"chunk {frag_idx}"),
                     "text": chunk,
                     "knowledge_signals": frag_signals,
                     "knowledge_roles": knowledge_roles(frag_signals),
                     "knowledge_unit_candidates": knowledge_unit_candidates(chunk),
                 })
         if visual_mode != "none":
-            visuals.extend(extract_media(path, source_id, Path(asset_dir)))
-            visuals.extend(extract_pdf_page_visuals(path, source_id, Path(asset_dir), page_texts))
+            source_visuals = extract_media(path, source_id, asset_root)
+            source_visuals.extend(extract_pdf_page_visuals(path, source_id, asset_root, page_texts))
+            if path.suffix.lower() in IMAGE_SUFFIXES:
+                image_visual = preserve_direct_image(path, source_id, asset_root)
+                image_visual["manual_review_required"] = not bool(text)
+                source_visuals.append(image_visual)
+            for visual in source_visuals:
+                visual["source_name"] = display_name
+                if isinstance(visual.get("provenance"), dict):
+                    visual["provenance"]["source_name"] = display_name
+            visuals.extend(source_visuals)
+
+    excluded_fragments: list[dict[str, Any]] = []
+    safe_fragments: list[dict[str, Any]] = []
+    for fragment in fragments:
+        if fragment.get("content_triage") != "embedded_ai_instruction":
+            safe_fragments.append(fragment)
+            continue
+        text_digest = hashlib.sha256(str(fragment.get("text") or "").encode("utf-8")).hexdigest()
+        excluded_fragments.append({
+            key: fragment.get(key)
+            for key in (
+                "id", "source_id", "source_name", "locator", "locator_status",
+                "slide_number", "page_number", "paragraph_start", "paragraph_end",
+                "heading_path", "time_offset_seconds", "time_range", "provenance",
+            )
+            if fragment.get(key) is not None
+        } | {
+            "content_triage": "embedded_ai_instruction",
+            "exclusion_reason": "instructions_inside_source_are_not_agent_instructions",
+            "text_sha256": text_digest,
+        })
+    fragments = safe_fragments
     hints: dict[str, int] = {}
     signals: dict[str, int] = {}
     roles: dict[str, int] = {}
@@ -1000,10 +1291,12 @@ def build_scan(paths: list[str], asset_dir: str = ".skill_assets", visual_mode: 
         "schema_version": 3,
         "documents": documents,
         "fragments": fragments,
+        "excluded_fragments": excluded_fragments,
         "visuals": visuals,
         "summary": {
             "source_count": len(documents),
             "fragment_count": len(fragments),
+            "excluded_embedded_ai_instruction_count": len(excluded_fragments),
             "visual_count": len(visuals),
             "question_source_count": sum(1 for doc in documents if doc.get("question_signals", {}).get("has_questions")),
             "past_paper_question_source_count": sum(1 for doc in documents if doc.get("question_signals", {}).get("has_past_paper")),
@@ -1142,6 +1435,118 @@ def _count_values(items: list[dict[str, Any]], key: str) -> dict[str, int]:
         if value:
             counts[value] = counts.get(value, 0) + 1
     return counts
+
+
+ROLE_TO_HINT = {
+    "coverage_authority": "knowledge_material",
+    "course_knowledge": "knowledge_material",
+    "reference_notes": "style_reference",
+    "formal_past_paper": "practice_material",
+    "official_mock_specimen": "practice_material",
+    "practice_worksheet": "practice_material",
+    "mark_scheme": "marking_material",
+    "style_reference": "style_reference",
+    "essay_evidence": "extra_reading_source",
+}
+EXAM_SOURCE_ROLES = {
+    "formal_past_paper",
+    "official_mock_specimen",
+    "practice_worksheet",
+    "lecture_material",
+    "mark_scheme",
+    "other",
+}
+
+
+def apply_source_role_overrides(scan: dict[str, Any], task_context: dict[str, Any] | None) -> None:
+    """Apply explicit user role labels after extraction and before focused indexing."""
+    context = task_context or {}
+    raw_mapping = context.get("source_roles") or {}
+    if not isinstance(raw_mapping, dict):
+        return
+    mapping = {str(key).casefold(): str(value).strip().lower() for key, value in raw_mapping.items()}
+    documents = scan.get("documents", [])
+    for document in documents:
+        candidates = {
+            str(document.get("path") or "").casefold(),
+            str(document.get("name") or "").casefold(),
+            Path(str(document.get("path") or "unknown")).name.casefold(),
+        }
+        role = next((mapping[key] for key in candidates if key in mapping), None)
+        if not role:
+            continue
+        document["declared_source_role"] = role
+        if role in ROLE_TO_HINT:
+            document["source_hint"] = ROLE_TO_HINT[role]
+            document["category"] = ROLE_TO_HINT[role]
+        if role in EXAM_SOURCE_ROLES:
+            document["exam_source_role"] = role
+        elif role in {"coverage_authority", "course_knowledge", "reference_notes"}:
+            document["exam_source_role"] = "lecture_material"
+        for fragment in scan.get("fragments", []):
+            if fragment.get("source_id") != document.get("id"):
+                continue
+            fragment["declared_source_role"] = role
+            fragment["source_hint"] = document.get("source_hint")
+            fragment["category"] = document.get("category")
+            fragment["exam_source_role"] = document.get("exam_source_role")
+    summary = scan.get("summary")
+    if isinstance(summary, dict):
+        summary["source_hints"] = _count_values(documents, "source_hint")
+        summary["exam_source_roles"] = _count_values(documents, "exam_source_role")
+
+
+def _source_fingerprint(paths: list[str], excluded_dirs: tuple[Path, ...] = ()) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for raw in paths:
+        path = Path(raw).expanduser()
+        if not path.exists():
+            records.append({"path": str(path), "missing": True})
+            continue
+        candidates = [path]
+        if path.is_dir():
+            candidates = sorted(
+                item for item in path.rglob("*")
+                if item.is_file() and not item.is_symlink() and not _is_within(item, excluded_dirs)
+            )
+        for item in candidates:
+            if _is_within(item, excluded_dirs):
+                continue
+            stat = item.stat()
+            records.append({
+                "path": str(item.resolve()),
+                "size": stat.st_size,
+                "mtime_ns": stat.st_mtime_ns,
+            })
+    return records
+
+
+def _course_index_path(
+    cache_dir: str,
+    paths: list[str],
+    purpose: str,
+    visual_mode: str,
+    task_context: dict[str, Any] | None,
+    asset_dir: str,
+) -> Path:
+    root = Path(cache_dir).expanduser().resolve()
+    asset_root = Path(asset_dir).expanduser().resolve()
+    workspace = Path.cwd().resolve()
+    if root != workspace and workspace not in root.parents:
+        raise ValueError("The optional course index must stay inside the current task workspace")
+    payload = {
+        "cache_contract_version": 2,
+        "sources": _source_fingerprint(paths, (root, asset_root)),
+        "purpose": purpose,
+        "visual_mode": visual_mode,
+        "asset_dir": str(asset_root),
+        "task_context": task_context or {},
+    }
+    digest = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
+    ).hexdigest()
+    root.mkdir(parents=True, exist_ok=True)
+    return root / f"course-index-{digest}.json"
 
 
 def _task_mode(value: str) -> str:
@@ -1335,16 +1740,28 @@ def build_diagnostic_assessment(
     source_counts = _count_values(scan.get("documents", []), "source_hint")
     knowledge_count = source_counts.get("knowledge_material", 0)
     assessment_count = sum(source_counts.get(key, 0) for key in ASSESSMENT_CATEGORIES)
+    formal_paper_count = sum(
+        1 for item in scan.get("documents", []) if item.get("exam_source_role") == "formal_past_paper"
+    )
     has_direct_source = _has_task_context_value(context, "source_text", "readings", "source_materials_supplied")
     gaps: list[dict[str, str]] = []
 
-    if not scan.get("documents") and not has_direct_source:
-        gaps.append(_gap("missing_sources", "No readable source or direct source text was supplied."))
+    if (not scan.get("documents") or not scan.get("fragments")) and not has_direct_source:
+        gaps.append(_gap("missing_sources", "No usable source fragment or direct source text was supplied."))
 
     capability = str(context.get("requested_capability") or context.get("capability") or "").strip().lower()
-    if mode == "notes":
+    if mode in {"atlas", "notes"}:
         if scan.get("documents") and knowledge_count == 0 and not has_direct_source:
-            gaps.append(_gap("missing_course_knowledge", "Notes require course-knowledge evidence."))
+            gaps.append(_gap("missing_course_knowledge", f"{mode.title()} requires course-knowledge evidence."))
+    elif mode == "analysis":
+        if assessment_count == 0 and not has_direct_source:
+            gaps.append(_gap("missing_question_evidence", "Exam Analysis requires supplied papers or question evidence."))
+        elif formal_paper_count == 0:
+            gaps.append(_gap(
+                "missing_formal_past_papers",
+                "No formal past paper is available; auxiliary analysis may proceed but formal recurrence remains empty.",
+                "advisory",
+            ))
     elif mode == "practice":
         if capability in {"answer_evaluation", "evaluate_answer"}:
             if not _has_task_context_value(context, "student_answer"):
@@ -1414,7 +1831,7 @@ def build_fragment_index(scan: dict[str, Any] | None, purpose: str = "notes") ->
             "knowledge_score": score,
             "preview": re.sub(r"\s+", " ", text).strip()[:220],
         })
-    if purpose == "notes":
+    if purpose in {"atlas", "notes"}:
         fragments.sort(key=lambda item: (
             int(item.get("lecture_order") or 10_000),
             int(item.get("source_order") or 10_000),
@@ -1457,7 +1874,7 @@ def build_fragment_index(scan: dict[str, Any] | None, purpose: str = "notes") ->
             "source_audit": source_audit,
         },
         "notes_generation_fragments": usable if purpose == "notes" else fragments,
-        "detailed_knowledge_fragments": detailed if purpose == "notes" else fragments,
+        "detailed_knowledge_fragments": detailed if purpose in {"atlas", "notes"} else fragments,
         "fragments": fragments,
     }
 
@@ -1488,12 +1905,34 @@ def process_sources(
     visual_mode: str = "embedded_media",
     purpose: str = "notes",
     task_context: dict[str, Any] | None = None,
+    cache_dir: str | None = None,
 ) -> dict[str, Any]:
-    scan = build_scan(paths, asset_dir, visual_mode)
+    cache_root = Path(cache_dir).expanduser().resolve() if cache_dir else None
+    cache_path = (
+        _course_index_path(cache_dir, paths, purpose, visual_mode, task_context, asset_dir)
+        if cache_dir else None
+    )
+    if cache_path and cache_path.is_file():
+        try:
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            cached = None
+        if isinstance(cached, dict):
+            asset_paths = [
+                Path(str(item["asset_path"]))
+                for item in (cached.get("scan") or {}).get("visuals", [])
+                if item.get("asset_path")
+            ]
+            if all(path.is_file() for path in asset_paths):
+                cached["cache"] = {"optional": True, "status": "hit", "path": str(cache_path)}
+                return cached
+    excluded_dirs = (cache_root,) if cache_root else ()
+    scan = build_scan(paths, asset_dir, visual_mode, excluded_dirs=excluded_dirs)
+    apply_source_role_overrides(scan, task_context)
     index = build_fragment_index(scan, purpose)
     readiness = readiness_report(scan, purpose)
     diagnostic = build_diagnostic_assessment(scan, purpose, task_context)
-    return {
+    result = {
         "schema_version": 3,
         "purpose": purpose,
         "scan": scan,
@@ -1501,7 +1940,15 @@ def process_sources(
         "readiness": readiness,
         "diagnostic": diagnostic,
         "coverage_audit": index["coverage_profile"]["source_audit"],
+        "cache": {
+            "optional": True,
+            "status": "miss" if cache_path else "disabled",
+            "path": str(cache_path) if cache_path else None,
+        },
     }
+    if cache_path:
+        cache_path.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return result
 
 
 def _load_scan(path: str | None) -> dict[str, Any] | None:
@@ -1638,10 +2085,11 @@ def main() -> None:
         default="process",
     )
     parser.add_argument("--source-scan")
-    parser.add_argument("--purpose", choices=("notes", "practice", "essay"), default="notes")
+    parser.add_argument("--purpose", choices=("atlas", "analysis", "notes", "practice", "essay"), default="notes")
     parser.add_argument("--task-context")
     parser.add_argument("--out")
     parser.add_argument("--asset-dir", default=".skill_assets")
+    parser.add_argument("--cache-dir")
     parser.add_argument("--visual-mode", default="embedded_media")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
@@ -1653,6 +2101,8 @@ def main() -> None:
     analysis_scan = existing_scan
     if analysis_scan is None and args.sources and args.mode in {"exam-format-profile", "assessment-architecture", "diagnostic"}:
         analysis_scan = build_scan(args.sources, args.asset_dir, args.visual_mode)
+    if analysis_scan is not None:
+        apply_source_role_overrides(analysis_scan, task_context)
     if args.mode == "scan":
         result = build_scan(args.sources, args.asset_dir, args.visual_mode)
     elif args.mode == "index":
@@ -1666,7 +2116,14 @@ def main() -> None:
     elif args.mode == "diagnostic":
         result = build_diagnostic_assessment(analysis_scan, args.purpose, task_context)
     else:
-        result = process_sources(args.sources, args.asset_dir, args.visual_mode, args.purpose, task_context)
+        result = process_sources(
+            args.sources,
+            args.asset_dir,
+            args.visual_mode,
+            args.purpose,
+            task_context,
+            args.cache_dir,
+        )
     rendered = json.dumps(result, indent=2, ensure_ascii=False)
     if args.out:
         Path(args.out).write_text(rendered + "\n", encoding="utf-8")

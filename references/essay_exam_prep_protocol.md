@@ -1,43 +1,66 @@
 # Essay Protocol
 
-## Ordinary Essay Preparation
+## Public Scope
 
-Identify the command word, topic boundaries, assessment expectations, and the position the answer must defend. Build a thesis-led structure in which each paragraph contains a claim, course explanation, relevant evidence, analysis, and a link to the question.
+Essay handles only:
 
-Use examples and model answers to understand expected depth and structure. Use the user's requested artifact: outline, paragraph plan, evidence map, model response, feedback, or revision resource.
+- exam essay planning;
+- annotated model essays;
+- paragraph exemplars;
+- review and model answers for closed past assessments;
+- adaptation of an exam answer to a different question, command word, emphasis, or time limit.
 
-## Online Essay Assessment
+It does not produce a complete submission for an active assessed essay, report, poster, presentation, website, or other coursework. If lifecycle state is `active`, block complete drafting as `active_assessed_complete_draft_out_of_scope` even when a legacy permission field is `allowed`. If state is `unknown`, allow only permission-neutral question analysis, concept explanation, planning, and feedback until the state is known. If state is `closed`, post-assessment reconstruction and a model answer are permitted under the source rules below.
 
-Classify Online Essay lifecycle state before applying permissions:
+`build_essay_views` is the enforcement boundary for dual-view model essays. Before normalising a canonical body or constructing either view, it must inspect any explicitly supplied lifecycle state. For `active`, return `restricted`; for explicit `unknown`, return `needs_clarification`. Both responses must set `views_generated: false` and omit `views`. A `closed` state, or no lifecycle field for ordinary revision, may continue under the normal evidence rules.
 
-- `active`: permit question analysis, concept explanation, feedback, and permission-neutral planning; permit source use and complete drafting only when the permission for that requested action is explicit;
-- `closed`: permit post-assessment review, reconstruction, and model-answer support under the normal source-access and citation rules;
-- `unknown`: permit only permission-neutral support and clarify lifecycle state before restricted source use or complete drafting.
+## Question and Argument Model
 
-For an active assessment, establish only the permissions that affect the requested action:
+Identify the command word, topic boundaries, evidenced scope, and judgement the answer must defend. Build a thesis-led sequence in which each body paragraph has a declared function and develops claim, evidence, analysis, limitation where relevant, synthesis, and a link to the question.
 
-- lecture material use;
-- online material use;
-- uploaded reading use;
-- external academic source use;
-- citation expectations;
-- complete-draft permission.
+Use the user's requested exam-preparation artifact: outline, paragraph plan, evidence map, paragraph exemplar, dual-view model essay, closed past-assessment review, or adaptation notes. Do not turn an exam-preparation request into a currently assessed coursework deliverable.
 
-Return the action-specific `allowed_actions`, `blocked_actions`, `gaps`, and conditions, then proceed only with the permitted plan, evidence organisation, feedback, source use, or drafting level. Do not ask about unrelated permissions.
+## One Body, Two Views
 
-## Extra Reading
+Store essay prose once as an ordered `canonical_body`. Each paragraph block has a stable `block_id`, `paragraph_function`, `adaptation_notes`, and ordered text segments. Each segment has a stable `segment_id`, its text, zero or more teaching annotations, and any source references.
 
-Use reliable academic evidence such as peer-reviewed research, scholarly reviews, textbooks, official datasets, and primary documentation. Match each source to a specific essay claim.
+Project both views from that structure:
 
-Extra Reading is most useful when it adds:
+1. `clean`: concatenate the segments in order and omit teaching metadata;
+2. `annotated`: retain the identical segment text and expose the teaching metadata.
 
-- mechanism or molecular depth;
-- experimental or quantitative evidence;
-- a competing interpretation or limitation;
-- evaluation that changes the strength of the conclusion.
+The annotated teaching view supports and audits all of:
 
-Record source identity, evidence type, supported claim, and citation details. Integrate external evidence into the argument rather than collecting an isolated reading list.
+- `thesis`;
+- `claim`;
+- `evidence`;
+- `analysis`;
+- `limitation`;
+- `synthesis`;
+- `paragraph_function`;
+- `adaptation_notes`.
+
+Compute the clean, annotated, and canonical hashes from ordered prose only. All three hashes must match. Annotation text, paragraph-function labels, and adaptation notes are teaching metadata and must not alter the clean essay body. Missing annotation types produce `needs_review`; never create unsupported scientific content merely to fill an annotation category.
+
+## Source Roles
+
+Course sources are the primary basis for course facts and course scope. Attach their source IDs and locators to evidence segments where available.
+
+Formal past papers, official mocks, and specimens determine only the question scope and emphasis. Their allowed source-reference usages are `scope`, `emphasis`, `question_scope`, and `question_emphasis`. A past paper must not serve as factual evidence for a course claim, mechanism, experiment, or result.
+
+External academic evidence may be used only when the user supplied it or it was actually retrieved and verified within the current task. Verification is fragment-bound, not corpus-wide: resolve each essay segment's source ID or name and locator, then check its citation identity, DOI, reported experiment, quantitative value, and empirical result claim only against the resolved non-past-paper fragment text referenced by that same segment. Evidence found only in an unreferenced fragment, whether from the same source or another source, does not verify the claim. An unknown source or unresolved locator is an explicit source-audit issue. Do not create placeholder references, plausible-looking DOI strings, inferred author-year citations, or unobserved results, and do not complete a source gap from memory.
 
 ## Writing and QA
 
-Use the user's requested language and default to precise academic English. Keep causal statements proportional to the evidence. Distinguish observation, interpretation, and evaluation. Verify that the introduction answers the question, paragraphs develop the thesis, sources support the claims assigned to them, and the conclusion resolves the argument.
+Use the user's requested language and default to precise academic English. Keep causal statements proportional to the evidence. Distinguish observation, interpretation, and evaluation. Verify:
+
+- the introduction answers the question and states the thesis;
+- paragraph order develops rather than repeats the thesis;
+- claim, evidence, analysis, limitation, and synthesis labels match their actual functions;
+- evidence segments resolve to non-past-paper sources;
+- each source locator resolves to the fragment actually referenced by that segment;
+- past-paper references are scope or emphasis only;
+- no citation, DOI, experiment, quantitative value, or result claim is accepted from an unreferenced fragment;
+- clean and annotated body hashes match;
+- the conclusion resolves the argument;
+- adaptation notes explain how to alter the answer without becoming part of the clean prose.

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "atlas_relation.schema.json",
+  "title": "Course Atlas relation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "relation_id",
+    "source_node_id",
+    "target_node_id",
+    "relation_type",
+    "label",
+    "explanation",
+    "source_refs"
+  ],
+  "properties": {
+    "relation_id": {
+      "$ref": "atlas_node.schema.json#/$defs/nodeId"
+    },
+    "source_node_id": {
+      "$ref": "atlas_node.schema.json#/$defs/nodeId"
+    },
+    "target_node_id": {
+      "$ref": "atlas_node.schema.json#/$defs/nodeId"
+    },
+    "relation_type": {
+      "enum": [
+        "prerequisite_for",
+        "part_of",
+        "causes",
+        "activates",
+        "inhibits",
+        "regulates",
+        "compares_with",
+        "contrasts_with",
+        "associated_with",
+        "evidence_for",
+        "method_for",
+        "other"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "explanation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "atlas_node.schema.json#/$defs/sourceRef"
+      }
+    }
+  }
+}

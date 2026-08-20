@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the manifest-driven Everything Exam Preparation Plugin."""
+"""Validate the standalone Everything Exam Preparation Plugin."""
 
 from __future__ import annotations
 
@@ -13,76 +13,74 @@ from typing import Any
 
 import yaml
 
+try:
+    from jsonschema import Draft202012Validator
+except ImportError:  # pragma: no cover - exercised by the dependency preflight
+    Draft202012Validator = None  # type: ignore[assignment]
+
 
 ROOT = Path(__file__).resolve().parents[1]
-REQUIRED_RETIRED_SKILLS = {
-    "exam-prep-index",
-    "exam-prep-slide-triage",
-    "exam-prep-mcq",
-    "exam-prep-short-answer",
-    "exam-prep-long-answer",
-    "exam-prep-worked-solutions",
-    "exam-prep-online-essay-exam",
-    "exam-prep-extra-reading",
-    "exam-prep-question-solver",
-    "exam-prep-question-organizer",
-    "exam-prep-exam-mode",
-}
-RETIRED_PATHS = {
-    "plugin_capability_manifest.json",
-    "contracts",
-    "schemas",
-    "tests",
-    "scripts/build_fragment_index.py",
-    "scripts/input_readiness_check.py",
-    "scripts/assessment_tools.py",
-    "scripts/extra_reading_tools.py",
-    "scripts/plan_workflow.py",
-    "scripts/build_review_questions.py",
-    "scripts/soleil_adapter.py",
-    "scripts/mastery_history.py",
-    "scripts/github_ready_check.py",
-}
-RETIRED_LANGUAGE = {
-    "Auto-diagnosis": re.compile(r"auto[- ]diagnosis", re.I),
-    "Direct Invocation Gate": re.compile(r"direct invocation gate", re.I),
-    "Soleil": re.compile(r"\bsoleil\b", re.I),
-    "TaskRunState": re.compile(r"taskrunstate|task run state", re.I),
-    "Local Bridge": re.compile(r"local bridge", re.I),
-    "mastery history": re.compile(r"mastery history|mastery_history", re.I),
-    "thirteen routes": re.compile(r"13 routes|thirteen routes", re.I),
-}
-NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
-FIXED_COUNT_PATTERN = re.compile(
-    r"\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|\d+)\s+"
-    r"(?:(?:public|focused|local)\s+)?Skills?\b",
-    re.IGNORECASE,
-)
+NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+EXPECTED_SKILLS = [
+    "everything-exam-preparation",
+    "exam-prep-atlas",
+    "exam-prep-analysis",
+    "exam-prep-notes",
+    "exam-prep-practice",
+    "exam-prep-essay",
+]
+FOCUSED_PROTOCOLS = {
+    "exam-prep-atlas": "references/course_atlas_protocol.md",
+    "exam-prep-analysis": "references/exam_intelligence_protocol.md",
+    "exam-prep-notes": "references/exam_prep_notes_protocol.md",
+    "exam-prep-practice": "references/exam_mode_and_addons_protocol.md",
+    "exam-prep-essay": "references/essay_exam_prep_protocol.md",
+}
+REQUIRED_ATLAS_MEMBERS = {
+    "course_manifest.json",
+    "sources.json",
+    "relations.json",
+    "past_paper_links.json",
+    "public/web_index.json",
+    "audit/coverage_ledger.json",
+    "audit/exclusions.json",
+    "audit/manual_review.json",
+    "qa_report.md",
+    "checksums.sha256",
+}
+ANALYSIS_METRICS = {
+    "formal_occurrence_count",
+    "distinct_formal_years",
+    "formal_year_coverage",
+    "auxiliary_occurrence_count",
+    "format_diversity",
+    "explicit_mark_exposure",
+    "retention",
+    "cross_year_stability",
+    "mapping_coverage",
+    "unresolved_mapping_count",
+}
+ANNOTATION_TYPES = {
+    "thesis",
+    "claim",
+    "evidence",
+    "analysis",
+    "limitation",
+    "synthesis",
+    "paragraph function",
+    "adaptation notes",
+}
+PROHIBITED_EXTERNAL_PATTERNS = {
+    "coursework sibling": re.compile("coursework" + r"[-_ ]" + "killer", re.I),
+    "university sibling": re.compile("everything" + r"[-_ ]" + "university", re.I),
+    "external persistent store": re.compile("memory" + r"[_ ]" + "root|artifact" + r"[_ ]" + "registry", re.I),
+    "external Plugin path": re.compile(r"\.\./(?:" + "Coursework|Everything" + "-University)", re.I),
+}
 
 
 class ValidationError(RuntimeError):
     pass
-
-
-def load_json(relative: str) -> dict[str, Any]:
-    path = ROOT / relative
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise ValidationError(f"Invalid JSON: {relative}: {exc}") from exc
-    if not isinstance(value, dict):
-        raise ValidationError(f"Expected a JSON object: {relative}")
-    return value
-
-
-def load_yaml(relative: str) -> dict[str, Any]:
-    path = ROOT / relative
-    try:
-        value = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
-        raise ValidationError(f"Invalid YAML: {relative}: {exc}") from exc
-    return value if isinstance(value, dict) else {}
 
 
 def read_text(relative: str) -> str:
@@ -92,327 +90,307 @@ def read_text(relative: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def load_json(relative: str) -> dict[str, Any]:
+    try:
+        value = json.loads(read_text(relative))
+    except json.JSONDecodeError as exc:
+        raise ValidationError(f"Invalid JSON: {relative}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise ValidationError(f"Expected JSON object: {relative}")
+    return value
+
+
+def load_yaml(relative: str) -> dict[str, Any]:
+    try:
+        value = yaml.safe_load(read_text(relative))
+    except yaml.YAMLError as exc:
+        raise ValidationError(f"Invalid YAML: {relative}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise ValidationError(f"Expected YAML object: {relative}")
+    return value
+
+
 def frontmatter(relative: str) -> tuple[str, str]:
-    text = read_text(relative)
-    match = re.match(r"\A---\n(.*?)\n---\n", text, re.DOTALL)
+    match = re.match(r"\A---\n(.*?)\n---\n", read_text(relative), re.DOTALL)
     if not match:
         raise ValidationError(f"Missing Skill frontmatter: {relative}")
-    block = match.group(1)
-    name = re.search(r"^name:\s*([^\n]+)$", block, re.MULTILINE)
-    description = re.search(r"^description:\s*([^\n]+)$", block, re.MULTILINE)
-    extra = [
-        line.split(":", 1)[0]
-        for line in block.splitlines()
-        if ":" in line and not line.startswith(("name:", "description:"))
-    ]
-    if not name or not description or extra:
-        raise ValidationError(f"Skill frontmatter must contain only name and description: {relative}")
-    return name.group(1).strip(), description.group(1).strip()
+    fields: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        if ":" not in line:
+            raise ValidationError(f"Invalid Skill frontmatter line: {relative}: {line}")
+        key, value = line.split(":", 1)
+        fields[key.strip()] = value.strip()
+    if set(fields) != {"name", "description"} or not NAME_PATTERN.fullmatch(fields["name"]):
+        raise ValidationError(f"Skill frontmatter must contain only valid name and description: {relative}")
+    if len(fields["description"]) < 40:
+        raise ValidationError(f"Skill description is too short: {relative}")
+    return fields["name"], fields["description"]
 
 
-def manifest_skills(manifest: dict[str, Any]) -> list[tuple[str, str]]:
-    entries = manifest.get("public_skills")
-    if not isinstance(entries, list) or len(entries) < 2:
-        raise ValidationError("A Multi-Skill System requires a Router and at least one focused Skill")
-    pairs: list[tuple[str, str]] = []
-    purposes: list[str] = []
-    for item in entries:
-        if not isinstance(item, dict):
-            raise ValidationError("Each public Skill declaration must be an object")
-        name = str(item.get("name", ""))
-        relative = str(item.get("path", ""))
-        purpose = str(item.get("purpose", ""))
-        if not NAME_PATTERN.fullmatch(name) or relative != f"skills/{name}/SKILL.md" or not purpose:
-            raise ValidationError(f"Invalid public Skill declaration: {item!r}")
-        pairs.append((name, relative))
-        purposes.append(purpose)
-    if len({name for name, _ in pairs}) != len(pairs):
-        raise ValidationError("Public Skill names must be unique")
-    router = str(manifest.get("skill_id", ""))
-    architecture = manifest.get("architecture", {})
-    if pairs[0][0] != router or purposes[0] != "intent_router":
-        raise ValidationError("The first public Skill must be the declared Router")
-    if architecture.get("router") != router or architecture.get("focused_skill_policy") != "manifest_driven":
-        raise ValidationError("Architecture must declare a manifest-driven focused Skill policy")
-    return pairs
+def actual_files(directory: str, suffix: str, prefix: str = "") -> set[str]:
+    root = ROOT / directory
+    return {
+        path.relative_to(ROOT).as_posix()
+        for path in root.glob(f"{prefix}*{suffix}")
+        if path.is_file()
+    }
 
 
-def check_manifest() -> tuple[dict[str, Any], list[tuple[str, str]], set[str], set[str]]:
+def check_manifest() -> dict[str, Any]:
     manifest = load_json("skill_manifest.json")
-    version = str(manifest.get("plugin_version", ""))
-    if manifest.get("schema_version") != 3 or not VERSION_PATTERN.fullmatch(version):
-        raise ValidationError("skill_manifest.json must declare schema 3 and a semantic Plugin version")
-    if manifest.get("skill_id") != "everything-exam-preparation" or manifest.get("multi_skill_system") is not True:
-        raise ValidationError("skill_manifest.json has the wrong Router identity")
-    skills = manifest_skills(manifest)
-    references = {str(item) for item in manifest.get("references", [])}
-    actual_references = {
-        path.relative_to(ROOT).as_posix()
-        for path in (ROOT / "references").glob("*.md")
-    }
-    if not references or references != actual_references:
-        raise ValidationError("Manifest references must match the live reference files")
-    tools = manifest.get("tools", {})
-    if not isinstance(tools, dict) or not tools:
-        raise ValidationError("skill_manifest.json must declare retained tools")
-    tool_paths = {str(relative) for relative in tools.values()}
-    actual_scripts = {
-        path.relative_to(ROOT).as_posix()
-        for path in (ROOT / "scripts").glob("*.py")
-    }
-    if tool_paths != actual_scripts:
-        raise ValidationError("Manifest tools must match the live core scripts")
-    for relative in references | tool_paths:
-        read_text(relative)
-    removed = {str(item) for item in manifest.get("removed_focused_skills", [])}
-    if not REQUIRED_RETIRED_SKILLS.issubset(removed):
-        raise ValidationError("skill_manifest.json is missing Plugin-owned retired Skills")
-    if removed & {name for name, _ in skills}:
-        raise ValidationError("A public Skill cannot also be retired")
-    return manifest, skills, references, tool_paths
+    if manifest.get("schema_version") != 4 or manifest.get("plugin_version") != "4.0.0":
+        raise ValidationError("Manifest must declare schema 4 and Plugin version 4.0.0")
+    if not VERSION_PATTERN.fullmatch(str(manifest.get("plugin_version") or "")):
+        raise ValidationError("Plugin version must use strict semantic versioning")
+    architecture = manifest.get("architecture") or {}
+    if (
+        manifest.get("standalone") is not True
+        or architecture.get("router") != EXPECTED_SKILLS[0]
+        or architecture.get("source_processor") != "scripts/extract_sources.py"
+        or architecture.get("external_plugin_calls") is not False
+    ):
+        raise ValidationError("Manifest does not declare the standalone architecture")
+
+    entries = manifest.get("public_skills")
+    if not isinstance(entries, list) or [item.get("name") for item in entries if isinstance(item, dict)] != EXPECTED_SKILLS:
+        raise ValidationError("Public Skill architecture or order is incorrect")
+    for item in entries:
+        name = str(item.get("name") or "")
+        if item.get("path") != f"skills/{name}/SKILL.md" or not item.get("purpose"):
+            raise ValidationError(f"Invalid public Skill declaration: {item!r}")
+
+    declared_references = set(manifest.get("references") or [])
+    declared_schemas = set(manifest.get("schemas") or [])
+    declared_tools = set((manifest.get("tools") or {}).values())
+    declared_tests = set(manifest.get("tests") or [])
+    if declared_references != actual_files("references", ".md"):
+        raise ValidationError("Manifest references do not match references/*.md")
+    if declared_schemas != actual_files("schemas", ".json"):
+        raise ValidationError("Manifest schemas do not match schemas/*.json")
+    if declared_tools != actual_files("scripts", ".py"):
+        raise ValidationError("Manifest tools do not match scripts/*.py")
+    if declared_tests != actual_files("tests", ".py", "test_"):
+        raise ValidationError("Manifest tests do not match tests/test_*.py")
+    for relative in declared_references | declared_schemas | declared_tools | declared_tests:
+        read_text(str(relative))
+    return manifest
 
 
-def check_skills(skills: list[tuple[str, str]]) -> None:
+def check_skills_and_metadata(manifest: dict[str, Any]) -> None:
     root_name, _ = frontmatter("SKILL.md")
-    if root_name != skills[0][0]:
-        raise ValidationError("Root SKILL.md must match the Router")
-    for expected_name, relative in skills:
-        actual_name, description = frontmatter(relative)
-        if actual_name != expected_name or len(description) < 40:
-            raise ValidationError(f"Invalid Skill metadata: {relative}")
+    if root_name != EXPECTED_SKILLS[0]:
+        raise ValidationError("Root SKILL.md must be the Router")
     live = {
-        path.name
-        for path in (ROOT / "skills").iterdir()
+        path.name for path in (ROOT / "skills").iterdir()
         if path.is_dir() and (path / "SKILL.md").is_file()
     }
-    if live != {name for name, _ in skills}:
-        raise ValidationError(f"Skill directories differ from the manifest: {sorted(live)}")
+    if live != set(EXPECTED_SKILLS):
+        raise ValidationError(f"Live Skills differ from manifest: {sorted(live)}")
+    for name in EXPECTED_SKILLS:
+        relative = f"skills/{name}/SKILL.md"
+        actual, _ = frontmatter(relative)
+        if actual != name:
+            raise ValidationError(f"Skill identity mismatch: {relative}")
+        content = read_text(relative)
+        if "input_and_evidence_protocol.md" not in content:
+            raise ValidationError(f"Skill omits the shared source/result contract: {name}")
+        if name != EXPECTED_SKILLS[0] and "extract_sources.py" not in content:
+            raise ValidationError(f"Focused Skill cannot process raw sources independently: {name}")
+        protocol = FOCUSED_PROTOCOLS.get(name)
+        if protocol and Path(protocol).name not in content:
+            raise ValidationError(f"Focused Skill omits its own protocol: {name}")
 
-
-def check_metadata(manifest: dict[str, Any], skills: list[tuple[str, str]]) -> None:
+    version = manifest["plugin_version"]
     plugin = load_json(".codex-plugin/plugin.json")
-    plugin_version = str(plugin.get("version", "")).split("+", 1)[0]
-    if plugin.get("name") != "everything-exam-preparation" or plugin_version != manifest["plugin_version"]:
-        raise ValidationError("Plugin identity or version drifted")
-    if plugin.get("skills") != "./skills/":
-        raise ValidationError("Plugin metadata must expose ./skills/")
-    agents = load_yaml("agents/openai.yaml")
-    if (
-        str(agents.get("version", "")).split("+", 1)[0] != manifest["plugin_version"]
-        or agents.get("default_skill") != skills[0][0]
-        or agents.get("skills_manifest") != "skill_manifest.json"
-        or "skills" in agents
-    ):
-        raise ValidationError("agents/openai.yaml must use the manifest as the Skill source")
-    focused = {name for name, _ in skills[1:]}
-    presets = load_yaml("agents/presets.yaml").get("presets", {})
-    if not isinstance(presets, dict):
-        raise ValidationError("agents/presets.yaml presets must be an object")
-    preset_skills = {
-        str(value.get("skill"))
-        for value in presets.values()
-        if isinstance(value, dict) and value.get("skill")
-    }
-    if not preset_skills.issubset(focused):
-        raise ValidationError("Agent presets may reference only manifest-declared focused Skills")
-    prompt_cards = load_yaml("agents/prompt_cards.yaml").get("prompt_cards", [])
-    if not isinstance(prompt_cards, list):
-        raise ValidationError("agents/prompt_cards.yaml prompt_cards must be a list")
-    card_skills = {
-        str(item.get("skill"))
-        for item in prompt_cards
-        if isinstance(item, dict) and item.get("skill")
-    }
-    if not card_skills.issubset(focused):
-        raise ValidationError("Prompt cards may reference only manifest-declared focused Skills")
+    if plugin.get("name") != EXPECTED_SKILLS[0] or plugin.get("version") != version or plugin.get("skills") != "./skills/":
+        raise ValidationError("Plugin identity, version, or Skill path drifted")
+    if "apps" in plugin or "mcpServers" in plugin or "hooks" in plugin:
+        raise ValidationError("Plugin declares a companion component that does not exist")
+    interface = plugin.get("interface") or {}
+    if not interface.get("displayName") or not interface.get("shortDescription") or not interface.get("longDescription"):
+        raise ValidationError("Plugin interface metadata is incomplete")
+    if len(interface.get("defaultPrompt") or []) > 3:
+        raise ValidationError("Plugin may expose at most three default prompts")
+
+    agent = load_yaml("agents/openai.yaml")
+    if agent.get("version") != version or agent.get("default_skill") != EXPECTED_SKILLS[0]:
+        raise ValidationError("agents/openai.yaml identity or version drifted")
+    focused = set(EXPECTED_SKILLS[1:])
+    presets = load_yaml("agents/presets.yaml").get("presets") or {}
+    cards = load_yaml("agents/prompt_cards.yaml").get("prompt_cards") or []
+    if {item.get("skill") for item in presets.values()} != focused:
+        raise ValidationError("Agent presets must cover the focused Skills exactly")
+    if {item.get("skill") for item in cards} != focused:
+        raise ValidationError("Prompt cards must cover the focused Skills exactly")
     load_yaml("agents/setup_wizard.yaml")
 
 
-def source_files() -> list[Path]:
+def repository_sources() -> list[Path]:
     selected: list[Path] = []
     for path in ROOT.rglob("*"):
         if not path.is_file():
             continue
         relative = path.relative_to(ROOT)
-        if any(part in {".git", "outputs", "__pycache__", ".skill_assets"} for part in relative.parts):
+        if any(part in {".git", "__pycache__", ".skill_assets", ".pytest_cache"} for part in relative.parts):
             continue
-        if path.suffix.lower() in {".md", ".json", ".yaml", ".yml", ".py"}:
+        if path.suffix.lower() in {".md", ".json", ".yaml", ".yml", ".py", ".txt"}:
             selected.append(path)
     return selected
 
 
-def check_retirement(skills: list[tuple[str, str]], references: set[str]) -> None:
-    present = sorted(path for path in RETIRED_PATHS if (ROOT / path).exists())
-    if present:
-        raise ValidationError("Retired paths remain: " + ", ".join(present))
-    retired = REQUIRED_RETIRED_SKILLS
-    for path in source_files():
+def check_independence(manifest: dict[str, Any]) -> None:
+    for path in repository_sources():
         relative = path.relative_to(ROOT).as_posix()
-        if relative in {"scripts/validate_skill_contracts.py", "skill_manifest.json"}:
-            continue
         text = path.read_text(encoding="utf-8", errors="ignore")
-        for label, pattern in RETIRED_LANGUAGE.items():
+        for label, pattern in PROHIBITED_EXTERNAL_PATTERNS.items():
             if pattern.search(text):
-                raise ValidationError(f"{relative} still references {label}")
-        for name in retired:
-            if name in text:
-                raise ValidationError(f"{relative} still references retired Skill {name}")
-    public_files = [
-        "SKILL.md",
-        "README.md",
-        ".codex-plugin/plugin.json",
-        "agents/openai.yaml",
-        *(relative for _, relative in skills),
-        *references,
-    ]
-    combined = "\n".join(read_text(path) for path in public_files)
-    if FIXED_COUNT_PATTERN.search(combined):
-        raise ValidationError("Public guidance must not encode a fixed Skill count")
+                raise ValidationError(f"{relative} contains prohibited {label} dependency language")
+    router = read_text("scripts/route_request.py")
+    if '"plugin_calls": []' not in router or "out_of_scope_assessed_coursework" not in router:
+        raise ValidationError("Router does not prove local refusal without external calls")
+    root = read_text("SKILL.md").lower()
+    for boundary in ("currently assessed coursework", "university timetables", "do not invoke or route"):
+        if boundary not in root:
+            raise ValidationError(f"Root boundary is missing: {boundary}")
+    if manifest.get("architecture", {}).get("external_plugin_calls") is not False:
+        raise ValidationError("External Plugin calls must remain disabled")
 
 
-def check_merged_tools() -> None:
-    merged_functions = {
-        "scripts/extract_sources.py": (
-            "process_sources",
-            "build_fragment_index",
-            "readiness_report",
-            "build_exam_format_profile",
-            "build_assessment_architecture",
-            "build_diagnostic_assessment",
-        ),
-        "scripts/exam_mode_tools.py": ("build_assessment_blueprint", "evaluate_answer", "build_timed_practice"),
-        "scripts/essay_exam_tools.py": (
-            "discover_extra_reading",
-            "build_extra_reading_enrichment",
-            "online_essay_permission_status",
-        ),
-    }
-    for relative, functions in merged_functions.items():
-        text = read_text(relative)
-        for function in functions:
-            if f"def {function}(" not in text:
-                raise ValidationError(f"{relative} is missing merged function {function}")
+def check_schemas(manifest: dict[str, Any]) -> None:
+    if Draft202012Validator is None:
+        raise ValidationError("jsonschema is required; install requirements.txt before validation")
+    for relative in manifest.get("schemas") or []:
+        schema = load_json(relative)
+        try:
+            Draft202012Validator.check_schema(schema)
+        except Exception as exc:
+            raise ValidationError(f"Invalid JSON Schema: {relative}: {exc}") from exc
 
 
-def check_assessment_contracts() -> None:
-    shared_protocol = read_text("references/input_and_evidence_protocol.md")
-    source_tool = read_text("scripts/extract_sources.py")
-    for contract in ("ExamFormatProfile", "AssessmentArchitecture", "DiagnosticAssessment"):
-        if contract not in shared_protocol or f'"contract": "{contract}"' not in source_tool:
-            raise ValidationError(f"Shared diagnostic contract is incomplete: {contract}")
-    for field in ('"task_mode"', '"status"', '"gaps"', '"degraded"'):
-        if source_tool.count(field) < 3:
-            raise ValidationError(f"Shared diagnostic contracts are missing field {field}")
-
-    practice_protocol = read_text("references/exam_mode_and_addons_protocol.md")
-    practice_tool = read_text("scripts/exam_mode_tools.py")
-    for status in ("correct", "partial", "incorrect", "contradicted", "missing"):
-        if f'"{status}"' not in practice_tool or status not in practice_protocol:
-            raise ValidationError(f"Practice evaluation status is incomplete: {status}")
-    if "mark_estimate_basis" not in practice_tool or "explicit mark allocation" not in practice_protocol:
-        raise ValidationError("Practice mark estimates must remain evidence-gated")
-
-    essay_protocol = read_text("references/essay_exam_prep_protocol.md")
-    essay_tool = read_text("scripts/essay_exam_tools.py")
-    for state in ("active", "closed", "unknown"):
-        if f'"{state}"' not in essay_tool or state not in essay_protocol:
-            raise ValidationError(f"Online Essay lifecycle state is incomplete: {state}")
-    for field in ('"allowed_actions"', '"blocked_actions"', '"gaps"'):
-        if field not in essay_tool:
-            raise ValidationError(f"Online Essay permission result is missing {field}")
+def require_tokens(relative: str, tokens: set[str], label: str) -> None:
+    text = read_text(relative).casefold()
+    missing = sorted(token for token in tokens if token.casefold() not in text)
+    if missing:
+        raise ValidationError(f"{label} is missing: {', '.join(missing)}")
 
 
-def check_public_result_contract(manifest: dict[str, Any], skills: list[tuple[str, str]]) -> None:
-    expected_statuses = {
-        "completed",
-        "completed_with_gaps",
-        "needs_material_input",
-        "source_conflict",
-        "artifact_generated",
-        "analysis_only",
-    }
-    expected_artifact_fields = {
-        "artifact_id",
-        "artifact_type",
-        "file_format",
-        "content_schema_version",
-        "source_corpus_ids",
-        "qa_status",
-    }
-    contract = manifest.get("result_contract", {})
-    if contract.get("schema_version") != "1.0":
-        raise ValidationError("The public Skill result contract must use schema 1.0")
-    if set(contract.get("statuses", [])) != expected_statuses:
-        raise ValidationError("The public Skill result statuses are incomplete")
-    if set(contract.get("artifact_required_fields", [])) != expected_artifact_fields:
-        raise ValidationError("The public artifact manifest fields are incomplete")
-    protocol = read_text("references/input_and_evidence_protocol.md")
-    for token in expected_statuses | expected_artifact_fields | {"skill_id", "task_mode", "primary_output", "qa"}:
-        if token not in protocol:
-            raise ValidationError(f"The public Skill result contract is missing {token}")
-    for name, relative in skills:
-        if "input_and_evidence_protocol.md" not in read_text(relative):
-            raise ValidationError(f"{name} does not declare the shared public result contract")
-
-
-def check_notes_policy() -> None:
-    root_skill = read_text("SKILL.md")
-    skill = read_text("skills/exam-prep-notes/SKILL.md")
-    input_protocol = read_text("references/input_and_evidence_protocol.md")
-    protocol = read_text("references/exam_prep_notes_protocol.md")
-    combined = f"{root_skill}\n{skill}\n{input_protocol}\n{protocol}".lower()
-    if "visual-first" in combined:
-        raise ValidationError("Notes guidance must use a visual-value gate rather than visual-first composition")
-    required = {
-        "materially improves": "a material teaching-value threshold for images",
-        "no image quota": "an explicit no-quota image policy",
-        "original lecture-slide": "source-slide visual priority",
-        "knowledge density": "density-adaptive content length",
-        "longer paragraphs": "flexible paragraph composition",
-        "lecture boundary": "Lecture-boundary page-flow control",
-        "knowledge-only": "the knowledge-only Notes artifact boundary",
-        "source type never grants permission": "source evidence must not trigger another artifact",
-        "do not create a companion": "no unsolicited companion Practice or Essay output",
-        "assessment strategy": "assessment-planning content exclusion from public Notes",
-        "2 cm margins": "the shared 2 cm Notes page-margin specification",
-        "partially cropped slide title": "complete-or-removed slide-title cropping",
-        "15.5 pt first-level headings": "the shared Notes heading scale",
-    }
-    for phrase, purpose in required.items():
-        if phrase not in combined:
-            raise ValidationError(f"Notes guidance is missing {purpose}: {phrase!r}")
-
-    generator = read_text("scripts/generate_exam_prep_notes_docx.py")
-    geometry_contract = {
-        r"(?m)^MARGIN_TWIPS\s*=\s*1134\s*$": "2 cm margins in Word twips",
-        r"(?m)^CONTENT_WIDTH_TWIPS\s*=\s*PAGE_WIDTH_TWIPS\s*-\s*\(2\s*\*\s*MARGIN_TWIPS\)\s*$": (
-            "content width derived from both 2 cm side margins"
-        ),
-        r"(?m)^MAX_IMAGE_WIDTH_EMU\s*=\s*6_120_000\s*$": (
-            "the 17 cm image-width ceiling inside the 2 cm margins"
-        ),
-    }
-    for pattern, purpose in geometry_contract.items():
-        if not re.search(pattern, generator):
-            raise ValidationError(f"Notes generator is missing {purpose}")
-
-    typography_contract = {
-        r"(?m)^BODY_HALF_POINTS\s*=\s*22\s*$": "Arial 11 pt body text",
-        r"(?m)^TITLE_HALF_POINTS\s*=\s*40\s*$": "20 pt title text",
-        r"(?m)^HEADING1_HALF_POINTS\s*=\s*31\s*$": "15.5 pt first-level headings",
-        r"(?m)^HEADING2_HALF_POINTS\s*=\s*26\s*$": "13 pt second-level headings",
-        r"(?m)^FORMULA_HALF_POINTS\s*=\s*23\s*$": "11.5 pt display equations",
-        r"(?m)^CAPTION_HALF_POINTS\s*=\s*18\s*$": "9 pt captions",
-        r"(?m)^TABLE_HALF_POINTS\s*=\s*20\s*$": "10 pt table text",
-    }
-    for pattern, purpose in typography_contract.items():
-        if not re.search(pattern, generator):
-            raise ValidationError(f"Notes generator is missing {purpose}")
-    margin_attributes = set(
-        re.findall(r'w:(top|right|bottom|left)="\{MARGIN_TWIPS\}"', generator)
+def check_source_contract() -> None:
+    require_tokens(
+        "scripts/extract_sources.py",
+        {
+            "expanded_source_inputs", "read_docx_paragraph_units", "read_image_text",
+            "atlas", "analysis", "cache_dir", "embedded_ai_instruction",
+            "formal_past_paper", "official_mock_specimen", "mark_scheme",
+        },
+        "Shared source processor",
     )
-    if margin_attributes != {"top", "right", "bottom", "left"}:
-        raise ValidationError("Notes generator does not apply the 2 cm margin token on all four sides")
+    require_tokens(
+        "references/input_and_evidence_protocol.md",
+        {"pptx", "pdf", "docx", "image", "zip", "timestamp", "incomplete", "optional task-local cache"},
+        "Source protocol",
+    )
+
+
+def check_atlas_contract() -> None:
+    require_tokens("references/course_atlas_protocol.md", REQUIRED_ATLAS_MEMBERS, "Course Atlas protocol")
+    require_tokens(
+        "schemas/atlas_node.schema.json",
+        {
+            "node_id", "node_type", "parent_id", "title", "explanation", "sequence_index",
+            "keywords", "aliases", "source_refs", "relation_ids", "knowledge_status",
+        },
+        "Atlas node schema",
+    )
+    require_tokens(
+        "scripts/validate_course_atlas.py",
+        {"checksums.sha256", "modules/", "manual_review", "raw"},
+        "Course Atlas validator",
+    )
+
+
+def check_analysis_contract() -> None:
+    combined = "\n".join([
+        read_text("references/exam_intelligence_protocol.md"),
+        read_text("scripts/exam_intelligence_tools.py"),
+        read_text("schemas/question_family.schema.json"),
+    ]).casefold()
+    for metric in ANALYSIS_METRICS:
+        if metric not in combined:
+            raise ValidationError(f"Exam Analysis omits metric: {metric}")
+    for role in ("formal_past_paper", "official_mock_specimen", "practice_worksheet", "lecture_material", "mark_scheme"):
+        if role not in combined:
+            raise ValidationError(f"Exam Analysis omits source role: {role}")
+    for boundary in ("official assessment weighting", "predict", "public", "audit"):
+        if boundary not in combined:
+            raise ValidationError(f"Exam Analysis omits boundary: {boundary}")
+
+
+def check_notes_contract() -> None:
+    combined = "\n".join([
+        read_text("SKILL.md"),
+        read_text("skills/exam-prep-notes/SKILL.md"),
+        read_text("references/exam_prep_notes_protocol.md"),
+    ]).casefold()
+    for phrase in (
+        "knowledge-only", "course-complete", "assessment strategy", "question banks",
+        "essay", "revision schedules", "do not create a companion",
+    ):
+        if phrase not in combined:
+            raise ValidationError(f"Notes boundary is missing: {phrase}")
+    generator = read_text("scripts/generate_exam_prep_notes_docx.py")
+    geometry = {
+        r"(?m)^MARGIN_TWIPS\s*=\s*1134\s*$": "2 cm margins",
+        r"(?m)^BODY_HALF_POINTS\s*=\s*22\s*$": "Arial 11 pt body",
+        r"(?m)^HEADING1_HALF_POINTS\s*=\s*31\s*$": "15.5 pt first heading",
+    }
+    for pattern, label in geometry.items():
+        if not re.search(pattern, generator):
+            raise ValidationError(f"Notes renderer omits {label}")
+
+
+def check_practice_contract() -> None:
+    practice_script = read_text("scripts/exam_mode_tools.py")
+    combined = "\n".join([
+        read_text("skills/exam-prep-practice/SKILL.md"),
+        read_text("references/exam_mode_and_addons_protocol.md"),
+        practice_script,
+    ]).casefold()
+    for phrase in (
+        "solution_book", "major question", "general approach", "docx", "pdf",
+        "json", "batch", "continuous", "heading", "table", "formula", "callout",
+    ):
+        if phrase not in combined:
+            raise ValidationError(f"Practice solution-book contract is missing: {phrase}")
+    for status in ("correct", "partial", "incorrect", "contradicted", "missing"):
+        if status not in combined:
+            raise ValidationError(f"Practice answer status is missing: {status}")
+    for forbidden in (
+        "build_mcq_saq_recurrence_report",
+        '"build-mcq-report"',
+        '"build-short-answer-report"',
+        '"build-mcq-saq-report"',
+    ):
+        if forbidden in practice_script:
+            raise ValidationError(
+                f"Practice exposes an Analysis-owned recurrence command or builder: {forbidden}"
+            )
+
+
+def check_essay_contract() -> None:
+    combined = "\n".join([
+        read_text("skills/exam-prep-essay/SKILL.md"),
+        read_text("references/essay_exam_prep_protocol.md"),
+        read_text("scripts/essay_exam_tools.py"),
+    ]).casefold()
+    for annotation in ANNOTATION_TYPES:
+        if annotation not in combined and annotation.replace(" ", "_") not in combined:
+            raise ValidationError(f"Essay annotation is missing: {annotation}")
+    for phrase in (
+        "clean", "annotated", "shared", "canonical", "closed", "course sources",
+        "past papers", "doi", "currently assessed",
+    ):
+        if phrase not in combined:
+            raise ValidationError(f"Essay contract is missing: {phrase}")
 
 
 def run_check(command: list[str]) -> None:
@@ -422,36 +400,42 @@ def run_check(command: list[str]) -> None:
         raise ValidationError(f"Command failed: {' '.join(command)}\n{detail}")
 
 
-def is_git_worktree() -> bool:
-    proc = subprocess.run(
-        ["git", "rev-parse", "--is-inside-work-tree"],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-    )
-    return proc.returncode == 0 and proc.stdout.strip() == "true"
+def check_runtime() -> None:
+    run_check([sys.executable, "-m", "compileall", "-q", "scripts", "tests"])
+    for relative in (
+        "scripts/route_request.py",
+        "scripts/extract_sources.py",
+        "scripts/generate_exam_prep_notes_docx.py",
+        "scripts/exam_mode_tools.py",
+        "scripts/essay_exam_tools.py",
+        "scripts/publish_skill.py",
+    ):
+        run_check([sys.executable, relative, "--self-test"])
+    run_check([sys.executable, "scripts/exam_intelligence_tools.py", "self-test"])
+    run_check([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests"])
+    if shutil.which("soffice"):
+        run_check([sys.executable, "scripts/generate_exam_prep_notes_docx.py", "--render-self-test"])
+    if (ROOT / ".git").exists():
+        run_check(["git", "diff", "--check"])
 
 
 def main() -> int:
     try:
-        manifest, skills, references, _ = check_manifest()
-        check_skills(skills)
-        check_metadata(manifest, skills)
-        check_retirement(skills, references)
-        check_merged_tools()
-        check_assessment_contracts()
-        check_public_result_contract(manifest, skills)
-        check_notes_policy()
-        for key in ("sources", "notes", "practice", "essay", "installation"):
-            run_check([sys.executable, str(manifest["tools"][key]), "--self-test"])
-        if shutil.which("soffice"):
-            run_check([sys.executable, str(manifest["tools"]["notes"]), "--render-self-test"])
-        if is_git_worktree():
-            run_check(["git", "diff", "--check"])
-    except (ValidationError, KeyError) as exc:
+        manifest = check_manifest()
+        check_skills_and_metadata(manifest)
+        check_independence(manifest)
+        check_schemas(manifest)
+        check_source_contract()
+        check_atlas_contract()
+        check_analysis_contract()
+        check_notes_contract()
+        check_practice_contract()
+        check_essay_contract()
+        check_runtime()
+    except (ValidationError, KeyError, OSError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    print(f"OK: manifest-driven Everything Exam Preparation Plugin {manifest['plugin_version']} validated")
+    print(f"OK: standalone Everything Exam Preparation Plugin {manifest['plugin_version']} validated")
     return 0
 
 

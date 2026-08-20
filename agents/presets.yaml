@@ -1,25 +1,41 @@
 presets:
+  atlas:
+    skill: exam-prep-atlas
+    output: source-grounded Course Atlas package
+    actions:
+      - process raw course sources
+      - build atomic nodes and relations
+      - audit coverage and exclusions
+      - validate package schemas and checksums
+  analysis:
+    skill: exam-prep-analysis
+    output: interpretable exam-intelligence package
+    actions:
+      - classify paper roles
+      - extract and map questions
+      - compute formal and auxiliary metrics separately
+      - validate public and audit data
   notes:
     skill: exam-prep-notes
-    output: explanation-first course Notes
+    output: explanation-first knowledge-only Notes
     actions:
-      - process sources and slide triage
+      - process raw course sources
       - build course coverage audit
       - explain connected knowledge units
       - render and inspect the document
   practice:
     skill: exam-prep-practice
-    output: requested question-based artifact
+    output: requested question-based artifact or solution book
     actions:
       - process course and question sources
       - run the selected practice capability
-      - preserve useful provenance
-      - verify the output
+      - preserve continuous major-question reasoning
+      - validate and inspect the output
   essay:
     skill: exam-prep-essay
-    output: requested essay-support artifact
+    output: exam essay learning artifact
     actions:
       - analyse question and course evidence
-      - establish Online Essay permissions when needed
-      - integrate reliable Extra Reading
-      - verify argument and source use
+      - build one canonical essay body
+      - render clean and annotated views
+      - verify annotations and source use

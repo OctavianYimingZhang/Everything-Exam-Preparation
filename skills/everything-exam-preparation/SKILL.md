@@ -1,18 +1,22 @@
 ---
 name: everything-exam-preparation
-description: Router for exam-preparation requests covering course Notes, question-based Practice, and Essay support from lectures, past papers, questions, answers, readings, and assessment instructions.
+description: Route standalone exam and revision requests to Course Atlas, past-paper Analysis, knowledge-only Notes, Practice, or exam Essay support while refusing out-of-scope assessed coursework and administration.
 ---
 
 # Everything Exam Preparation Router
 
-Use the package workflow in [`../../SKILL.md`](../../SKILL.md).
+Use the package workflow in [`../../SKILL.md`](../../SKILL.md) and the shared result contract in `references/input_and_evidence_protocol.md`.
 
-Route explicit requests directly:
+Route the requested artifact directly:
 
-- Notes and lecture revision → `exam-prep-notes`
-- Questions, papers, worked answers, blueprints, evaluation, or timed work → `exam-prep-practice`
-- Essay planning, drafting, Online Essay work, or Extra Reading → `exam-prep-essay`
+- Mind Map, Course Atlas, knowledge tree, concept graph, website-import JSON or ZIP → `exam-prep-atlas`
+- Units Analysis, formal recurrence, question mapping or clustering, exam intelligence → `exam-prep-analysis`
+- course-complete knowledge-only Notes → `exam-prep-notes`
+- questions, worked solutions, Answer PDFs, evaluation, or timed work → `exam-prep-practice`
+- exam essay plans, shared-body model essay views, paragraph exemplars, or closed past-assessment review → `exam-prep-essay`
 
-Ask once only when a missing choice would materially change the requested artifact.
+For an explicit multi-artifact request, return every local owner and run each independently. Keep the resulting artifacts separate unless the student asks for a combined file.
 
-Return the public result envelope from `references/input_and_evidence_protocol.md`, including the selected `task_mode`, single artifact owner, assumptions, gaps, evidence summary, public completion status, and QA. Declare a real artifact format only after that file exists.
+Complete deliverables for currently assessed coursework and university administration are outside this Plugin. State that boundary and stop. Do not call or identify another plugin as a destination.
+
+Each focused Skill accepts the raw user files and independently invokes the shared source processor. No prior focused-Skill run or prepared index is required.

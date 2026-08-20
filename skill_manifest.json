@@ -1,17 +1,20 @@
 {
-  "schema_version": 3,
-  "plugin_version": "3.2.0",
+  "schema_version": 4,
+  "plugin_version": "4.0.0",
   "skill_id": "everything-exam-preparation",
   "repo": "OctavianYimingZhang/Everything-Exam-Preparation",
   "branch": "main",
   "entrypoint": "SKILL.md",
   "multi_skill_system": true,
+  "standalone": true,
   "architecture": {
     "router": "everything-exam-preparation",
     "focused_skill_policy": "manifest_driven",
-    "boundary_rule": "Split when learning intent, evidence role, workflow, toolchain, or output is materially independent; merge when those elements are shared."
+    "source_processor": "scripts/extract_sources.py",
+    "cache_policy": "optional_task_local_rebuildable",
+    "external_plugin_calls": false
   },
-  "default_output": "docx",
+  "default_output": "requested_artifact",
   "default_output_language": "en",
   "result_contract": {
     "schema_version": "1.0",
@@ -39,35 +42,68 @@
       "purpose": "intent_router"
     },
     {
+      "name": "exam-prep-atlas",
+      "path": "skills/exam-prep-atlas/SKILL.md",
+      "purpose": "course_atlas"
+    },
+    {
+      "name": "exam-prep-analysis",
+      "path": "skills/exam-prep-analysis/SKILL.md",
+      "purpose": "exam_intelligence"
+    },
+    {
       "name": "exam-prep-notes",
       "path": "skills/exam-prep-notes/SKILL.md",
-      "purpose": "course_notes"
+      "purpose": "knowledge_only_notes"
     },
     {
       "name": "exam-prep-practice",
       "path": "skills/exam-prep-practice/SKILL.md",
-      "purpose": "question_based_practice"
+      "purpose": "practice_and_solution_books"
     },
     {
       "name": "exam-prep-essay",
       "path": "skills/exam-prep-essay/SKILL.md",
-      "purpose": "essay_support"
+      "purpose": "exam_essay_learning"
     }
   ],
   "references": [
     "references/input_and_evidence_protocol.md",
+    "references/course_atlas_protocol.md",
+    "references/exam_intelligence_protocol.md",
     "references/exam_prep_notes_protocol.md",
     "references/exam_mode_and_addons_protocol.md",
     "references/essay_exam_prep_protocol.md"
   ],
+  "schemas": [
+    "schemas/course_atlas_package.schema.json",
+    "schemas/atlas_node.schema.json",
+    "schemas/atlas_relation.schema.json",
+    "schemas/exam_intelligence_package.schema.json",
+    "schemas/question_record.schema.json",
+    "schemas/question_family.schema.json"
+  ],
   "tools": {
+    "router": "scripts/route_request.py",
     "sources": "scripts/extract_sources.py",
+    "atlas_builder": "scripts/build_course_atlas.py",
+    "atlas_validation": "scripts/validate_course_atlas.py",
+    "analysis": "scripts/exam_intelligence_tools.py",
     "notes": "scripts/generate_exam_prep_notes_docx.py",
     "practice": "scripts/exam_mode_tools.py",
     "essay": "scripts/essay_exam_tools.py",
     "validation": "scripts/validate_skill_contracts.py",
     "installation": "scripts/publish_skill.py"
   },
+  "tests": [
+    "tests/test_router_independence.py",
+    "tests/test_source_processor.py",
+    "tests/test_course_atlas.py",
+    "tests/test_exam_intelligence.py",
+    "tests/test_rendered_documents.py",
+    "tests/test_solution_book.py",
+    "tests/test_essay_views.py"
+  ],
   "removed_focused_skills": [
     "exam-prep-index",
     "exam-prep-slide-triage",

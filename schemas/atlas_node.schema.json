@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "atlas_node.schema.json",
+  "title": "Course Atlas node",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "node_id",
+    "node_type",
+    "parent_id",
+    "title",
+    "explanation",
+    "sequence_index",
+    "keywords",
+    "aliases",
+    "source_refs",
+    "relation_ids",
+    "knowledge_status"
+  ],
+  "properties": {
+    "node_id": {
+      "$ref": "#/$defs/nodeId"
+    },
+    "node_type": {
+      "enum": [
+        "course",
+        "theme",
+        "lecture",
+        "module",
+        "concept",
+        "detail"
+      ]
+    },
+    "parent_id": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/nodeId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "explanation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sequence_index": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "keywords": {
+      "$ref": "#/$defs/stringSet"
+    },
+    "aliases": {
+      "$ref": "#/$defs/stringSet"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sourceRef"
+      }
+    },
+    "relation_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nodeId"
+      }
+    },
+    "knowledge_status": {
+      "enum": [
+        "complete",
+        "partial",
+        "incomplete",
+        "uncertain"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "course"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "parent_id": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "parent_id": {
+            "$ref": "#/$defs/nodeId"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "enum": [
+              "concept",
+              "detail"
+            ]
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source_refs": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nodeId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "sourceRef": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_id",
+            "locator_status",
+            "locator"
+          ],
+          "properties": {
+            "source_id": {
+              "$ref": "#/$defs/nodeId"
+            },
+            "locator_status": {
+              "const": "exact"
+            },
+            "locator": {
+              "$ref": "#/$defs/locator"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_id",
+            "locator_status",
+            "reason"
+          ],
+          "properties": {
+            "source_id": {
+              "$ref": "#/$defs/nodeId"
+            },
+            "locator_status": {
+              "const": "incomplete"
+            },
+            "reason": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        }
+      ]
+    },
+    "locator": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "start",
+            "end"
+          ],
+          "properties": {
+            "kind": {
+              "const": "slide"
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "start",
+            "end"
+          ],
+          "properties": {
+            "kind": {
+              "const": "page"
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "heading_path"
+          ],
+          "properties": {
+            "kind": {
+              "const": "heading_path"
+            },
+            "heading_path": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/nonEmptyString"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "start",
+            "end"
+          ],
+          "properties": {
+            "kind": {
+              "const": "paragraph_range"
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "start",
+            "end"
+          ],
+          "properties": {
+            "kind": {
+              "const": "timestamp"
+            },
+            "start": {
+              "type": "string",
+              "pattern": "^[0-9]{2,}:[0-5][0-9]:[0-5][0-9](?:\\.[0-9]{3})?$"
+            },
+            "end": {
+              "type": "string",
+              "pattern": "^[0-9]{2,}:[0-5][0-9]:[0-5][0-9](?:\\.[0-9]{3})?$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "start",
+            "end"
+          ],
+          "properties": {
+            "kind": {
+              "const": "line_range"
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "file"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

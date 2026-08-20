@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/OctavianYimingZhang/Everything-Exam-Preparation/schemas/question_family.schema.json",
+  "title": "Public Exam Intelligence Question Family",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "family_id",
+    "title",
+    "description",
+    "formal_occurrence_count",
+    "distinct_formal_years",
+    "formal_year_coverage",
+    "auxiliary_occurrence_count",
+    "format_diversity",
+    "explicit_mark_exposure",
+    "retention",
+    "cross_year_stability",
+    "mapping_coverage",
+    "unresolved_mapping_count"
+  ],
+  "properties": {
+    "family_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "formal_occurrence_count": {"type": "integer", "minimum": 0},
+    "distinct_formal_years": {"type": "integer", "minimum": 0},
+    "formal_year_coverage": {"type": "number", "minimum": 0, "maximum": 1},
+    "auxiliary_occurrence_count": {"type": "integer", "minimum": 0},
+    "format_diversity": {"type": "integer", "minimum": 0},
+    "explicit_mark_exposure": {"type": "number", "minimum": 0},
+    "retention": {"type": "number", "minimum": 0, "maximum": 1},
+    "cross_year_stability": {"type": "number", "minimum": 0, "maximum": 1},
+    "mapping_coverage": {"type": "number", "minimum": 0, "maximum": 1},
+    "unresolved_mapping_count": {"type": "integer", "minimum": 0},
+    "member_question_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "clustering_method": {
+      "type": "string",
+      "enum": [
+        "explicit_family",
+        "explicit_mapping",
+        "deterministic_similarity",
+        "singleton_unresolved"
+      ]
+    },
+    "manual_review_required": {"type": "boolean"}
+  }
+}

@@ -6,7 +6,9 @@ setup_wizard:
     - target_question_or_answer
     - evaluation_criteria
     - timed_duration
-    - online_essay_permissions
+    - closed_assessment_state
   defaults:
     output_language: English
     document_style: A4 Arial academic
+    source_processing: direct
+    cache: optional_task_local

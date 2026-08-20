@@ -1,6 +1,6 @@
 name: Everything Exam Preparation
-version: 3.2.0
+version: 4.0.0
 default_skill: everything-exam-preparation
 skills_manifest: skill_manifest.json
 default_output_language: English
-workflow: select the requested artifact, process trusted sources, generate, validate
+workflow: route requested exam artifact(s), process raw sources locally, generate, validate
