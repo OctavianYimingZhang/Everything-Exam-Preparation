@@ -3,23 +3,23 @@ presets:
     skill: exam-prep-notes
     output: explanation-first course Notes
     actions:
-      - process sources and slide triage
-      - build course coverage audit
-      - explain connected knowledge units
-      - render and inspect the document
+      - process sources once and reuse the fragment index
+      - organise connected knowledge units
+      - generate the document once
+      - run a bounded sanity check
   practice:
     skill: exam-prep-practice
     output: requested question-based artifact
     actions:
-      - process course and question sources
+      - process course and question sources once
       - run the selected practice capability
-      - preserve useful provenance
-      - verify the output
+      - generate the requested output once
+      - run a bounded sanity check
   essay:
     skill: exam-prep-essay
     output: requested essay-support artifact
     actions:
-      - analyse question and course evidence
+      - analyse the question and evidence once
       - establish Online Essay permissions when needed
-      - integrate reliable Extra Reading
-      - verify argument and source use
+      - generate the requested output once
+      - run a bounded sanity check

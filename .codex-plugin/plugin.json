@@ -1,7 +1,7 @@
 {
   "name": "everything-exam-preparation",
-  "version": "3.2.0",
-  "description": "A manifest-driven exam-preparation system for course Notes, question-based Practice, and Essay support.",
+  "version": "3.3.0",
+  "description": "A manifest-driven, single-pass exam-preparation system for course Notes, question-based Practice, and Essay support.",
   "author": {
     "name": "Octavian Yiming Zhang"
   },
@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Everything Exam Preparation",
-    "shortDescription": "Create course Notes, exam Practice, and Essay support.",
-    "longDescription": "Routes explicit student requests to explanation-first Notes, question-based Practice, or Essay support using trusted course and assessment material.",
+    "shortDescription": "Create course Notes, exam Practice, and Essay support in one pass.",
+    "longDescription": "Routes explicit student requests to knowledge-only Notes, question-based Practice, or Essay support using trusted material, one-pass generation, and bounded checks.",
     "developerName": "Octavian Yiming Zhang",
     "category": "Education",
     "capabilities": [

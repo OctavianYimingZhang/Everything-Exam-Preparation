@@ -1,32 +1,31 @@
 # Everything Exam Preparation
 
-Everything Exam Preparation is a Codex Plugin that turns trusted course and assessment material into the student artifact requested.
+Everything Exam Preparation is a Codex Plugin that turns trusted course and assessment material into the requested student artifact through a single-pass workflow.
 
 ## Structure
-
-The manifest currently exposes these Skill entries:
 
 | Skill | Responsibility |
 | --- | --- |
 | `everything-exam-preparation` | Routes explicit requests. |
-| `exam-prep-notes` | Creates course Notes and performs internal slide triage. |
-| `exam-prep-practice` | Handles all question-based preparation, blueprints, evaluation, and timed practice. |
-| `exam-prep-essay` | Handles ordinary and Online Essay support plus Extra Reading. |
+| `exam-prep-notes` | Creates course-complete, knowledge-only Notes. |
+| `exam-prep-practice` | Handles question-based preparation, blueprints, evaluation, and timed practice. |
+| `exam-prep-essay` | Handles ordinary and permitted Online Essay support plus Extra Reading. |
 
-The router selects the artifact from the user's request. It asks a concise question only when an indispensable input or a materially different output choice is unresolved.
-
-The focused Skill list is manifest-driven. Split a Skill when its learning intent, evidence role, workflow, toolchain, or output is materially independent; merge it when those boundaries are shared.
+The router acts directly when the requested artifact and required inputs are clear.
 
 ## Core Workflow
 
 ```text
-user request + trusted sources
+request + trusted sources
     -> select Notes, Practice, or Essay
-    -> process sources and preserve locators
-    -> diagnose task readiness and evidenced assessment architecture
-    -> generate the requested artifact
-    -> validate content and rendered output
+    -> extract once and reuse the source index
+    -> plan structure
+    -> generate once
+    -> bounded sanity check
+    -> deliver
 ```
+
+Normal student tasks do not trigger page-image rendering, exhaustive coverage ledgers, repeated diagnostics, or correction-and-rerender loops. Targeted visual inspection is used only when explicitly requested or when a concrete extraction or layout failure identifies a specific page or element.
 
 Four references define the shared behaviour:
 
@@ -39,12 +38,14 @@ Four references define the shared behaviour:
 
 | Script | Responsibility |
 | --- | --- |
-| `scripts/extract_sources.py` | Extraction, fragment indexing, focused-Skill diagnostics, exam-format profiling, assessment architecture, slide triage, and coverage audit. |
-| `scripts/generate_exam_prep_notes_docx.py` | Academic DOCX rendering. |
+| `scripts/extract_sources.py` | One-pass extraction, fragment indexing, and focused diagnostics. |
+| `scripts/generate_exam_prep_notes_docx.py` | Deterministic academic DOCX generation. |
 | `scripts/exam_mode_tools.py` | Practice analysis and generation. |
 | `scripts/essay_exam_tools.py` | Essay and Extra Reading analysis. |
-| `scripts/validate_skill_contracts.py` | Unified repository validation. |
-| `scripts/publish_skill.py` | Manifest-driven local synchronisation and drift checking. |
+| `scripts/validate_skill_contracts.py` | Repository-maintenance validation. |
+| `scripts/publish_skill.py` | Local installation synchronisation and drift checking. |
+
+Validation and render self-tests are maintenance commands. They are not part of ordinary Notes, Practice, or Essay generation.
 
 ## Installation
 
@@ -69,17 +70,15 @@ done
 python3 "$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py" .
 ```
 
-The unified validator checks the manifest-declared Skills, references, metadata consistency, retained tool self-tests, retired structure, and installation declarations.
-
 ## Repository Map
 
 | Path | Responsibility |
 | --- | --- |
-| `SKILL.md` | Package router and shared rules. |
+| `SKILL.md` | Package router and one-pass shared rules. |
 | `skills/` | Manifest-declared Plugin Skill entries. |
 | `references/` | Source, Notes, Practice, and Essay protocols. |
-| `scripts/` | Core processing, rendering, validation, and synchronisation. |
-| `agents/` | Optional presets, prompt cards, and setup metadata. |
+| `scripts/` | Processing, generation, validation, and synchronisation. |
+| `agents/` | Optional presets and setup metadata. |
 | `.codex-plugin/plugin.json` | Plugin metadata. |
 | `skill_manifest.json` | Version, public Skill list, tools, and local cleanup list. |
 
